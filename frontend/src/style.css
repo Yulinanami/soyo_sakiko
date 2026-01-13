@@ -50,3 +50,33 @@
 .tag-highlight {
   @apply bg-sakiko text-white;
 }
+
+/* 阅读器内容样式 */
+.reader-content {
+  font-family: "Noto Serif SC", "Source Han Serif CN", "Songti SC", "SimSun",
+    serif;
+  font-size: 1.125rem;
+  line-height: 2;
+  color: #333;
+  text-align: justify;
+}
+
+.reader-content p {
+  margin-bottom: 1.5em;
+  text-indent: 2em;
+}
+
+.reader-content p:first-child {
+  text-indent: 0;
+}
+
+.reader-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* 处理换行符 - 每个段落之间有间距 */
+.reader-content br {
+  display: block;
+  content: "";
+  margin-bottom: 0.75em;
+}

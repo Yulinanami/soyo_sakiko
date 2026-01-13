@@ -95,13 +95,13 @@ function nextChapter() {
     </nav>
 
     <!-- Content -->
-    <main class="py-8">
-      <div class="max-w-3xl mx-auto px-4">
+    <main class="py-12 bg-gray-50">
+      <div class="max-w-2xl mx-auto px-6">
         <div v-if="loading" class="text-center py-16 text-gray-500">加载中...</div>
         <div v-else-if="error" class="text-center py-16 text-red-500">{{ error }}</div>
         <article 
           v-else 
-          class="bg-white p-8 rounded-lg shadow-sm leading-relaxed text-lg"
+          class="reader-content bg-white px-10 py-12 rounded-xl shadow-sm"
           v-html="chapterContent"
         ></article>
       </div>
