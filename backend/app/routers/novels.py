@@ -2,6 +2,7 @@
 Novels Router
 """
 
+import asyncio
 from fastapi import APIRouter, Query, HTTPException
 from typing import List
 from app.schemas.novel import Novel, NovelListResponse, NovelSource
@@ -21,56 +22,82 @@ async def search_novels(
     sources: List[NovelSource] = Query(default=[NovelSource.AO3]),
     tags: List[str] = Query(default=["素祥", "祥素"]),
     page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
+    page_size: int = Query(default=30, ge=1, le=100),
     sort_by: str = Query(default="date"),
     sort_order: str = Query(default="desc"),
 ):
-    """Search novels across multiple sources with caching"""
+    """Search novels across multiple sources"""
 
-    # Create cache key
-    cache_key = CacheKeys.novel_search([s.value for s in sources], tags, page, sort_by)
+    print(
+        f"🔍 Searching sources: {[s.value for s in sources]}, tags: {tags}, page: {page}"
+    )
 
-    # Try to get from cache
-    cached = await cache.get(cache_key)
-    if cached:
-        return NovelListResponse(**cached)
+    # For multiple sources, we fetch page_size from EACH source, then interleave
+    # This ensures balanced display from each source
+    per_source_count = page_size if len(sources) > 1 else page_size
 
-    # Fetch from sources
-    all_novels = []
-    for source in sources:
+    # Fetch from all sources in parallel
+    async def fetch_from_source(source: NovelSource):
         try:
             adapter = get_adapter(source)
             novels = await adapter.search(
-                tags=tags, page=page, page_size=page_size, sort_by=sort_by
+                tags=tags,
+                page=page,  # Pass the actual page number
+                page_size=per_source_count,
+                sort_by=sort_by,
             )
-            all_novels.extend(novels)
+            print(f"✅ {source.value}: fetched {len(novels)} novels (page {page})")
+            return source, novels
         except Exception as e:
-            print(f"Error fetching from {source}: {e}")
+            print(f"❌ Error fetching from {source.value}: {e}")
+            import traceback
 
-    # Sort combined results
-    if sort_by == "date":
-        all_novels.sort(key=lambda x: x.published_at, reverse=(sort_order == "desc"))
-    elif sort_by == "kudos":
-        all_novels.sort(key=lambda x: x.kudos or 0, reverse=(sort_order == "desc"))
-    elif sort_by == "hits":
-        all_novels.sort(key=lambda x: x.hits or 0, reverse=(sort_order == "desc"))
+            traceback.print_exc()
+            return source, []
 
-    # Paginate
-    total = len(all_novels)
-    start = (page - 1) * page_size
-    end = start + page_size
-    paginated = all_novels[start:end]
+    # Run all searches in parallel
+    results = await asyncio.gather(*[fetch_from_source(s) for s in sources])
 
+    # Collect novels and track if any source has more
+    source_novels = {}
+    any_has_more = False
+
+    for source, novels in results:
+        source_novels[source] = novels
+        # If we got the full count, there might be more
+        if len(novels) >= per_source_count:
+            any_has_more = True
+
+    # If multiple sources, interleave results for balanced display
+    if len(sources) > 1:
+        # Interleave results from different sources
+        all_novels = []
+        max_len = (
+            max(len(novels) for novels in source_novels.values())
+            if source_novels
+            else 0
+        )
+
+        for i in range(max_len):
+            for source in sources:
+                novels = source_novels.get(source, [])
+                if i < len(novels):
+                    all_novels.append(novels[i])
+
+        print(f"📚 Interleaved {len(all_novels)} novels from {len(sources)} sources")
+    else:
+        # Single source - just use the novels directly
+        all_novels = list(source_novels.values())[0] if source_novels else []
+        print(f"📚 Total novels from source: {len(all_novels)}")
+
+    # For the response, we return all fetched novels (already paginated from sources)
     response = NovelListResponse(
-        novels=paginated,
-        total=total,
+        novels=all_novels,
+        total=len(all_novels) + (page_size if any_has_more else 0),  # Estimate total
         page=page,
         page_size=page_size,
-        has_more=end < total,
+        has_more=any_has_more,
     )
-
-    # Cache the response
-    await cache.set(cache_key, response.model_dump(), SEARCH_CACHE_TTL)
 
     return response
 

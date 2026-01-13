@@ -5,6 +5,7 @@ Uses ao3-api library for fetching fanfiction from Archive of Our Own
 
 from typing import List, Optional
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from app.adapters.base import BaseAdapter
 from app.schemas.novel import Novel, NovelSource
 
@@ -23,6 +24,9 @@ class AO3Adapter(BaseAdapter):
 
     source_name = "ao3"
 
+    # Use dedicated thread pool for AO3 operations
+    _executor = ThreadPoolExecutor(max_workers=2)
+
     # SoyoSaki related tags on AO3
     SOYOSAKI_TAGS = [
         "Nagasaki Soyo/Toyokawa Sakiko",
@@ -34,15 +38,16 @@ class AO3Adapter(BaseAdapter):
     ) -> List[Novel]:
         """Search for SoyoSaki works on AO3"""
         if not AO3_AVAILABLE:
+            print("⚠️ AO3: Library not available")
             return []
 
         # Combine user tags with default SoyoSaki tags
         search_tags = list(set(tags + self.SOYOSAKI_TAGS))
 
         # Run synchronous AO3 search in executor
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         novels = await loop.run_in_executor(
-            None, self._search_sync, search_tags, page, page_size, sort_by
+            self._executor, self._search_sync, search_tags, page, page_size, sort_by
         )
 
         return novels
@@ -106,6 +111,17 @@ class AO3Adapter(BaseAdapter):
         except:
             pass
 
+        # Parse dates to ISO format for consistent sorting
+        def to_iso_date(date_val):
+            if date_val is None:
+                return ""
+            try:
+                if hasattr(date_val, "isoformat"):
+                    return date_val.isoformat()
+                return str(date_val)
+            except:
+                return ""
+
         return Novel(
             id=str(work.id),
             source=NovelSource.AO3,
@@ -119,8 +135,8 @@ class AO3Adapter(BaseAdapter):
             chapter_count=getattr(work, "nchapters", 1),
             kudos=getattr(work, "kudos", 0),
             hits=getattr(work, "hits", 0),
-            published_at=str(getattr(work, "date_published", "")),
-            updated_at=str(getattr(work, "date_updated", "")),
+            published_at=to_iso_date(getattr(work, "date_published", None)),
+            updated_at=to_iso_date(getattr(work, "date_updated", None)),
             source_url=work.url,
             is_complete=getattr(work, "complete", None),
         )
@@ -130,8 +146,10 @@ class AO3Adapter(BaseAdapter):
         if not AO3_AVAILABLE:
             return None
 
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._get_detail_sync, novel_id)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            self._executor, self._get_detail_sync, novel_id
+        )
 
     def _get_detail_sync(self, novel_id: str) -> Optional[Novel]:
         """Synchronous get detail"""
@@ -147,8 +165,10 @@ class AO3Adapter(BaseAdapter):
         if not AO3_AVAILABLE:
             return []
 
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._get_chapters_sync, novel_id)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            self._executor, self._get_chapters_sync, novel_id
+        )
 
     def _get_chapters_sync(self, novel_id: str) -> List[dict]:
         """Synchronous get chapters"""
@@ -169,9 +189,9 @@ class AO3Adapter(BaseAdapter):
         if not AO3_AVAILABLE:
             return None
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None, self._get_chapter_content_sync, novel_id, chapter_num
+            self._executor, self._get_chapter_content_sync, novel_id, chapter_num
         )
 
     def _get_chapter_content_sync(

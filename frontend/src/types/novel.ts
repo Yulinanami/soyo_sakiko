@@ -33,6 +33,6 @@ export interface NovelListResponse {
   novels: Novel[];
   total: number;
   page: number;
-  pageSize: number;
-  hasMore: boolean;
+  page_size: number;  // Backend uses snake_case
+  has_more: boolean;  // Backend uses snake_case
 }

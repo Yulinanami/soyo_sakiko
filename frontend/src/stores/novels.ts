@@ -9,7 +9,7 @@ export const useNovelsStore = defineStore('novels', () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
   const currentPage = ref(1);
-  const pageSize = ref(20);
+  const pageSize = ref(30);
   const total = ref(0);
   const hasMore = ref(true);
 
@@ -51,7 +51,7 @@ export const useNovelsStore = defineStore('novels', () => {
       }
       
       total.value = response.total;
-      hasMore.value = response.hasMore;
+      hasMore.value = response.has_more;
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取小说列表失败';
     } finally {
