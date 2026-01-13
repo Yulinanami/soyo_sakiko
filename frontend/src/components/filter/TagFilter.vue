@@ -52,8 +52,8 @@ function isSelected(tag: string) {
         :class="[
           'px-3 py-1.5 border rounded-full text-sm cursor-pointer transition-all',
           isSelected(tag) 
-            ? 'tag-highlight border-transparent' 
-            : 'border-gray-200 bg-white hover:border-primary hover:text-primary'
+            ? 'bg-soyo text-white border-soyo' 
+            : 'border-gray-200 bg-white hover:border-soyo hover:text-soyo-dark'
         ]"
         @click="toggleTag(tag)"
       >

@@ -1,9 +1,15 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useUserStore } from './stores/user';
 import { useRouter } from 'vue-router';
 
 const userStore = useUserStore();
 const router = useRouter();
+const sidebarOpen = ref(true);
+
+function toggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value;
+}
 
 function handleLogout() {
   userStore.logout();
@@ -12,61 +18,108 @@ function handleLogout() {
 </script>
 
 <template>
-  <div id="app" class="min-h-screen">
-    <!-- Global Navigation -->
-    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <router-link to="/" class="text-xl font-bold text-soyo-dark no-underline">
+  <div id="app" class="min-h-screen flex bg-gray-50">
+    <!-- 左侧边栏 - 祥子淡蓝色 -->
+    <aside 
+      :class="[
+        'fixed left-0 top-0 h-full bg-sakiko-dark text-white z-40 transition-all duration-300 flex flex-col',
+        sidebarOpen ? 'w-56' : 'w-0'
+      ]"
+    >
+      <div class="p-4 flex items-center gap-3 border-b border-sakiko">
+        <button @click="toggleSidebar" class="text-xl hover:text-white transition-colors">
+          ☰
+        </button>
+        <router-link v-if="sidebarOpen" to="/" class="text-xl font-bold text-white no-underline">
           🎸 SoyoSaki
         </router-link>
+      </div>
+      
+      <nav v-if="sidebarOpen" class="flex-1 p-4 space-y-2">
+        <router-link 
+          to="/" 
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko no-underline text-white transition-colors"
+        >
+          <span>🏠</span>
+          <span>首页</span>
+        </router-link>
         
-        <div class="flex items-center gap-6">
+        <template v-if="userStore.isLoggedIn">
           <router-link 
-            to="/" 
-            class="text-gray-600 font-medium hover:text-primary transition-colors no-underline"
+            to="/favorites" 
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko no-underline text-white transition-colors"
           >
-            首页
+            <span>❤️</span>
+            <span>我的收藏</span>
           </router-link>
-          
-          <template v-if="userStore.isLoggedIn">
-            <router-link 
-              to="/favorites" 
-              class="text-gray-600 font-medium hover:text-primary transition-colors no-underline"
+        </template>
+        
+        <div class="border-t border-sakiko my-4"></div>
+        
+        <div class="text-xs text-sakiko-pale uppercase tracking-wide px-3 mb-2">数据源</div>
+        <div class="flex items-center gap-3 px-3 py-2 text-sm text-white/80">
+          <span>📚</span>
+          <span>AO3</span>
+        </div>
+        <div class="flex items-center gap-3 px-3 py-2 text-sm text-white/80">
+          <span>🎨</span>
+          <span>Pixiv</span>
+        </div>
+        <div class="flex items-center gap-3 px-3 py-2 text-sm text-white/50">
+          <span>📝</span>
+          <span>Lofter (开发中)</span>
+        </div>
+      </nav>
+      
+      <!-- 用户区域 -->
+      <div v-if="sidebarOpen" class="p-4 border-t border-sakiko">
+        <template v-if="userStore.isLoggedIn">
+          <div class="flex items-center justify-between">
+            <span class="text-sm">{{ userStore.user?.username }}</span>
+            <button 
+              @click="handleLogout" 
+              class="text-xs px-2 py-1 bg-transparent border border-sakiko rounded hover:border-red-400 hover:text-red-400 transition-all"
             >
-              收藏
-            </router-link>
-            <div class="flex items-center gap-4">
-              <span class="text-gray-600">{{ userStore.user?.username }}</span>
-              <button 
-                @click="handleLogout" 
-                class="px-3 py-1.5 bg-transparent border border-gray-300 rounded-md text-sm cursor-pointer 
-                       hover:border-red-500 hover:text-red-500 transition-all"
-              >
-                登出
-              </button>
-            </div>
-          </template>
-          
-          <template v-else>
+              登出
+            </button>
+          </div>
+        </template>
+        <template v-else>
+          <div class="flex gap-2">
             <router-link 
               to="/login" 
-              class="text-gray-600 font-medium hover:text-primary transition-colors no-underline"
+              class="flex-1 text-center text-sm py-2 border border-sakiko rounded hover:bg-sakiko no-underline text-white transition-colors"
             >
               登录
             </router-link>
             <router-link 
               to="/register" 
-              class="px-4 py-2 bg-soyo text-white font-medium rounded-lg no-underline hover:bg-soyo-dark transition-colors"
+              class="flex-1 text-center text-sm py-2 bg-soyo rounded no-underline text-white hover:bg-soyo-dark transition-colors"
             >
               注册
             </router-link>
-          </template>
-        </div>
+          </div>
+        </template>
       </div>
-    </nav>
+    </aside>
     
-    <!-- Main Content -->
-    <router-view />
+    <!-- 侧边栏收起时显示的小按钮 -->
+    <button 
+      v-if="!sidebarOpen"
+      @click="toggleSidebar" 
+      class="fixed left-0 top-4 z-50 bg-sakiko-dark text-white p-3 rounded-r-lg hover:bg-sakiko transition-colors"
+    >
+      ☰
+    </button>
+    
+    <!-- 主内容区域 -->
+    <main 
+      :class="[
+        'flex-1 transition-all duration-300',
+        sidebarOpen ? 'ml-56' : 'ml-0'
+      ]"
+    >
+      <router-view />
+    </main>
   </div>
 </template>
-

@@ -56,7 +56,7 @@ function nextChapter() {
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Header -->
-    <header v-if="novel" class="bg-gradient-to-r from-primary to-secondary text-white py-8">
+    <header v-if="novel" class="bg-soyo text-white py-8">
       <div class="max-w-3xl mx-auto px-4">
         <router-link to="/" class="text-white/80 text-sm hover:text-white no-underline">
           ← 返回列表
@@ -72,7 +72,7 @@ function nextChapter() {
     </header>
 
     <!-- Chapter Navigation -->
-    <nav v-if="novel" class="bg-white border-b border-gray-200 py-4 sticky top-16 z-40">
+    <nav v-if="novel" class="bg-white border-b border-gray-200 py-4">
       <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
         <button 
           @click="prevChapter" 
