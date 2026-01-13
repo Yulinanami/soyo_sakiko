@@ -25,7 +25,7 @@ const sourceClass = computed(() => {
 });
 
 const formattedDate = computed(() => {
-  const date = new Date(props.novel.publishedAt);
+  const date = new Date(props.novel.published_at);
   return date.toLocaleDateString('zh-CN');
 });
 
@@ -46,10 +46,10 @@ function isHighlightTag(tag: string): boolean {
     <router-link :to="`/novel/${novel.source}/${novel.id}`" class="block no-underline text-inherit">
       <!-- Cover Image -->
       <div 
-        v-if="novel.coverImage" 
+        v-if="novel.cover_image" 
         class="h-40 overflow-hidden bg-sakiko-pale"
       >
-        <img :src="novel.coverImage" :alt="novel.title" class="w-full h-full object-cover" />
+        <img :src="novel.cover_image" :alt="novel.title" class="w-full h-full object-cover" />
       </div>
       <div 
         v-else 
@@ -91,20 +91,20 @@ function isHighlightTag(tag: string): boolean {
         </div>
         
         <div class="flex flex-wrap gap-3 text-xs text-gray-500">
-          <span v-if="novel.wordCount">📝 {{ novel.wordCount.toLocaleString() }} 字</span>
-          <span v-if="novel.chapterCount">📖 {{ novel.chapterCount }} 章</span>
+          <span v-if="novel.word_count">📝 {{ novel.word_count.toLocaleString() }} 字</span>
+          <span v-if="novel.chapter_count">📖 {{ novel.chapter_count }} 章</span>
           <span v-if="novel.kudos">❤️ {{ novel.kudos }}</span>
           <span class="ml-auto">{{ formattedDate }}</span>
         </div>
         
         <div 
-          v-if="novel.isComplete !== undefined"
+          v-if="novel.is_complete !== undefined"
           :class="[
             'inline-block mt-3 text-xs px-3 py-1 rounded-full',
-            novel.isComplete ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-600'
+            novel.is_complete ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-600'
           ]"
         >
-          {{ novel.isComplete ? '已完结' : '连载中' }}
+          {{ novel.is_complete ? '已完结' : '连载中' }}
         </div>
       </div>
     </router-link>

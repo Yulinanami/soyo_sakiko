@@ -5,19 +5,19 @@ export interface Novel {
   source: NovelSource;
   title: string;
   author: string;
-  authorUrl?: string;
+  author_url?: string;       // snake_case from backend
   summary: string;
   tags: string[];
   rating?: string;
-  wordCount?: number;
-  chapterCount?: number;
+  word_count?: number;       // snake_case from backend
+  chapter_count?: number;    // snake_case from backend
   kudos?: number;
   hits?: number;
-  publishedAt: string;
-  updatedAt?: string;
-  sourceUrl: string;
-  coverImage?: string;
-  isComplete?: boolean;
+  published_at: string;      // snake_case from backend
+  updated_at?: string;       // snake_case from backend
+  source_url: string;        // snake_case from backend
+  cover_image?: string;      // snake_case from backend
+  is_complete?: boolean;     // snake_case from backend
 }
 
 export interface NovelSearchParams {

@@ -47,7 +47,7 @@ function prevChapter() {
 }
 
 function nextChapter() {
-  if (novel.value && currentChapter.value < (novel.value.chapterCount || 1)) {
+  if (novel.value && currentChapter.value < (novel.value.chapter_count || 1)) {
     loadChapter(currentChapter.value + 1);
   }
 }
@@ -65,8 +65,8 @@ function nextChapter() {
         <p class="opacity-90 mb-2">作者: {{ novel.author }}</p>
         <div class="flex gap-4 text-sm opacity-80">
           <span class="bg-white/20 px-2 py-0.5 rounded">{{ source.toUpperCase() }}</span>
-          <span v-if="novel.wordCount">{{ novel.wordCount.toLocaleString() }} 字</span>
-          <span v-if="novel.chapterCount">{{ novel.chapterCount }} 章</span>
+          <span v-if="novel.word_count">{{ novel.word_count.toLocaleString() }} 字</span>
+          <span v-if="novel.chapter_count">{{ novel.chapter_count }} 章</span>
         </div>
       </div>
     </header>
@@ -82,11 +82,11 @@ function nextChapter() {
           ← 上一章
         </button>
         <span class="text-gray-600">
-          第 {{ currentChapter }} / {{ novel.chapterCount || 1 }} 章
+          第 {{ currentChapter }} / {{ novel.chapter_count || 1 }} 章
         </span>
         <button 
           @click="nextChapter" 
-          :disabled="currentChapter >= (novel.chapterCount || 1)"
+          :disabled="currentChapter >= (novel.chapter_count || 1)"
           class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           下一章 →
@@ -118,15 +118,15 @@ function nextChapter() {
           ← 上一章
         </button>
         <a 
-          :href="novel.sourceUrl" 
+          :href="novel.source_url" 
           target="_blank" 
-          class="text-primary hover:underline"
+          class="text-soyo-dark hover:underline"
         >
           在 {{ source.toUpperCase() }} 查看原文
         </a>
         <button 
           @click="nextChapter" 
-          :disabled="currentChapter >= (novel.chapterCount || 1)"
+          :disabled="currentChapter >= (novel.chapter_count || 1)"
           class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           下一章 →
