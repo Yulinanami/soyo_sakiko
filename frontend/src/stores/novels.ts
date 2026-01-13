@@ -49,7 +49,10 @@ export const useNovelsStore = defineStore('novels', () => {
       if (reset) {
         novels.value = response.novels;
       } else {
-        novels.value.push(...response.novels);
+        // Deduplicate: only add novels that don't already exist
+        const existingIds = new Set(novels.value.map(n => `${n.source}:${n.id}`));
+        const newNovels = response.novels.filter(n => !existingIds.has(`${n.source}:${n.id}`));
+        novels.value.push(...newNovels);
       }
       
       total.value = response.total;

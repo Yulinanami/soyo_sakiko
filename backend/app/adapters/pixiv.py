@@ -66,32 +66,45 @@ class PixivAdapter(BaseAdapter):
 
         exclude_tags = exclude_tags or []
 
-        # Build search query - combine tags with OR
-        search_query = " OR ".join(tags)
+        # Search each tag separately and combine results
+        search_tags = tags if tags else ["素祥"]
 
         def _search():
             try:
+                all_novels = []
+                seen_ids = set()
+
                 # Pixiv uses offset-based pagination
                 offset = (page - 1) * page_size
 
-                # Search for novels with the tag
-                result = self._api.search_novel(
-                    word=search_query,
-                    sort="date_desc" if sort_by == "date" else "popular_desc",
-                    search_target="partial_match_for_tags",
-                )
+                for tag in search_tags:
+                    try:
+                        # Search for novels with the tag
+                        result = self._api.search_novel(
+                            word=tag,
+                            sort="date_desc" if sort_by == "date" else "popular_desc",
+                            search_target="partial_match_for_tags",
+                            offset=offset,  # Use offset for pagination
+                        )
 
-                novels = []
-                for novel_data in result.get("novels", []):
-                    if len(novels) >= page_size:
-                        break
-                    # Filter by title - exclude works containing exclude_tags
-                    title = novel_data.get("title", "")
-                    if any(pattern in title for pattern in exclude_tags):
+                        for novel_data in result.get("novels", []):
+                            novel_id = novel_data.get("id")
+                            if novel_id in seen_ids:
+                                continue
+                            seen_ids.add(novel_id)
+
+                            # Filter by title - exclude works containing exclude_tags
+                            title = novel_data.get("title", "")
+                            if any(pattern in title for pattern in exclude_tags):
+                                continue
+                            all_novels.append(self._parse_novel(novel_data))
+                    except Exception as e:
+                        print(f"Pixiv search error for tag '{tag}': {e}")
                         continue
-                    novels.append(self._parse_novel(novel_data))
 
-                return novels
+                # Sort by date and return page_size items
+                all_novels.sort(key=lambda x: x.published_at or "", reverse=True)
+                return all_novels[:page_size]
             except Exception as e:
                 print(f"Pixiv search error: {e}")
                 return []
