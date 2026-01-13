@@ -16,6 +16,7 @@ export const useNovelsStore = defineStore('novels', () => {
   // Filters
   const selectedSources = ref<NovelSource[]>(['ao3']);
   const selectedTags = ref<string[]>(['素祥', '祥素']);
+  const excludeTags = ref<string[]>(['爱素', '愛素', '素爱', '素愛']);  // Default exclude tags
   const sortBy = ref<'date' | 'kudos' | 'hits' | 'wordCount'>('date');
   const sortOrder = ref<'asc' | 'desc'>('desc');
 
@@ -36,6 +37,7 @@ export const useNovelsStore = defineStore('novels', () => {
       const params: NovelSearchParams = {
         sources: selectedSources.value,
         tags: selectedTags.value,
+        excludeTags: excludeTags.value,
         page: currentPage.value,
         pageSize: pageSize.value,
         sortBy: sortBy.value,
@@ -87,6 +89,7 @@ export const useNovelsStore = defineStore('novels', () => {
     hasMore,
     selectedSources,
     selectedTags,
+    excludeTags,  // Export for UI
     sortBy,
     sortOrder,
     // Computed

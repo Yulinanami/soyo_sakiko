@@ -21,6 +21,7 @@ CHAPTER_CACHE_TTL = 1800  # 30 minutes
 async def search_novels(
     sources: List[NovelSource] = Query(default=[NovelSource.AO3]),
     tags: List[str] = Query(default=["素祥", "祥素"]),
+    exclude_tags: List[str] = Query(default=[]),  # Tags to exclude from results
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=30, ge=1, le=100),
     sort_by: str = Query(default="date"),
@@ -29,7 +30,7 @@ async def search_novels(
     """Search novels across multiple sources"""
 
     print(
-        f"🔍 Searching sources: {[s.value for s in sources]}, tags: {tags}, page: {page}"
+        f"🔍 Searching sources: {[s.value for s in sources]}, tags: {tags}, exclude: {exclude_tags}, page: {page}"
     )
 
     # For multiple sources, we fetch page_size from EACH source, then interleave
@@ -42,7 +43,8 @@ async def search_novels(
             adapter = get_adapter(source)
             novels = await adapter.search(
                 tags=tags,
-                page=page,  # Pass the actual page number
+                exclude_tags=exclude_tags,  # Pass exclude tags
+                page=page,
                 page_size=per_source_count,
                 sort_by=sort_by,
             )

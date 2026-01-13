@@ -34,12 +34,19 @@ class AO3Adapter(BaseAdapter):
     ]
 
     async def search(
-        self, tags: List[str], page: int = 1, page_size: int = 20, sort_by: str = "date"
+        self,
+        tags: List[str],
+        exclude_tags: List[str] = None,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "date",
     ) -> List[Novel]:
         """Search for SoyoSaki works on AO3"""
         if not AO3_AVAILABLE:
             print("⚠️ AO3: Library not available")
             return []
+
+        exclude_tags = exclude_tags or []
 
         # Combine user tags with default SoyoSaki tags
         search_tags = list(set(tags + self.SOYOSAKI_TAGS))
@@ -47,13 +54,24 @@ class AO3Adapter(BaseAdapter):
         # Run synchronous AO3 search in executor
         loop = asyncio.get_running_loop()
         novels = await loop.run_in_executor(
-            self._executor, self._search_sync, search_tags, page, page_size, sort_by
+            self._executor,
+            self._search_sync,
+            search_tags,
+            exclude_tags,
+            page,
+            page_size,
+            sort_by,
         )
 
         return novels
 
     def _search_sync(
-        self, tags: List[str], page: int, page_size: int, sort_by: str
+        self,
+        tags: List[str],
+        exclude_tags: List[str],
+        page: int,
+        page_size: int,
+        sort_by: str,
     ) -> List[Novel]:
         """Synchronous search implementation"""
         try:
@@ -69,10 +87,17 @@ class AO3Adapter(BaseAdapter):
 
             novels = []
             start = (page - 1) * page_size
-            end = start + page_size
+            # Fetch more to account for filtered items
+            end = start + page_size * 2
 
             for work in search.results[start:end]:
+                if len(novels) >= page_size:
+                    break
                 try:
+                    title = getattr(work, "title", "") or ""
+                    if self._should_exclude(title, exclude_tags):
+                        continue
+
                     novel = self._convert_work(work)
                     novels.append(novel)
                 except Exception as e:
@@ -83,6 +108,13 @@ class AO3Adapter(BaseAdapter):
         except Exception as e:
             print(f"AO3 search error: {e}")
             return []
+
+    def _should_exclude(self, title: str, exclude_tags: List[str]) -> bool:
+        """Check if title contains any of the exclude tags"""
+        for pattern in exclude_tags:
+            if pattern in title:
+                return True
+        return False
 
     def _map_sort(self, sort_by: str) -> str:
         """Map sort parameter to AO3 sort column"""

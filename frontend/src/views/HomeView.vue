@@ -5,6 +5,7 @@ import { useSourcesStore } from '../stores/sources';
 import NovelList from '../components/novel/NovelList.vue';
 import SourceSelector from '../components/filter/SourceSelector.vue';
 import TagFilter from '../components/filter/TagFilter.vue';
+import ExcludeFilter from '../components/filter/ExcludeFilter.vue';
 
 const novelsStore = useNovelsStore();
 const sourcesStore = useSourcesStore();
@@ -22,20 +23,29 @@ function handleTagChange(tags: string[]) {
   novelsStore.selectedTags = tags;
   novelsStore.fetchNovels(true);
 }
+
+function handleExcludeChange(tags: string[]) {
+  novelsStore.excludeTags = tags;
+  novelsStore.fetchNovels(true);
+}
 </script>
 
 <template>
   <div class="min-h-screen">
     <!-- 顶部标签栏 -->
     <header class="bg-white border-b border-gray-200">
-      <div class="px-6 py-4">
+      <div class="px-6 py-4 space-y-4">
         <!-- 标签过滤 -->
-        <div class="flex items-center gap-4 mb-4">
-          <TagFilter 
-            :selected-tags="novelsStore.selectedTags" 
-            @update:selected-tags="handleTagChange" 
-          />
-        </div>
+        <TagFilter 
+          :selected-tags="novelsStore.selectedTags" 
+          @update:selected-tags="handleTagChange" 
+        />
+        
+        <!-- 排除过滤 -->
+        <ExcludeFilter
+          :exclude-tags="novelsStore.excludeTags"
+          @update:exclude-tags="handleExcludeChange"
+        />
         
         <!-- 数据源选择和排序 -->
         <div class="flex flex-wrap items-center justify-between gap-4">

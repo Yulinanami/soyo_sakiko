@@ -53,11 +53,18 @@ class PixivAdapter(BaseAdapter):
             return False
 
     async def search(
-        self, tags: List[str], page: int = 1, page_size: int = 20, sort_by: str = "date"
+        self,
+        tags: List[str],
+        exclude_tags: List[str] = None,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "date",
     ) -> List[Novel]:
         """Search Pixiv novels by tags"""
         if not self._init_api():
             return []
+
+        exclude_tags = exclude_tags or []
 
         # Build search query - combine tags with OR
         search_query = " OR ".join(tags)
@@ -75,7 +82,13 @@ class PixivAdapter(BaseAdapter):
                 )
 
                 novels = []
-                for novel_data in result.get("novels", [])[:page_size]:
+                for novel_data in result.get("novels", []):
+                    if len(novels) >= page_size:
+                        break
+                    # Filter by title - exclude works containing exclude_tags
+                    title = novel_data.get("title", "")
+                    if any(pattern in title for pattern in exclude_tags):
+                        continue
                     novels.append(self._parse_novel(novel_data))
 
                 return novels

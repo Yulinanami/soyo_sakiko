@@ -23,6 +23,7 @@ export interface Novel {
 export interface NovelSearchParams {
   sources: NovelSource[];
   tags: string[];
+  excludeTags?: string[];  // Tags to exclude from results
   page?: number;
   pageSize?: number;
   sortBy?: "date" | "kudos" | "hits" | "wordCount";

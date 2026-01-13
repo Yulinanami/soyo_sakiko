@@ -14,7 +14,12 @@ class BaseAdapter(ABC):
 
     @abstractmethod
     async def search(
-        self, tags: List[str], page: int = 1, page_size: int = 20, sort_by: str = "date"
+        self,
+        tags: List[str],
+        exclude_tags: List[str] = None,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "date",
     ) -> List[Novel]:
         """Search for novels by tags"""
         pass

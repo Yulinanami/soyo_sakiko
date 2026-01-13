@@ -45,6 +45,11 @@ export const novelApi = {
     // Add tags as repeated params
     params.tags.forEach(tag => searchParams.append('tags', tag));
     
+    // Add exclude_tags as repeated params
+    if (params.excludeTags) {
+      params.excludeTags.forEach(tag => searchParams.append('exclude_tags', tag));
+    }
+    
     // Add other params with defaults
     searchParams.append('page', String(params.page ?? 1));
     searchParams.append('page_size', String(params.pageSize ?? 20));
