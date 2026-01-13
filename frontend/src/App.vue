@@ -2,6 +2,8 @@
 import { ref } from 'vue';
 import { useUserStore } from './stores/user';
 import { useRouter } from 'vue-router';
+import ao3Logo from './assets/ao3.png';
+import pixivLogo from './assets/pixiv.png';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -58,11 +60,11 @@ function handleLogout() {
         
         <div class="text-xs text-sakiko-pale uppercase tracking-wide px-3 mb-2">数据源</div>
         <div class="flex items-center gap-3 px-3 py-2 text-sm text-white/80">
-          <span>📚</span>
+          <img :src="ao3Logo" alt="AO3" class="w-5 h-5 object-contain" />
           <span>AO3</span>
         </div>
         <div class="flex items-center gap-3 px-3 py-2 text-sm text-white/80">
-          <span>🎨</span>
+          <img :src="pixivLogo" alt="Pixiv" class="w-5 h-5 object-contain" />
           <span>Pixiv</span>
         </div>
         <div class="flex items-center gap-3 px-3 py-2 text-sm text-white/50">

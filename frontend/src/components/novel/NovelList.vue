@@ -28,14 +28,15 @@ const emit = defineEmits<{
       <span>加载中...</span>
     </div>
     
-    <div v-if="!loading && hasMore" class="flex justify-center py-8">
+    <div v-if="!loading && hasMore" class="flex flex-col items-center gap-3 py-8">
+      <span class="text-sm text-gray-500">已加载 {{ novels.length }} 篇同人文</span>
       <button @click="emit('load-more')" class="btn-primary">
         加载更多
       </button>
     </div>
     
     <div v-if="!loading && !hasMore && novels.length > 0" class="text-center py-8 text-gray-400 text-sm">
-      已加载全部内容
+      已加载全部 {{ novels.length }} 篇同人文
     </div>
   </div>
 </template>

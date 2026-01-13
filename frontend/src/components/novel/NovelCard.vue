@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Novel } from '../../types/novel';
+import ao3Logo from '../../assets/ao3.png';
+import pixivLogo from '../../assets/pixiv.png';
 
 const props = defineProps<{
   novel: Novel;
 }>();
 
-const sourceIcon = computed(() => {
-  const icons: Record<string, string> = {
-    ao3: '📚',
-    pixiv: '🎨',
-    lofter: '📝',
-  };
-  return icons[props.novel.source] || '📄';
-});
+// Source logos
+const sourceLogos: Record<string, string> = {
+  ao3: ao3Logo,
+  pixiv: pixivLogo,
+};
+
+const sourceLogo = computed(() => sourceLogos[props.novel.source]);
 
 const sourceClass = computed(() => {
   const classes: Record<string, string> = {
@@ -55,14 +56,16 @@ function isHighlightTag(tag: string): boolean {
         v-else 
         class="h-40 bg-sakiko-light flex items-center justify-center"
       >
-        <span class="text-5xl opacity-80">{{ sourceIcon }}</span>
+        <img v-if="sourceLogo" :src="sourceLogo" alt="source" class="w-16 h-16 object-contain opacity-60" />
+        <span v-else class="text-5xl opacity-80">📄</span>
       </div>
       
       <!-- Content -->
       <div class="p-4">
         <div class="flex gap-2 mb-3">
-          <span :class="['text-xs px-2 py-0.5 rounded', sourceClass]">
-            {{ sourceIcon }} {{ novel.source.toUpperCase() }}
+          <span :class="['flex items-center gap-1 text-xs px-2 py-0.5 rounded', sourceClass]">
+            <img v-if="sourceLogo" :src="sourceLogo" alt="" class="w-3 h-3 object-contain" />
+            {{ novel.source.toUpperCase() }}
           </span>
           <span v-if="novel.rating" class="text-xs px-2 py-0.5 rounded bg-yellow-400 text-gray-800">
             {{ novel.rating }}

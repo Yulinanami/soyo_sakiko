@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { useSourcesStore } from '../../stores/sources';
+import ao3Logo from '../../assets/ao3.png';
+import pixivLogo from '../../assets/pixiv.png';
 
 const sourcesStore = useSourcesStore();
 
 const emit = defineEmits<{
   (e: 'change'): void;
 }>();
+
+// Source logos
+const sourceLogos: Record<string, string> = {
+  ao3: ao3Logo,
+  pixiv: pixivLogo,
+};
 
 function toggle(name: string) {
   sourcesStore.toggleSource(name);
@@ -30,7 +38,13 @@ function toggle(name: string) {
         @click="toggle(source.name)"
         :title="source.requiresAuth ? '需要配置账号' : ''"
       >
-        <span class="text-base">{{ source.icon }}</span>
+        <img 
+          v-if="sourceLogos[source.name]" 
+          :src="sourceLogos[source.name]" 
+          :alt="source.displayName"
+          class="w-4 h-4 object-contain"
+        />
+        <span v-else class="text-base">{{ source.icon }}</span>
         <span>{{ source.displayName }}</span>
         <span v-if="source.requiresAuth && !source.enabled" class="text-xs">🔒</span>
       </button>
