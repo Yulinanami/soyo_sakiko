@@ -16,22 +16,33 @@ class CacheService:
         self._redis: Optional[redis.Redis] = None
 
     async def connect(self):
-        """Connect to Redis"""
+        """Connect to Redis (fail gracefully if unavailable)"""
         if self._redis is None:
-            self._redis = redis.from_url(
-                settings.REDIS_URL, encoding="utf-8", decode_responses=True
-            )
+            try:
+                self._redis = redis.from_url(
+                    settings.REDIS_URL, encoding="utf-8", decode_responses=True
+                )
+                # Test connection
+                await self._redis.ping()
+            except Exception as e:
+                print(f"Redis connection failed (cache disabled): {e}")
+                self._redis = None
 
     async def disconnect(self):
         """Disconnect from Redis"""
         if self._redis:
-            await self._redis.close()
+            try:
+                await self._redis.close()
+            except:
+                pass
             self._redis = None
 
     async def get(self, key: str) -> Optional[Any]:
         """Get cached value"""
-        await self.connect()
         try:
+            await self.connect()
+            if self._redis is None:
+                return None
             data = await self._redis.get(key)
             if data:
                 return json.loads(data)
