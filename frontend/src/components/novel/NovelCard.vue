@@ -18,8 +18,8 @@ const sourceIcon = computed(() => {
 const sourceClass = computed(() => {
   const classes: Record<string, string> = {
     ao3: 'bg-red-700 text-white',
-    pixiv: 'bg-blue-500 text-white',
-    lofter: 'bg-green-600 text-white',
+    pixiv: 'bg-sakiko text-white',
+    lofter: 'bg-soyo text-white',
   };
   return classes[props.novel.source] || 'bg-gray-500 text-white';
 });
@@ -47,13 +47,13 @@ function isHighlightTag(tag: string): boolean {
       <!-- Cover Image -->
       <div 
         v-if="novel.coverImage" 
-        class="h-40 overflow-hidden bg-gradient-to-r from-primary to-secondary"
+        class="h-40 overflow-hidden bg-sakiko-pale"
       >
         <img :src="novel.coverImage" :alt="novel.title" class="w-full h-full object-cover" />
       </div>
       <div 
         v-else 
-        class="h-40 bg-gradient-to-r from-primary to-secondary flex items-center justify-center"
+        class="h-40 bg-sakiko-light flex items-center justify-center"
       >
         <span class="text-5xl opacity-80">{{ sourceIcon }}</span>
       </div>

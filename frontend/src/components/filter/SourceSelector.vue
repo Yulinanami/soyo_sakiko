@@ -23,8 +23,8 @@ function toggle(name: string) {
         :class="[
           'flex items-center gap-1.5 px-3 py-2 border-2 rounded-lg cursor-pointer transition-all text-sm',
           source.enabled 
-            ? 'border-primary bg-gradient-to-r from-primary to-secondary text-white' 
-            : 'border-gray-200 bg-white hover:border-primary',
+            ? 'border-sakiko bg-sakiko text-white' 
+            : 'border-gray-200 bg-white hover:border-sakiko hover:text-sakiko-dark',
           source.requiresAuth && !source.enabled ? 'opacity-60' : ''
         ]"
         @click="toggle(source.name)"

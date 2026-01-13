@@ -4,18 +4,32 @@ export default {
   theme: {
     extend: {
       colors: {
+        // 素世 (Soyo) - 亚麻色/栗色系
+        soyo: {
+          DEFAULT: "#C4A77D", // 亚麻色
+          light: "#D4BC94",
+          dark: "#8B6914", // 栗色
+          cream: "#F5E6D3",
+        },
+        // 祥子 (Sakiko) - 淡蓝色系
+        sakiko: {
+          DEFAULT: "#7EB8DA", // 淡蓝色
+          light: "#B5D8ED",
+          dark: "#4A90B8",
+          pale: "#E8F4FA",
+        },
+        // 主题色 (使用素世的亚麻色作为主色)
         primary: {
-          DEFAULT: "#667eea",
-          dark: "#764ba2",
-          light: "#8b9cf4",
+          DEFAULT: "#C4A77D",
+          dark: "#A68B5B",
+          light: "#D4BC94",
         },
+        // 次要色 (使用祥子的淡蓝色)
         secondary: {
-          DEFAULT: "#764ba2",
-          light: "#9b6fc4",
+          DEFAULT: "#7EB8DA",
+          dark: "#4A90B8",
+          light: "#B5D8ED",
         },
-      },
-      backgroundImage: {
-        "gradient-primary": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       },
       fontFamily: {
         sans: [

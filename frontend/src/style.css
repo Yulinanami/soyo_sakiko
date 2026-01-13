@@ -1,22 +1,35 @@
 @import "tailwindcss";
 
-/* Custom theme configuration */
+/* SoyoSaki 主题配色 */
 @theme {
-  --color-primary: #667eea;
-  --color-primary-dark: #764ba2;
-  --color-primary-light: #8b9cf4;
-  --color-secondary: #764ba2;
+  /* 素世 - 亚麻色/栗色系 */
+  --color-soyo: #c4a77d;
+  --color-soyo-light: #d4bc94;
+  --color-soyo-dark: #8b6914;
+  --color-soyo-cream: #f5e6d3;
+
+  /* 祥子 - 淡蓝色系 */
+  --color-sakiko: #7eb8da;
+  --color-sakiko-light: #b5d8ed;
+  --color-sakiko-dark: #4a90b8;
+  --color-sakiko-pale: #e8f4fa;
+
+  /* 主题色别名 */
+  --color-primary: #c4a77d;
+  --color-secondary: #7eb8da;
 }
 
-/* Custom component classes */
+/* 主按钮 - 素世亚麻色 */
 .btn-primary {
-  @apply px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-lg 
-         hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply px-6 py-3 bg-soyo text-white font-semibold rounded-lg 
+         hover:bg-soyo-dark hover:shadow-lg hover:-translate-y-0.5 
+         transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
+/* 次按钮 - 祥子淡蓝色 */
 .btn-secondary {
-  @apply px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded-lg
-         hover:border-primary hover:text-primary transition-all duration-200;
+  @apply px-4 py-2 border-2 border-sakiko bg-white text-sakiko-dark rounded-lg
+         hover:bg-sakiko hover:text-white transition-all duration-200;
 }
 
 .card {
@@ -25,13 +38,15 @@
 
 .input {
   @apply w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base
-         focus:outline-none focus:border-primary transition-colors;
+         focus:outline-none focus:border-sakiko transition-colors;
 }
 
+/* 普通标签 */
 .tag {
   @apply px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-full;
 }
 
+/* 素祥相关标签高亮 - 使用祥子的淡蓝色 */
 .tag-highlight {
-  @apply bg-gradient-to-r from-primary to-secondary text-white;
+  @apply bg-sakiko text-white;
 }

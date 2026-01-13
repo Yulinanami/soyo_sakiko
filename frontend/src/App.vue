@@ -16,7 +16,7 @@ function handleLogout() {
     <!-- Global Navigation -->
     <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <router-link to="/" class="text-xl font-bold text-primary no-underline">
+        <router-link to="/" class="text-xl font-bold text-soyo-dark no-underline">
           🎸 SoyoSaki
         </router-link>
         
@@ -56,7 +56,7 @@ function handleLogout() {
             </router-link>
             <router-link 
               to="/register" 
-              class="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-lg no-underline"
+              class="px-4 py-2 bg-soyo text-white font-medium rounded-lg no-underline hover:bg-soyo-dark transition-colors"
             >
               注册
             </router-link>

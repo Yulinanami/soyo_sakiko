@@ -26,8 +26,8 @@ function handleTagChange(tags: string[]) {
 
 <template>
   <div class="min-h-screen">
-    <!-- Hero Banner -->
-    <header class="bg-gradient-to-r from-primary to-secondary py-16 px-8 text-center text-white">
+    <!-- Hero Banner - 素世主题色 -->
+    <header class="bg-soyo py-16 px-8 text-center text-white">
       <h1 class="text-4xl md:text-5xl font-bold mb-3">🎸 SoyoSaki 同人文聚合</h1>
       <p class="text-lg opacity-90">
         长崎素世 × 丰川祥子 · 收录来自 AO3 / Pixiv / Lofter 的同人作品
