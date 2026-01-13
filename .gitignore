@@ -1,0 +1,22 @@
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker volumes (if running locally)
+postgres_data/
+redis_data/
+
+# Logs
+*.log
+logs/

@@ -1,0 +1,100 @@
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import type { Novel, NovelSearchParams, NovelSource } from '../types/novel';
+import { novelApi } from '../services/api';
+
+export const useNovelsStore = defineStore('novels', () => {
+  // State
+  const novels = ref<Novel[]>([]);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+  const currentPage = ref(1);
+  const pageSize = ref(20);
+  const total = ref(0);
+  const hasMore = ref(true);
+
+  // Filters
+  const selectedSources = ref<NovelSource[]>(['ao3']);
+  const selectedTags = ref<string[]>(['素祥', '祥素']);
+  const sortBy = ref<'date' | 'kudos' | 'hits' | 'wordCount'>('date');
+  const sortOrder = ref<'asc' | 'desc'>('desc');
+
+  // Computed
+  const isEmpty = computed(() => novels.value.length === 0 && !loading.value);
+
+  // Actions
+  async function fetchNovels(reset = false) {
+    if (reset) {
+      currentPage.value = 1;
+      novels.value = [];
+    }
+
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const params: NovelSearchParams = {
+        sources: selectedSources.value,
+        tags: selectedTags.value,
+        page: currentPage.value,
+        pageSize: pageSize.value,
+        sortBy: sortBy.value,
+        sortOrder: sortOrder.value,
+      };
+
+      const response = await novelApi.search(params);
+      
+      if (reset) {
+        novels.value = response.novels;
+      } else {
+        novels.value.push(...response.novels);
+      }
+      
+      total.value = response.total;
+      hasMore.value = response.hasMore;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '获取小说列表失败';
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function loadMore() {
+    if (loading.value || !hasMore.value) return;
+    currentPage.value++;
+    await fetchNovels(false);
+  }
+
+  function setFilters(sources: NovelSource[], tags: string[]) {
+    selectedSources.value = sources;
+    selectedTags.value = tags;
+    fetchNovels(true);
+  }
+
+  function setSort(by: typeof sortBy.value, order: typeof sortOrder.value) {
+    sortBy.value = by;
+    sortOrder.value = order;
+    fetchNovels(true);
+  }
+
+  return {
+    // State
+    novels,
+    loading,
+    error,
+    currentPage,
+    total,
+    hasMore,
+    selectedSources,
+    selectedTags,
+    sortBy,
+    sortOrder,
+    // Computed
+    isEmpty,
+    // Actions
+    fetchNovels,
+    loadMore,
+    setFilters,
+    setSort,
+  };
+});

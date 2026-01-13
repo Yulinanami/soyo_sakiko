@@ -1,0 +1,67 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useUserStore } from '../stores/user';
+
+const router = useRouter();
+const route = useRoute();
+const userStore = useUserStore();
+
+const username = ref('');
+const password = ref('');
+
+async function handleLogin() {
+  const success = await userStore.login(username.value, password.value);
+  if (success) {
+    const redirect = route.query.redirect as string || '/';
+    router.push(redirect);
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-r from-primary to-secondary p-8">
+    <div class="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md">
+      <h1 class="text-center text-2xl font-bold text-gray-800 mb-2">🎸 登录</h1>
+      <p class="text-center text-gray-600 text-sm mb-8">登录以使用收藏和阅读记录功能</p>
+      
+      <form @submit.prevent="handleLogin" class="space-y-6">
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+          <input 
+            id="username"
+            v-model="username" 
+            type="text" 
+            placeholder="请输入用户名"
+            required
+            class="input"
+          />
+        </div>
+        
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">密码</label>
+          <input 
+            id="password"
+            v-model="password" 
+            type="password" 
+            placeholder="请输入密码"
+            required
+            class="input"
+          />
+        </div>
+        
+        <div v-if="userStore.error" class="bg-red-50 text-red-500 p-3 rounded-lg text-sm">
+          {{ userStore.error }}
+        </div>
+        
+        <button type="submit" class="w-full btn-primary" :disabled="userStore.loading">
+          {{ userStore.loading ? '登录中...' : '登录' }}
+        </button>
+      </form>
+      
+      <p class="text-center mt-6 text-gray-600">
+        还没有账号？<router-link to="/register" class="text-primary font-medium hover:underline">立即注册</router-link>
+      </p>
+    </div>
+  </div>
+</template>

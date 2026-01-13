@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles */
+@layer base {
+  body {
+    @apply font-sans bg-gray-50 text-gray-900 antialiased;
+  }
+
+  a {
+    @apply text-primary hover:text-primary-dark transition-colors;
+  }
+}
+
+/* Custom component classes */
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-lg 
+           hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded-lg
+           hover:border-primary hover:text-primary transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-200;
+  }
+
+  .input {
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base
+           focus:outline-none focus:border-primary transition-colors;
+  }
+
+  .container-main {
+    @apply max-w-7xl mx-auto px-4;
+  }
+
+  .gradient-bg {
+    @apply bg-gradient-to-r from-primary to-secondary;
+  }
+
+  .tag {
+    @apply px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-full;
+  }
+
+  .tag-highlight {
+    @apply bg-gradient-to-r from-primary to-secondary text-white;
+  }
+}
+
+/* Custom utilities */
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+}
