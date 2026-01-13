@@ -11,7 +11,7 @@ const emit = defineEmits<{
 
 const customTag = ref('');
 
-const defaultTags = ['素祥', '祥素', 'Nagasaki Soyo/Toyokawa Sakiko', 'MyGO!!!!!'];
+const defaultTags = ['素祥', '祥素', 'そよさき', 'Nagasaki Soyo/Togawa Sakiko', 'MyGO!!!!!'];
 
 const allTags = computed(() => {
   const set = new Set([...defaultTags, ...props.selectedTags]);
