@@ -36,7 +36,22 @@ api.interceptors.response.use(
 // Novel API
 export const novelApi = {
   search: async (params: NovelSearchParams): Promise<NovelListResponse> => {
-    const { data } = await api.get('/novels', { params });
+    // Build query string manually for array params (FastAPI expects sources=ao3&sources=pixiv format)
+    const searchParams = new URLSearchParams();
+    
+    // Add sources as repeated params
+    params.sources.forEach(source => searchParams.append('sources', source));
+    
+    // Add tags as repeated params
+    params.tags.forEach(tag => searchParams.append('tags', tag));
+    
+    // Add other params with defaults
+    searchParams.append('page', String(params.page ?? 1));
+    searchParams.append('page_size', String(params.pageSize ?? 20));
+    searchParams.append('sort_by', params.sortBy ?? 'date');
+    searchParams.append('sort_order', params.sortOrder ?? 'desc');
+    
+    const { data } = await api.get(`/novels?${searchParams.toString()}`);
     return data;
   },
 

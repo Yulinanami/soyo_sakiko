@@ -1,0 +1,171 @@
+"""
+Pixiv Adapter for fetching novels
+
+Pixiv requires OAuth authentication with a refresh token.
+Users need to obtain their refresh token using: https://gist.github.com/ZipFile/c9ebedb224406f4f11845ab700124362
+"""
+
+import asyncio
+from typing import List, Optional
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
+
+from app.adapters.base import BaseAdapter
+from app.schemas.novel import Novel, NovelSource
+from app.config import settings
+
+
+class PixivAdapter(BaseAdapter):
+    """Adapter for Pixiv novel data source"""
+
+    source = NovelSource.PIXIV
+
+    def __init__(self):
+        self._api = None
+        self._executor = ThreadPoolExecutor(max_workers=2)
+        self._initialized = False
+
+    def _init_api(self):
+        """Initialize Pixiv API with refresh token"""
+        if self._initialized:
+            return self._api is not None
+
+        self._initialized = True
+
+        refresh_token = settings.PIXIV_REFRESH_TOKEN
+        if not refresh_token:
+            print("⚠️ Pixiv: No refresh token configured")
+            return False
+
+        try:
+            from pixivpy3 import AppPixivAPI
+
+            self._api = AppPixivAPI()
+            self._api.auth(refresh_token=refresh_token)
+            print("✅ Pixiv: API authenticated successfully")
+            return True
+        except ImportError:
+            print("❌ Pixiv: pixivpy3 not installed. Run: pip install pixivpy3")
+            return False
+        except Exception as e:
+            print(f"❌ Pixiv: Authentication failed: {e}")
+            self._api = None
+            return False
+
+    async def search(
+        self, tags: List[str], page: int = 1, page_size: int = 20, sort_by: str = "date"
+    ) -> List[Novel]:
+        """Search Pixiv novels by tags"""
+        if not self._init_api():
+            return []
+
+        # Build search query - combine tags with OR
+        search_query = " OR ".join(tags)
+
+        def _search():
+            try:
+                # Pixiv uses offset-based pagination
+                offset = (page - 1) * page_size
+
+                # Search for novels with the tag
+                result = self._api.search_novel(
+                    word=search_query,
+                    sort="date_desc" if sort_by == "date" else "popular_desc",
+                    search_target="partial_match_for_tags",
+                )
+
+                novels = []
+                for novel_data in result.get("novels", [])[:page_size]:
+                    novels.append(self._parse_novel(novel_data))
+
+                return novels
+            except Exception as e:
+                print(f"Pixiv search error: {e}")
+                return []
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self._executor, _search)
+
+    async def get_detail(self, novel_id: str) -> Optional[Novel]:
+        """Get novel detail by ID"""
+        if not self._init_api():
+            return None
+
+        def _get_detail():
+            try:
+                result = self._api.novel_detail(int(novel_id))
+                if "novel" in result:
+                    return self._parse_novel(result["novel"])
+                return None
+            except Exception as e:
+                print(f"Pixiv detail error: {e}")
+                return None
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self._executor, _get_detail)
+
+    async def get_chapters(self, novel_id: str) -> List[dict]:
+        """Get chapter list for a novel"""
+        # Pixiv novels are typically single chapter
+        # For series, we would need different handling
+        return [{"chapter": 1, "title": "正文"}]
+
+    async def get_chapter_content(self, novel_id: str, chapter: int) -> Optional[str]:
+        """Get chapter content"""
+        if not self._init_api():
+            return None
+
+        def _get_content():
+            try:
+                result = self._api.novel_text(int(novel_id))
+                if "novel_text" in result:
+                    # Convert newlines to HTML paragraphs
+                    text = result["novel_text"]
+                    paragraphs = text.split("\n")
+                    html = "".join(f"<p>{p}</p>" for p in paragraphs if p.strip())
+                    return html
+                return None
+            except Exception as e:
+                print(f"Pixiv content error: {e}")
+                return None
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self._executor, _get_content)
+
+    def _parse_novel(self, data: dict) -> Novel:
+        """Parse Pixiv novel data into unified Novel schema"""
+        # Extract tags
+        tags = [tag.get("name", "") for tag in data.get("tags", [])]
+
+        # Parse date
+        create_date = data.get("create_date", "")
+        try:
+            published_at = datetime.fromisoformat(
+                create_date.replace("Z", "+00:00")
+            ).isoformat()
+        except:
+            published_at = datetime.now().isoformat()
+
+        # Get summary/caption, default to empty string
+        caption = data.get("caption") or ""
+        summary = caption[:500] if caption else "暂无简介"
+
+        return Novel(
+            id=str(data.get("id", "")),
+            source=NovelSource.PIXIV,
+            title=data.get("title", "Unknown"),
+            author=data.get("user", {}).get("name", "Unknown"),
+            author_url=f"https://www.pixiv.net/users/{data.get('user', {}).get('id', '')}",
+            summary=summary,
+            tags=tags,
+            word_count=data.get("text_length", 0),
+            chapter_count=1,  # Most Pixiv novels are single-chapter
+            kudos=data.get("total_bookmarks", 0),
+            hits=data.get("total_view", 0),
+            rating=None,  # Pixiv doesn't have ratings like AO3
+            published_at=published_at,
+            updated_at=published_at,
+            source_url=f"https://www.pixiv.net/novel/show.php?id={data.get('id', '')}",
+            cover_image=data.get("image_urls", {}).get("medium"),
+            is_complete=True,
+        )

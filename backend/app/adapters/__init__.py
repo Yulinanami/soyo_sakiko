@@ -4,11 +4,13 @@ Adapters Package
 
 from app.adapters.base import BaseAdapter
 from app.adapters.ao3 import AO3Adapter
+from app.adapters.pixiv import PixivAdapter
 from app.schemas.novel import NovelSource
 
 # Adapter registry
 _adapters = {
     NovelSource.AO3: AO3Adapter(),
+    NovelSource.PIXIV: PixivAdapter(),
 }
 
 
@@ -24,4 +26,10 @@ def register_adapter(source: NovelSource, adapter: BaseAdapter):
     _adapters[source] = adapter
 
 
-__all__ = ["BaseAdapter", "AO3Adapter", "get_adapter", "register_adapter"]
+__all__ = [
+    "BaseAdapter",
+    "AO3Adapter",
+    "PixivAdapter",
+    "get_adapter",
+    "register_adapter",
+]
