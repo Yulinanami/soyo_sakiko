@@ -8,6 +8,9 @@ const props = defineProps<{
   novel: Novel;
 }>();
 
+// API base URL
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
 // Source logos
 const sourceLogos: Record<string, string> = {
   ao3: ao3Logo,
@@ -23,6 +26,18 @@ const sourceClass = computed(() => {
     lofter: 'bg-soyo text-white',
   };
   return classes[props.novel.source] || 'bg-gray-500 text-white';
+});
+
+// Get cover image URL - proxy Pixiv images through backend
+const coverImageUrl = computed(() => {
+  if (!props.novel.cover_image) return null;
+  
+  // Pixiv images need to be proxied due to hotlink protection
+  if (props.novel.source === 'pixiv' && props.novel.cover_image.includes('pximg.net')) {
+    return `${API_BASE}/proxy/pixiv?url=${encodeURIComponent(props.novel.cover_image)}`;
+  }
+  
+  return props.novel.cover_image;
 });
 
 const formattedDate = computed(() => {
@@ -47,10 +62,10 @@ function isHighlightTag(tag: string): boolean {
     <router-link :to="`/novel/${novel.source}/${novel.id}`" class="block no-underline text-inherit">
       <!-- Cover Image -->
       <div 
-        v-if="novel.cover_image" 
+        v-if="coverImageUrl" 
         class="h-40 overflow-hidden bg-sakiko-pale"
       >
-        <img :src="novel.cover_image" :alt="novel.title" class="w-full h-full object-cover" />
+        <img :src="coverImageUrl" :alt="novel.title" class="w-full h-full object-cover" />
       </div>
       <div 
         v-else 
