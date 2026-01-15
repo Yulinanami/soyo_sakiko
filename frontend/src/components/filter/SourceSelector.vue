@@ -2,6 +2,7 @@
 import { useSourcesStore } from '../../stores/sources';
 import ao3Logo from '../../assets/ao3.png';
 import pixivLogo from '../../assets/pixiv.png';
+import lofterLogo from '../../assets/lofter.png';
 
 const sourcesStore = useSourcesStore();
 
@@ -13,6 +14,7 @@ const emit = defineEmits<{
 const sourceLogos: Record<string, string> = {
   ao3: ao3Logo,
   pixiv: pixivLogo,
+  lofter: lofterLogo,
 };
 
 function toggle(name: string) {

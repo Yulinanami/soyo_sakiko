@@ -17,6 +17,7 @@ const id = route.params.id as string;
 
 onMounted(async () => {
   await loadNovel();
+  // Always try to load chapter content, even if novel detail failed
   await loadChapter(1);
 });
 
@@ -24,12 +25,43 @@ async function loadNovel() {
   try {
     novel.value = await novelApi.getDetail(source, id);
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '加载小说信息失败';
+    // For Lofter and other sources where detail might not be available,
+    // we just log but don't block - we'll still try to load the chapter
+    console.warn('Could not load novel detail:', err);
+    
+    // Generate source URL for Lofter
+    let sourceUrl = '';
+    if (source === 'lofter' && id.includes(':')) {
+      const [blogName, postId] = id.split(':', 2);
+      sourceUrl = `https://${blogName}.lofter.com/post/${postId}`;
+    }
+    
+    // Create a minimal novel object for display
+    novel.value = {
+      id: id,
+      source: source as any,
+      title: source === 'lofter' ? 'Lofter 文章' : '文章',
+      author: 'Unknown',
+      author_url: '',
+      summary: '',
+      tags: [],
+      word_count: undefined,
+      chapter_count: 1,
+      kudos: undefined,
+      hits: undefined,
+      rating: undefined,
+      published_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      source_url: sourceUrl,
+      cover_image: undefined,
+      is_complete: true,
+    };
   }
 }
 
 async function loadChapter(chapter: number) {
   loading.value = true;
+  error.value = null;
   try {
     chapterContent.value = await novelApi.getChapterContent(source, id, chapter);
     currentChapter.value = chapter;

@@ -4,6 +4,7 @@ import { useUserStore } from './stores/user';
 import { useRouter } from 'vue-router';
 import ao3Logo from './assets/ao3.png';
 import pixivLogo from './assets/pixiv.png';
+import lofterLogo from './assets/lofter.png';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -67,9 +68,9 @@ function handleLogout() {
           <img :src="pixivLogo" alt="Pixiv" class="w-5 h-5 object-contain" />
           <span>Pixiv</span>
         </div>
-        <div class="flex items-center gap-3 px-3 py-2 text-sm text-white/50">
-          <span>📝</span>
-          <span>Lofter (开发中)</span>
+        <div class="flex items-center gap-3 px-3 py-2 text-sm text-white/80">
+          <img :src="lofterLogo" alt="Lofter" class="w-5 h-5 object-contain" />
+          <span>Lofter</span>
         </div>
       </nav>
       

@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import type { Novel } from '../../types/novel';
 import ao3Logo from '../../assets/ao3.png';
 import pixivLogo from '../../assets/pixiv.png';
+import lofterLogo from '../../assets/lofter.png';
 
 const props = defineProps<{
   novel: Novel;
@@ -15,6 +16,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const sourceLogos: Record<string, string> = {
   ao3: ao3Logo,
   pixiv: pixivLogo,
+  lofter: lofterLogo,
 };
 
 const sourceLogo = computed(() => sourceLogos[props.novel.source]);
