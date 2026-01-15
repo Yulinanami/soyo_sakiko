@@ -65,6 +65,7 @@ class AO3Adapter(BaseAdapter):
 
         return novels
 
+
     def _search_sync(
         self,
         tags: List[str],

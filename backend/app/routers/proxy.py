@@ -84,6 +84,9 @@ async def proxy_lofter_image(url: str):
         "nosdn.127.net",
         "netease.com",
     ]
+    if url and url.startswith("//"):
+        url = f"https:{url}"
+
     if not url or not any(domain in url for domain in lofter_domains):
         raise HTTPException(status_code=400, detail="Invalid Lofter image URL")
 

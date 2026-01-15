@@ -8,6 +8,7 @@ from typing import List
 from app.schemas.novel import Novel, NovelListResponse, NovelSource
 from app.adapters import get_adapter
 from app.services.cache_service import cache, CacheKeys
+from app.config import settings
 
 router = APIRouter()
 
@@ -68,6 +69,13 @@ async def search_novels(
         source_novels[source] = novels
         # If we got the full count, there might be more
         if len(novels) >= per_source_count:
+            any_has_more = True
+        if (
+            source == NovelSource.LOFTER
+            and settings.LOFTER_DYNAMIC_ENABLED
+            and novels
+        ):
+            # Dynamic crawling doesn't expose total; allow manual "load more"
             any_has_more = True
 
     # If multiple sources, interleave results for balanced display

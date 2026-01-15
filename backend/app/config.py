@@ -27,6 +27,15 @@ class Settings(BaseSettings):
 
     # Lofter (optional) - requires login cookie
     LOFTER_COOKIE: str = ""
+    LOFTER_CAPTTOKEN: str = ""
+    LOFTER_DYNAMIC_ENABLED: bool = False
+    LOFTER_DYNAMIC_HEADLESS: bool = True
+    LOFTER_DYNAMIC_MAX_ITEMS: int = 30
+    LOFTER_DYNAMIC_MAX_SCROLLS: int = 8
+    LOFTER_DYNAMIC_SCROLL_WAIT_MS: int = 1200
+    LOFTER_DYNAMIC_INITIAL_WAIT_MS: int = 1500
+    LOFTER_MAX_PAGE_SIZE: int = 30
+    LOFTER_DYNAMIC_CACHE_TTL: int = 300
 
     # Rate limiting
     RATE_LIMIT_REQUESTS: int = 100

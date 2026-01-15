@@ -4,9 +4,11 @@ import type { AuthResponse, LoginRequest, RegisterRequest, User } from '../types
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 
+const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 120000;
+
 const api = axios.create({
   baseURL: API_BASE,
-  timeout: 30000,
+  timeout: API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },
