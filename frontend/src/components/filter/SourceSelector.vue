@@ -5,6 +5,9 @@ import pixivLogo from '../../assets/pixiv.png';
 import lofterLogo from '../../assets/lofter.png';
 
 const sourcesStore = useSourcesStore();
+const props = defineProps<{
+  loadingSources?: Record<string, boolean>;
+}>();
 
 const emit = defineEmits<{
   (e: 'change'): void;
@@ -40,12 +43,17 @@ function toggle(name: string) {
         @click="toggle(source.name)"
         :title="source.requiresAuth ? '需要配置账号' : ''"
       >
-        <img 
-          v-if="sourceLogos[source.name]" 
-          :src="sourceLogos[source.name]" 
-          :alt="source.displayName"
-          class="w-4 h-4 object-contain"
-        />
+        <span
+          v-if="source.enabled && props.loadingSources?.[source.name]"
+          class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"
+        ></span>
+        <span v-else-if="sourceLogos[source.name]" class="text-base">
+          <img 
+            :src="sourceLogos[source.name]" 
+            :alt="source.displayName"
+            class="w-4 h-4 object-contain"
+          />
+        </span>
         <span v-else class="text-base">{{ source.icon }}</span>
         <span>{{ source.displayName }}</span>
         <span v-if="source.requiresAuth && !source.enabled" class="text-xs">🔒</span>

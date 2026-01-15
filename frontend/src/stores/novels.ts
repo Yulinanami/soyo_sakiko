@@ -12,6 +12,22 @@ export const useNovelsStore = defineStore('novels', () => {
   const pageSize = ref(30);
   const total = ref(0);
   const hasMore = ref(true);
+  const novelsBySource = ref<Record<NovelSource, Novel[]>>({
+    ao3: [],
+    pixiv: [],
+    lofter: [],
+  });
+  const hasMoreBySource = ref<Record<NovelSource, boolean>>({
+    ao3: false,
+    pixiv: false,
+    lofter: false,
+  });
+  const loadingSources = ref<Record<NovelSource, boolean>>({
+    ao3: false,
+    pixiv: false,
+    lofter: false,
+  });
+  let requestId = 0;
 
   // Filters
   const selectedSources = ref<NovelSource[]>(['ao3']);
@@ -25,9 +41,14 @@ export const useNovelsStore = defineStore('novels', () => {
 
   // Actions
   async function fetchNovels(reset = false) {
+    requestId += 1;
+    const activeRequestId = requestId;
+
     if (reset) {
       currentPage.value = 1;
       novels.value = [];
+      novelsBySource.value = { ao3: [], pixiv: [], lofter: [] };
+      hasMoreBySource.value = { ao3: false, pixiv: false, lofter: false };
     }
 
     if (selectedSources.value.length === 0) {
@@ -47,44 +68,68 @@ export const useNovelsStore = defineStore('novels', () => {
       return;
     }
 
+    selectedSources.value.forEach(source => {
+      loadingSources.value[source] = true;
+    });
     loading.value = true;
     error.value = null;
 
-    try {
-      const params: NovelSearchParams = {
-        sources: selectedSources.value,
-        tags: selectedTags.value,
-        excludeTags: excludeTags.value,
-        page: currentPage.value,
-        pageSize: pageSize.value,
-        sortBy: sortBy.value,
-        sortOrder: sortOrder.value,
-      };
+    const updateAggregates = () => {
+      rebuildNovels();
+      hasMore.value = selectedSources.value.some(source => hasMoreBySource.value[source]);
+      total.value = novels.value.length + (hasMore.value ? pageSize.value : 0);
+      loading.value = selectedSources.value.some(source => loadingSources.value[source]);
+    };
 
-      const response = await novelApi.search(params);
-      const allowedSources = new Set(selectedSources.value);
-      const filteredNovels = response.novels.filter(n => allowedSources.has(n.source));
-      
-      if (reset) {
-        novels.value = filteredNovels;
-      } else {
-        // Deduplicate: only add novels that don't already exist
-        const existingIds = new Set(novels.value.map(n => `${n.source}:${n.id}`));
-        const newNovels = filteredNovels.filter(n => !existingIds.has(`${n.source}:${n.id}`));
-        novels.value.push(...newNovels);
-      }
-      
-      total.value = response.total;
-      hasMore.value = response.has_more;
+    try {
+      await Promise.allSettled(
+        selectedSources.value.map(async (source) => {
+          const params: NovelSearchParams = {
+            sources: [source],
+            tags: selectedTags.value,
+            excludeTags: excludeTags.value,
+            page: currentPage.value,
+            pageSize: pageSize.value,
+            sortBy: sortBy.value,
+            sortOrder: sortOrder.value,
+          };
+
+          try {
+            const response = await novelApi.search(params);
+            if (activeRequestId !== requestId) {
+              return;
+            }
+            const filtered = response.novels.filter(n => n.source === source);
+            if (reset) {
+              novelsBySource.value[source] = filtered;
+            } else {
+              const existingIds = new Set(
+                novelsBySource.value[source].map(n => `${n.source}:${n.id}`)
+              );
+              const newNovels = filtered.filter(n => !existingIds.has(`${n.source}:${n.id}`));
+              novelsBySource.value[source].push(...newNovels);
+            }
+            hasMoreBySource.value[source] = response.has_more;
+            updateAggregates();
+          } catch (err) {
+            if (activeRequestId === requestId) {
+              error.value = err instanceof Error ? err.message : '获取小说列表失败';
+            }
+          } finally {
+            if (activeRequestId === requestId) {
+              loadingSources.value[source] = false;
+              updateAggregates();
+            }
+          }
+        })
+      );
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取小说列表失败';
-    } finally {
-      loading.value = false;
     }
   }
 
   async function loadMore() {
-    if (loading.value || !hasMore.value) return;
+    if (loading.value || !hasMore.value || selectedSources.value.length === 0) return;
     currentPage.value++;
     await fetchNovels(false);
   }
@@ -101,6 +146,30 @@ export const useNovelsStore = defineStore('novels', () => {
     fetchNovels(true);
   }
 
+  function rebuildNovels() {
+    const combined: Novel[] = [];
+    const seen = new Set<string>();
+    const sourceOrder = selectedSources.value.length
+      ? selectedSources.value
+      : (Object.keys(novelsBySource.value) as NovelSource[]);
+    const maxLen = Math.max(
+      0,
+      ...sourceOrder.map(source => novelsBySource.value[source]?.length || 0)
+    );
+    for (let i = 0; i < maxLen; i += 1) {
+      for (const source of sourceOrder) {
+        const list = novelsBySource.value[source] || [];
+        if (i >= list.length) continue;
+        const novel = list[i];
+        const key = `${novel.source}:${novel.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        combined.push(novel);
+      }
+    }
+    novels.value = combined;
+  }
+
   return {
     // State
     novels,
@@ -114,6 +183,7 @@ export const useNovelsStore = defineStore('novels', () => {
     excludeTags,  // Export for UI
     sortBy,
     sortOrder,
+    loadingSources,
     // Computed
     isEmpty,
     // Actions

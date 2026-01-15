@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   excludeTags: string[];
-}>();
+  open?: boolean;
+}>(), {
+  open: false,
+});
 
 const emit = defineEmits<{
   (e: 'update:exclude-tags', tags: string[]): void;
@@ -44,7 +47,7 @@ function isSelected(tag: string) {
 </script>
 
 <template>
-  <div class="flex items-center gap-3 flex-wrap">
+  <div v-if="props.open" class="flex items-center gap-3 flex-wrap">
     <span class="font-medium text-gray-700 whitespace-nowrap">排除:</span>
     <div class="flex gap-1.5 flex-wrap">
       <button

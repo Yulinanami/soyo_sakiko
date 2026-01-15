@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, nextTick } from 'vue';
+import { onMounted, nextTick, ref } from 'vue';
 import { useNovelsStore } from '../stores/novels';
 import { useSourcesStore } from '../stores/sources';
 import NovelList from '../components/novel/NovelList.vue';
@@ -9,6 +9,7 @@ import ExcludeFilter from '../components/filter/ExcludeFilter.vue';
 
 const novelsStore = useNovelsStore();
 const sourcesStore = useSourcesStore();
+const isExcludeOpen = ref(false);
 
 function restoreListScroll() {
   const raw = sessionStorage.getItem('soyosaki:listScrollY');
@@ -47,6 +48,10 @@ function handleExcludeChange(tags: string[]) {
   novelsStore.excludeTags = tags;
   novelsStore.fetchNovels(true);
 }
+
+function toggleExclude() {
+  isExcludeOpen.value = !isExcludeOpen.value;
+}
 </script>
 
 <template>
@@ -56,19 +61,25 @@ function handleExcludeChange(tags: string[]) {
       <div class="px-6 py-4 space-y-4">
         <!-- 标签过滤 -->
         <TagFilter 
-          :selected-tags="novelsStore.selectedTags" 
+          :selected-tags="novelsStore.selectedTags"
+          :exclude-open="isExcludeOpen"
+          @toggle-exclude="toggleExclude"
           @update:selected-tags="handleTagChange" 
         />
         
         <!-- 排除过滤 -->
         <ExcludeFilter
           :exclude-tags="novelsStore.excludeTags"
+          :open="isExcludeOpen"
           @update:exclude-tags="handleExcludeChange"
         />
         
         <!-- 数据源选择和排序 -->
         <div class="flex flex-wrap items-center justify-between gap-4">
-          <SourceSelector @change="handleSourceChange" />
+          <SourceSelector
+            :loading-sources="novelsStore.loadingSources"
+            @change="handleSourceChange"
+          />
           
           <select 
             v-model="novelsStore.sortBy" 

@@ -3,10 +3,12 @@ import { ref, computed } from 'vue';
 
 const props = defineProps<{
   selectedTags: string[];
+  excludeOpen?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: 'update:selected-tags', tags: string[]): void;
+  (e: 'toggle-exclude'): void;
 }>();
 
 const customTag = ref('');
@@ -44,6 +46,15 @@ function isSelected(tag: string) {
 
 <template>
   <div class="flex items-center gap-3 flex-wrap">
+    <button
+      type="button"
+      class="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-600 hover:border-red-400 hover:text-red-500 transition-all"
+      @click="emit('toggle-exclude')"
+      :title="props.excludeOpen ? '收起排除标签' : '展开排除标签'"
+      aria-label="切换排除标签"
+    >
+      {{ props.excludeOpen ? '▾' : '▸' }}
+    </button>
     <span class="font-medium text-gray-700 whitespace-nowrap">标签:</span>
     <div class="flex gap-1.5 flex-wrap">
       <button
