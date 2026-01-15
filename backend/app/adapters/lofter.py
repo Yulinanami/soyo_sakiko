@@ -62,13 +62,17 @@ class LofterAdapter(BaseAdapter):
         if max_page_size and page_size > max_page_size:
             page_size = max_page_size
 
-        # Use multiple tags and merge results to increase coverage
-        search_tags = list(dict.fromkeys(tags + self.SOYOSAKI_TAGS))
-        if not search_tags:
-            search_tags = ["素祥"]
+        user_tags = list(dict.fromkeys(tags))
+        if not user_tags:
+            user_tags = list(self.SOYOSAKI_TAGS)
+        if not user_tags:
+            user_tags = ["素祥"]
 
-        # Prefer the main tag page for better coverage and structure
-        primary_tag = "素祥" if "素祥" in search_tags else search_tags[0]
+        # Prefer a non-default tag if user selected one
+        primary_tag = next(
+            (tag for tag in user_tags if tag not in self.SOYOSAKI_TAGS),
+            user_tags[0],
+        )
 
         # Map sort_by to Lofter's ranking type
         ranking_type = {

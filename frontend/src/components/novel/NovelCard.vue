@@ -10,7 +10,7 @@ const props = defineProps<{
 }>();
 
 // API base URL
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/+$/, '');
 
 // Source logos
 const sourceLogos: Record<string, string> = {
@@ -31,15 +31,35 @@ const sourceClass = computed(() => {
 });
 
 // Get cover image URL - proxy Pixiv images through backend
+const lofterDomains = [
+  'lf127.net',
+  '126.net',
+  'lofter.com',
+  'imglf',
+  'nos.netease.com',
+  'nosdn.127.net',
+  'netease.com',
+];
+
 const coverImageUrl = computed(() => {
   if (!props.novel.cover_image) return null;
-  
+  const imageUrl = props.novel.cover_image;
+
   // Pixiv images need to be proxied due to hotlink protection
-  if (props.novel.source === 'pixiv' && props.novel.cover_image.includes('pximg.net')) {
-    return `${API_BASE}/proxy/pixiv?url=${encodeURIComponent(props.novel.cover_image)}`;
+  if (props.novel.source === 'pixiv' && imageUrl.includes('pximg.net')) {
+    return `${API_BASE}/proxy/pixiv?url=${encodeURIComponent(imageUrl)}`;
+  }
+
+  if (props.novel.source === 'lofter') {
+    if (imageUrl.startsWith(`${API_BASE}/proxy/lofter`)) {
+      return imageUrl;
+    }
+    if (lofterDomains.some(domain => imageUrl.includes(domain))) {
+      return `${API_BASE}/proxy/lofter?url=${encodeURIComponent(imageUrl)}`;
+    }
   }
   
-  return props.novel.cover_image;
+  return imageUrl;
 });
 
 const formattedDate = computed(() => {
@@ -57,11 +77,20 @@ const truncatedSummary = computed(() => {
 function isHighlightTag(tag: string): boolean {
   return tag.includes('素') || tag.includes('祥') || tag.includes('Soyo') || tag.includes('Sakiko');
 }
+
+function rememberListScroll() {
+  sessionStorage.setItem('soyosaki:listScrollY', String(window.scrollY));
+  sessionStorage.setItem('soyosaki:preserveList', '1');
+}
 </script>
 
 <template>
   <article class="card overflow-hidden hover:-translate-y-1 transition-transform duration-200">
-    <router-link :to="`/novel/${novel.source}/${novel.id}`" class="block no-underline text-inherit">
+    <router-link
+      :to="`/novel/${novel.source}/${novel.id}`"
+      class="block no-underline text-inherit"
+      @click="rememberListScroll"
+    >
       <!-- Cover Image -->
       <div 
         v-if="coverImageUrl" 

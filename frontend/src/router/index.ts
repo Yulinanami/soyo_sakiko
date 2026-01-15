@@ -31,6 +31,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
   ],
+  scrollBehavior(_to, _from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition;
+    }
+    return { left: 0, top: 0 };
+  },
 });
 
 // Navigation guard for protected routes

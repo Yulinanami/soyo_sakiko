@@ -20,8 +20,8 @@ CHAPTER_CACHE_TTL = 1800  # 30 minutes
 
 @router.get("", response_model=NovelListResponse)
 async def search_novels(
-    sources: List[NovelSource] = Query(default=[NovelSource.AO3]),
-    tags: List[str] = Query(default=["素祥", "祥素"]),
+    sources: List[NovelSource] = Query(default_factory=list),
+    tags: List[str] = Query(default_factory=list),
     exclude_tags: List[str] = Query(default=[]),  # Tags to exclude from results
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=30, ge=1, le=100),
@@ -29,6 +29,24 @@ async def search_novels(
     sort_order: str = Query(default="desc"),
 ):
     """Search novels across multiple sources"""
+
+    if not sources:
+        return NovelListResponse(
+            novels=[],
+            total=0,
+            page=page,
+            page_size=page_size,
+            has_more=False,
+        )
+
+    if not tags:
+        return NovelListResponse(
+            novels=[],
+            total=0,
+            page=page,
+            page_size=page_size,
+            has_more=False,
+        )
 
     print(
         f"🔍 Searching sources: {[s.value for s in sources]}, tags: {tags}, exclude: {exclude_tags}, page: {page}"

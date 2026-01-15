@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, nextTick } from 'vue';
 import { useNovelsStore } from '../stores/novels';
 import { useSourcesStore } from '../stores/sources';
 import NovelList from '../components/novel/NovelList.vue';
@@ -10,8 +10,27 @@ import ExcludeFilter from '../components/filter/ExcludeFilter.vue';
 const novelsStore = useNovelsStore();
 const sourcesStore = useSourcesStore();
 
-onMounted(() => {
-  novelsStore.fetchNovels(true);
+function restoreListScroll() {
+  const raw = sessionStorage.getItem('soyosaki:listScrollY');
+  if (!raw) return;
+  sessionStorage.removeItem('soyosaki:listScrollY');
+  const y = Number(raw);
+  if (Number.isFinite(y)) {
+    window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+  }
+}
+
+onMounted(async () => {
+  const preserve = sessionStorage.getItem('soyosaki:preserveList') === '1';
+  if (preserve && novelsStore.novels.length > 0) {
+    sessionStorage.removeItem('soyosaki:preserveList');
+    await nextTick();
+    restoreListScroll();
+    return;
+  }
+  await novelsStore.fetchNovels(true);
+  await nextTick();
+  restoreListScroll();
 });
 
 function handleSourceChange() {

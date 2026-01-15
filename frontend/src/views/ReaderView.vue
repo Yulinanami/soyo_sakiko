@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { novelApi } from '../services/api';
 import type { Novel } from '../types/novel';
 
 const route = useRoute();
+const router = useRouter();
 
 const novel = ref<Novel | null>(null);
 const chapterContent = ref<string>('');
@@ -14,6 +15,7 @@ const error = ref<string | null>(null);
 
 const source = route.params.source as string;
 const id = route.params.id as string;
+const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:8000/api').replace(/\/+$/, '');
 
 onMounted(async () => {
   await loadNovel();
@@ -63,7 +65,8 @@ async function loadChapter(chapter: number) {
   loading.value = true;
   error.value = null;
   try {
-    chapterContent.value = await novelApi.getChapterContent(source, id, chapter);
+    const rawContent = await novelApi.getChapterContent(source, id, chapter);
+    chapterContent.value = normalizeContent(rawContent);
     currentChapter.value = chapter;
   } catch (err) {
     error.value = err instanceof Error ? err.message : '加载章节内容失败';
@@ -83,6 +86,21 @@ function nextChapter() {
     loadChapter(currentChapter.value + 1);
   }
 }
+
+function normalizeContent(content: string) {
+  if (!content) return content;
+  return content
+    .replace(/src=(['"])\/api\/([^'"]+)/g, `src=$1${API_BASE}/$2`)
+    .replace(/href=(['"])\/api\/([^'"]+)/g, `href=$1${API_BASE}/$2`);
+}
+
+function goBack() {
+  if (window.history.length > 1) {
+    router.back();
+  } else {
+    router.push({ name: 'home' });
+  }
+}
 </script>
 
 <template>
@@ -90,9 +108,13 @@ function nextChapter() {
     <!-- Header -->
     <header v-if="novel" class="bg-soyo text-white py-8">
       <div class="max-w-3xl mx-auto px-4">
-        <router-link to="/" class="text-white/80 text-sm hover:text-white no-underline">
+        <button
+          type="button"
+          @click="goBack"
+          class="text-white/80 text-sm hover:text-white no-underline"
+        >
           ← 返回列表
-        </router-link>
+        </button>
         <h1 class="mt-4 mb-2 text-2xl md:text-3xl font-bold">{{ novel.title }}</h1>
         <p class="opacity-90 mb-2">作者: {{ novel.author }}</p>
         <div class="flex gap-4 text-sm opacity-80">

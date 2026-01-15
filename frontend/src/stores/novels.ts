@@ -30,6 +30,23 @@ export const useNovelsStore = defineStore('novels', () => {
       novels.value = [];
     }
 
+    if (selectedSources.value.length === 0) {
+      error.value = null;
+      total.value = 0;
+      hasMore.value = false;
+      loading.value = false;
+      return;
+    }
+
+    if (selectedTags.value.length === 0) {
+      error.value = '请先选择至少一个标签';
+      total.value = 0;
+      hasMore.value = false;
+      loading.value = false;
+      novels.value = [];
+      return;
+    }
+
     loading.value = true;
     error.value = null;
 
@@ -45,13 +62,15 @@ export const useNovelsStore = defineStore('novels', () => {
       };
 
       const response = await novelApi.search(params);
+      const allowedSources = new Set(selectedSources.value);
+      const filteredNovels = response.novels.filter(n => allowedSources.has(n.source));
       
       if (reset) {
-        novels.value = response.novels;
+        novels.value = filteredNovels;
       } else {
         // Deduplicate: only add novels that don't already exist
         const existingIds = new Set(novels.value.map(n => `${n.source}:${n.id}`));
-        const newNovels = response.novels.filter(n => !existingIds.has(`${n.source}:${n.id}`));
+        const newNovels = filteredNovels.filter(n => !existingIds.has(`${n.source}:${n.id}`));
         novels.value.push(...newNovels);
       }
       
