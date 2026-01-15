@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { novelApi } from '../services/api';
 import type { Novel } from '../types/novel';
@@ -12,6 +12,7 @@ const chapterContent = ref<string>('');
 const currentChapter = ref(1);
 const loading = ref(true);
 const error = ref<string | null>(null);
+const contentRef = ref<HTMLElement | null>(null);
 
 const source = route.params.source as string;
 const id = route.params.id as string;
@@ -64,14 +65,20 @@ async function loadNovel() {
 async function loadChapter(chapter: number) {
   loading.value = true;
   error.value = null;
+  let shouldApplyLoaders = false;
   try {
     const rawContent = await novelApi.getChapterContent(source, id, chapter);
     chapterContent.value = normalizeContent(rawContent);
     currentChapter.value = chapter;
+    shouldApplyLoaders = true;
   } catch (err) {
     error.value = err instanceof Error ? err.message : '加载章节内容失败';
   } finally {
     loading.value = false;
+    if (shouldApplyLoaders) {
+      await nextTick();
+      applyImageLoaders();
+    }
   }
 }
 
@@ -92,6 +99,31 @@ function normalizeContent(content: string) {
   return content
     .replace(/src=(['"])\/api\/([^'"]+)/g, `src=$1${API_BASE}/$2`)
     .replace(/href=(['"])\/api\/([^'"]+)/g, `href=$1${API_BASE}/$2`);
+}
+
+function applyImageLoaders() {
+  if (!contentRef.value) return;
+  const images = Array.from(contentRef.value.querySelectorAll('img'));
+  images.forEach((img) => {
+    let wrapper = img.parentElement;
+    if (!wrapper || !wrapper.classList.contains('img-loading-wrapper')) {
+      wrapper = document.createElement('span');
+      wrapper.className = 'img-loading-wrapper';
+      const parent = img.parentElement;
+      if (parent) {
+        parent.insertBefore(wrapper, img);
+      }
+      wrapper.appendChild(img);
+    }
+
+    const markLoaded = () => wrapper?.classList.add('loaded');
+    if (img.complete && img.naturalWidth > 0) {
+      markLoaded();
+    } else {
+      img.addEventListener('load', markLoaded, { once: true });
+      img.addEventListener('error', markLoaded, { once: true });
+    }
+  });
 }
 
 function goBack() {
@@ -155,6 +187,7 @@ function goBack() {
         <div v-else-if="error" class="text-center py-16 text-red-500">{{ error }}</div>
         <article 
           v-else 
+          ref="contentRef"
           class="reader-content bg-white px-10 py-12 rounded-xl shadow-sm"
           v-html="chapterContent"
         ></article>

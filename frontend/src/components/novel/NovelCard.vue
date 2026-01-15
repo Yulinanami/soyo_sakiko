@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { Novel } from '../../types/novel';
 import ao3Logo from '../../assets/ao3.png';
 import pixivLogo from '../../assets/pixiv.png';
@@ -41,6 +41,8 @@ const lofterDomains = [
   'netease.com',
 ];
 
+const coverLoaded = ref(false);
+
 const coverImageUrl = computed(() => {
   if (!props.novel.cover_image) return null;
   const imageUrl = props.novel.cover_image;
@@ -60,6 +62,10 @@ const coverImageUrl = computed(() => {
   }
   
   return imageUrl;
+});
+
+watch(coverImageUrl, () => {
+  coverLoaded.value = false;
 });
 
 const formattedDate = computed(() => {
@@ -94,9 +100,22 @@ function rememberListScroll() {
       <!-- Cover Image -->
       <div 
         v-if="coverImageUrl" 
-        class="h-40 overflow-hidden bg-sakiko-pale"
+        class="h-40 overflow-hidden bg-sakiko-pale relative"
       >
-        <img :src="coverImageUrl" :alt="novel.title" class="w-full h-full object-cover" />
+        <div
+          v-if="!coverLoaded"
+          class="absolute inset-0 flex items-center justify-center bg-sakiko-pale/70"
+        >
+          <span class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+        </div>
+        <img 
+          :src="coverImageUrl" 
+          :alt="novel.title" 
+          class="w-full h-full object-cover transition-opacity duration-200"
+          :class="coverLoaded ? 'opacity-100' : 'opacity-0'"
+          @load="coverLoaded = true"
+          @error="coverLoaded = true"
+        />
       </div>
       <div 
         v-else 
