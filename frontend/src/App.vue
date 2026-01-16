@@ -56,6 +56,14 @@ function handleLogout() {
             <span>我的收藏</span>
           </router-link>
         </template>
+
+        <router-link
+          to="/settings"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko no-underline text-white transition-colors"
+        >
+          <span>⚙️</span>
+          <span>设置</span>
+        </router-link>
         
         <div class="border-t border-sakiko my-4"></div>
         

@@ -121,4 +121,20 @@ export const sourcesApi = {
   },
 };
 
+// Credential API
+export const credentialsApi = {
+  start: async (source: string) => {
+    const { data } = await api.post(`/credentials/${source}/start`);
+    return data;
+  },
+  status: async (source: string) => {
+    const { data } = await api.get(`/credentials/${source}/status`);
+    return data;
+  },
+  clear: async (source: string) => {
+    const { data } = await api.delete(`/credentials/${source}`);
+    return data;
+  },
+};
+
 export default api;

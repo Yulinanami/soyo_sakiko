@@ -1,3 +1,3 @@
-from app.routers import novels, auth, sources
+from app.routers import novels, auth, sources, credentials
 
-__all__ = ["novels", "auth", "sources"]
+__all__ = ["novels", "auth", "sources", "credentials"]

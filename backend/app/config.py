@@ -9,7 +9,7 @@ import os
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/soyosaki"
+    DATABASE_URL: str = "sqlite:///./soyosaki.db"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
