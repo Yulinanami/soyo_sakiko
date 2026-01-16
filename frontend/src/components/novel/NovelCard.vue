@@ -69,7 +69,11 @@ watch(coverImageUrl, () => {
 });
 
 const formattedDate = computed(() => {
-  const date = new Date(props.novel.published_at);
+  const rawDate = props.novel.published_at || props.novel.updated_at || '';
+  const date = new Date(rawDate);
+  if (Number.isNaN(date.getTime())) {
+    return '未知日期';
+  }
   return date.toLocaleDateString('zh-CN');
 });
 

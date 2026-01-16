@@ -149,6 +149,13 @@ function goBack() {
         </button>
         <h1 class="mt-4 mb-2 text-2xl md:text-3xl font-bold">{{ novel.title }}</h1>
         <p class="opacity-90 mb-2">作者: {{ novel.author }}</p>
+        <a
+          :href="novel.source_url"
+          target="_blank"
+          class="inline-block text-sm text-white/90 hover:text-white underline-offset-4 hover:underline mb-2"
+        >
+          在 {{ source.toUpperCase() }} 查看原文
+        </a>
         <div class="flex gap-4 text-sm opacity-80">
           <span class="bg-white/20 px-2 py-0.5 rounded">{{ source.toUpperCase() }}</span>
           <span v-if="novel.word_count">{{ novel.word_count.toLocaleString() }} 字</span>
@@ -204,13 +211,7 @@ function goBack() {
         >
           ← 上一章
         </button>
-        <a 
-          :href="novel.source_url" 
-          target="_blank" 
-          class="text-soyo-dark hover:underline"
-        >
-          在 {{ source.toUpperCase() }} 查看原文
-        </a>
+        <span class="text-gray-500 text-sm">{{ source.toUpperCase() }}</span>
         <button 
           @click="nextChapter" 
           :disabled="currentChapter >= (novel.chapter_count || 1)"

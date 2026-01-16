@@ -155,6 +155,11 @@ class AO3Adapter(BaseAdapter):
             except:
                 return ""
 
+        published_at = to_iso_date(getattr(work, "date_published", None))
+        updated_at = to_iso_date(getattr(work, "date_updated", None))
+        if not published_at:
+            published_at = updated_at
+
         return Novel(
             id=str(work.id),
             source=NovelSource.AO3,
@@ -168,8 +173,8 @@ class AO3Adapter(BaseAdapter):
             chapter_count=getattr(work, "nchapters", 1),
             kudos=getattr(work, "kudos", 0),
             hits=getattr(work, "hits", 0),
-            published_at=to_iso_date(getattr(work, "date_published", None)),
-            updated_at=to_iso_date(getattr(work, "date_updated", None)),
+            published_at=published_at,
+            updated_at=updated_at,
             source_url=work.url,
             is_complete=getattr(work, "complete", None),
         )
