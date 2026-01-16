@@ -1,13 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import type { Novel } from '../../types/novel';
+import { useFavoritesStore } from '../../stores/favorites';
+import { useUserStore } from '../../stores/user';
+import { useRouter } from 'vue-router';
 import ao3Logo from '../../assets/ao3.png';
 import pixivLogo from '../../assets/pixiv.png';
 import lofterLogo from '../../assets/lofter.png';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   novel: Novel;
-}>();
+  showFavoriteAction?: boolean;
+  footerNote?: string;
+}>(), {
+  showFavoriteAction: true,
+  footerNote: '',
+});
+
+const favoritesStore = useFavoritesStore();
+const userStore = useUserStore();
+const router = useRouter();
 
 // API base URL
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/+$/, '');
@@ -42,6 +54,8 @@ const lofterDomains = [
 ];
 
 const coverLoaded = ref(false);
+const favoriteLoading = ref(false);
+const isFavorite = computed(() => favoritesStore.isFavorite(props.novel));
 
 const coverImageUrl = computed(() => {
   if (!props.novel.cover_image) return null;
@@ -68,6 +82,12 @@ watch(coverImageUrl, () => {
   coverLoaded.value = false;
 });
 
+onMounted(() => {
+  if (userStore.isLoggedIn && !favoritesStore.loaded) {
+    favoritesStore.fetchFavorites();
+  }
+});
+
 const formattedDate = computed(() => {
   const rawDate = props.novel.published_at || props.novel.updated_at || '';
   const date = new Date(rawDate);
@@ -91,6 +111,41 @@ function isHighlightTag(tag: string): boolean {
 function rememberListScroll() {
   sessionStorage.setItem('soyosaki:listScrollY', String(window.scrollY));
   sessionStorage.setItem('soyosaki:preserveList', '1');
+  try {
+    const cacheKey = `soyosaki:novel:${props.novel.source}:${props.novel.id}`;
+    const payload = {
+      title: props.novel.title,
+      author: props.novel.author,
+      cover_image: props.novel.cover_image,
+      source_url: props.novel.source_url,
+      tags: props.novel.tags,
+      rating: props.novel.rating,
+      word_count: props.novel.word_count,
+      chapter_count: props.novel.chapter_count,
+      kudos: props.novel.kudos,
+      hits: props.novel.hits,
+      is_complete: props.novel.is_complete,
+    };
+    sessionStorage.setItem(cacheKey, JSON.stringify(payload));
+  } catch {
+    // Ignore storage errors.
+  }
+}
+
+async function toggleFavorite(event: Event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (!userStore.isLoggedIn) {
+    router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath, reason: 'favorites' } });
+    return;
+  }
+  if (favoriteLoading.value) return;
+  favoriteLoading.value = true;
+  try {
+    await favoritesStore.toggleFavorite(props.novel);
+  } finally {
+    favoriteLoading.value = false;
+  }
 }
 </script>
 
@@ -169,14 +224,29 @@ function rememberListScroll() {
           <span class="ml-auto">{{ formattedDate }}</span>
         </div>
         
-        <div 
-          v-if="novel.is_complete !== undefined"
-          :class="[
-            'inline-block mt-3 text-xs px-3 py-1 rounded-full',
-            novel.is_complete ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-600'
-          ]"
-        >
-          {{ novel.is_complete ? '已完结' : '连载中' }}
+        <div class="mt-3 flex items-center gap-2">
+          <span
+            v-if="novel.is_complete !== undefined"
+            :class="[
+              'text-xs px-3 py-1 rounded-full',
+              novel.is_complete ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-600'
+            ]"
+          >
+            {{ novel.is_complete ? '已完结' : '连载中' }}
+          </span>
+          <button
+            v-if="showFavoriteAction"
+            type="button"
+            class="text-xs px-3 py-1 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+            :title="userStore.isLoggedIn ? (isFavorite ? '取消收藏' : '收藏') : '登录后可收藏'"
+            @click="toggleFavorite"
+          >
+            <span v-if="favoriteLoading" class="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
+            <span v-else>{{ isFavorite ? '已收藏' : '收藏' }}</span>
+          </button>
+        </div>
+        <div v-if="footerNote" class="mt-2 text-xs text-gray-500 text-right">
+          {{ footerNote }}
         </div>
       </div>
     </router-link>

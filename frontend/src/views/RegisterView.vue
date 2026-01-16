@@ -7,7 +7,6 @@ const router = useRouter();
 const userStore = useUserStore();
 
 const username = ref('');
-const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const localError = ref('');
@@ -25,7 +24,7 @@ async function handleRegister() {
     return;
   }
   
-  const success = await userStore.register(username.value, email.value, password.value);
+  const success = await userStore.register(username.value, password.value);
   if (success) {
     router.push('/');
   }
@@ -46,18 +45,6 @@ async function handleRegister() {
             v-model="username" 
             type="text" 
             placeholder="请输入用户名"
-            required
-            class="input"
-          />
-        </div>
-        
-        <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">邮箱</label>
-          <input 
-            id="email"
-            v-model="email" 
-            type="email" 
-            placeholder="请输入邮箱"
             required
             class="input"
           />

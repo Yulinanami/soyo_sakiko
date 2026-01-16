@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { useUserStore } from '../stores/user';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,6 +32,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/history',
+      name: 'history',
+      component: () => import('../views/HistoryView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('../views/SettingsView.vue'),
@@ -46,9 +53,14 @@ const router = createRouter({
 
 // Navigation guard for protected routes
 router.beforeEach((to, _from, next) => {
-  const token = localStorage.getItem('token');
-  if (to.meta.requiresAuth && !token) {
-    next({ name: 'login', query: { redirect: to.fullPath } });
+  const userStore = useUserStore();
+  if (!userStore.token) {
+    userStore.syncFromStorage();
+  }
+  if (to.meta.requiresAuth && !userStore.token) {
+    const reason =
+      to.name === 'favorites' ? 'favorites' : to.name === 'history' ? 'history' : '';
+    next({ name: 'login', query: { redirect: to.fullPath, reason } });
   } else {
     next();
   }

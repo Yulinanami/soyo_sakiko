@@ -1,49 +1,51 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { favoritesApi } from '../services/api';
+import { computed, onMounted } from 'vue';
+import { useFavoritesStore } from '../stores/favorites';
 import NovelCard from '../components/novel/NovelCard.vue';
 import type { Novel } from '../types/novel';
 
 interface FavoriteItem {
   id: number;
-  novelId: string;
+  novel_id: string;
   source: string;
   title: string;
-  author: string;
-  coverUrl?: string;
-  createdAt: string;
+  author?: string;
+  cover_url?: string;
+  source_url?: string;
+  created_at: string;
 }
 
-const favorites = ref<FavoriteItem[]>([]);
-const loading = ref(true);
-const error = ref<string | null>(null);
+const favoritesStore = useFavoritesStore();
+const favorites = computed(() => favoritesStore.items);
+const loading = computed(() => favoritesStore.loading);
+const error = computed(() => favoritesStore.error);
 
 onMounted(async () => {
-  try {
-    favorites.value = await favoritesApi.getAll();
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : '加载收藏失败';
-  } finally {
-    loading.value = false;
-  }
+  await favoritesStore.fetchFavorites(true);
 });
 
 async function removeFavorite(id: number) {
   try {
-    await favoritesApi.remove(id);
-    favorites.value = favorites.value.filter(f => f.id !== id);
+    const target = favoritesStore.items.find((item) => item.id === id);
+    if (target) {
+      await favoritesStore.removeFavoriteByKey(target.source, target.novel_id);
+    }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '取消收藏失败';
+    console.warn('取消收藏失败', err);
   }
 }
 
-function toNovel(fav: FavoriteItem): Partial<Novel> {
+function toNovel(fav: FavoriteItem): Novel {
   return {
-    id: fav.novelId,
+    id: fav.novel_id,
     source: fav.source as Novel['source'],
     title: fav.title,
-    author: fav.author,
-    coverImage: fav.coverUrl,
+    author: fav.author || 'Unknown',
+    summary: '',
+    tags: [],
+    published_at: fav.created_at || '',
+    source_url: fav.source_url || '',
+    cover_image: fav.cover_url,
   };
 }
 </script>
@@ -70,7 +72,7 @@ function toNovel(fav: FavoriteItem): Partial<Novel> {
         
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div v-for="fav in favorites" :key="fav.id" class="relative group">
-            <NovelCard :novel="toNovel(fav) as Novel" />
+            <NovelCard :novel="toNovel(fav)" :show-favorite-action="false" />
             <button 
               class="absolute top-2 right-2 px-3 py-1 bg-red-500/90 text-white text-sm rounded
                      opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"

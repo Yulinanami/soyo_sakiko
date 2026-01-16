@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useUserStore } from './stores/user';
+import { useFavoritesStore } from './stores/favorites';
 import { useRouter } from 'vue-router';
 import ao3Logo from './assets/ao3.png';
 import pixivLogo from './assets/pixiv.png';
 import lofterLogo from './assets/lofter.png';
 
 const userStore = useUserStore();
+const favoritesStore = useFavoritesStore();
 const router = useRouter();
 const sidebarOpen = ref(true);
 
@@ -18,6 +20,18 @@ function handleLogout() {
   userStore.logout();
   router.push('/');
 }
+
+watch(
+  () => userStore.isLoggedIn,
+  (loggedIn) => {
+    if (loggedIn) {
+      favoritesStore.fetchFavorites();
+    } else {
+      favoritesStore.reset();
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -47,15 +61,22 @@ function handleLogout() {
           <span>首页</span>
         </router-link>
         
-        <template v-if="userStore.isLoggedIn">
-          <router-link 
-            to="/favorites" 
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko no-underline text-white transition-colors"
-          >
-            <span>❤️</span>
-            <span>我的收藏</span>
-          </router-link>
-        </template>
+        <router-link 
+          to="/favorites" 
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko no-underline text-white transition-colors"
+        >
+          <span>❤️</span>
+          <span>我的收藏</span>
+          <span v-if="!userStore.isLoggedIn" class="text-xs text-white/70">请登录</span>
+        </router-link>
+        <router-link
+          to="/history"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko no-underline text-white transition-colors"
+        >
+          <span>📖</span>
+          <span>阅读记录</span>
+          <span v-if="!userStore.isLoggedIn" class="text-xs text-white/70">请登录</span>
+        </router-link>
 
         <router-link
           to="/settings"

@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS: int = 100
     RATE_LIMIT_WINDOW: int = 60  # seconds
 
+    # Reading history
+    READING_HISTORY_TTL_DAYS: int = 30
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

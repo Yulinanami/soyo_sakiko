@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '../stores/user';
 
@@ -9,6 +9,15 @@ const userStore = useUserStore();
 
 const username = ref('');
 const password = ref('');
+const loginReason = computed(() => {
+  if (route.query.reason === 'favorites') {
+    return '请登录以查看收藏';
+  }
+  if (route.query.reason === 'history') {
+    return '请登录以查看阅读记录';
+  }
+  return '';
+});
 
 async function handleLogin() {
   const success = await userStore.login(username.value, password.value);
@@ -23,7 +32,10 @@ async function handleLogin() {
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-r from-primary to-secondary p-8">
     <div class="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md">
       <h1 class="text-center text-2xl font-bold text-gray-800 mb-2">🎸 登录</h1>
-      <p class="text-center text-gray-600 text-sm mb-8">登录以使用收藏和阅读记录功能</p>
+      <p class="text-center text-gray-600 text-sm mb-4">登录以使用收藏和阅读记录功能</p>
+      <p v-if="loginReason" class="text-center text-sm text-orange-600 mb-6">
+        {{ loginReason }}
+      </p>
       
       <form @submit.prevent="handleLogin" class="space-y-6">
         <div>

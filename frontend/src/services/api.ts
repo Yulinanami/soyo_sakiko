@@ -17,8 +17,10 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
+  if (token && token !== 'undefined' && token !== 'null') {
     config.headers.Authorization = `Bearer ${token}`;
+  } else if (token) {
+    localStorage.removeItem('token');
   }
   return config;
 });
@@ -82,17 +84,17 @@ export const novelApi = {
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
     const { data } = await api.post('/auth/login', credentials);
-    return data;
+    return normalizeAuthResponse(data);
   },
 
   register: async (info: RegisterRequest): Promise<AuthResponse> => {
     const { data } = await api.post('/auth/register', info);
-    return data;
+    return normalizeAuthResponse(data);
   },
 
   getProfile: async (): Promise<User> => {
     const { data } = await api.get('/auth/me');
-    return data;
+    return normalizeUser(data);
   },
 };
 
@@ -103,13 +105,28 @@ export const favoritesApi = {
     return data;
   },
 
-  add: async (novel: Partial<Novel>) => {
-    const { data } = await api.post('/user/favorites', novel);
+  add: async (payload: Record<string, any>) => {
+    const { data } = await api.post('/user/favorites', payload);
     return data;
   },
 
   remove: async (id: number) => {
     await api.delete(`/user/favorites/${id}`);
+  },
+};
+
+// History API
+export const historyApi = {
+  getAll: async () => {
+    const { data } = await api.get('/user/history');
+    return data;
+  },
+  record: async (payload: Record<string, any>) => {
+    const { data } = await api.post('/user/history', payload);
+    return data;
+  },
+  remove: async (id: number) => {
+    await api.delete(`/user/history/${id}`);
   },
 };
 
@@ -138,3 +155,27 @@ export const credentialsApi = {
 };
 
 export default api;
+
+export function setAuthToken(token: string | null) {
+  if (token && token !== 'undefined' && token !== 'null') {
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common.Authorization;
+  }
+}
+
+function normalizeUser(payload: any): User {
+  return {
+    id: payload.id,
+    username: payload.username,
+    createdAt: payload.created_at ?? payload.createdAt ?? '',
+  };
+}
+
+function normalizeAuthResponse(payload: any): AuthResponse {
+  return {
+    accessToken: payload.access_token ?? payload.accessToken,
+    tokenType: payload.token_type ?? payload.tokenType ?? 'bearer',
+    user: normalizeUser(payload.user ?? {}),
+  };
+}

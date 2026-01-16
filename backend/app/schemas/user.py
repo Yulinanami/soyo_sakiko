@@ -2,14 +2,12 @@
 User Schemas
 """
 
-from pydantic import BaseModel, EmailStr
-from typing import Optional
+from pydantic import BaseModel
 from datetime import datetime
 
 
 class UserBase(BaseModel):
     username: str
-    email: EmailStr
 
 
 class UserCreate(UserBase):
