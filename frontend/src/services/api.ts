@@ -130,14 +130,6 @@ export const historyApi = {
   },
 };
 
-// Sources API
-export const sourcesApi = {
-  getStatus: async () => {
-    const { data } = await api.get('/sources/status');
-    return data;
-  },
-};
-
 // Credential API
 export const credentialsApi = {
   start: async (source: string) => {

@@ -28,15 +28,6 @@ class CacheService:
                 print(f"Redis connection failed (cache disabled): {e}")
                 self._redis = None
 
-    async def disconnect(self):
-        """Disconnect from Redis"""
-        if self._redis:
-            try:
-                await self._redis.close()
-            except:
-                pass
-            self._redis = None
-
     async def get(self, key: str) -> Optional[Any]:
         """Get cached value"""
         try:
@@ -63,24 +54,6 @@ class CacheService:
         except Exception as e:
             print(f"Cache set error: {e}")
 
-    async def delete(self, key: str):
-        """Delete cached value"""
-        await self.connect()
-        try:
-            await self._redis.delete(key)
-        except Exception as e:
-            print(f"Cache delete error: {e}")
-
-    async def clear_pattern(self, pattern: str):
-        """Clear all keys matching pattern"""
-        await self.connect()
-        try:
-            keys = await self._redis.keys(pattern)
-            if keys:
-                await self._redis.delete(*keys)
-        except Exception as e:
-            print(f"Cache clear pattern error: {e}")
-
     @staticmethod
     def make_key(*parts) -> str:
         """Create cache key from parts"""
@@ -93,12 +66,6 @@ cache = CacheService()
 
 # Cache key patterns
 class CacheKeys:
-    @staticmethod
-    def novel_search(sources: list, tags: list, page: int, sort_by: str) -> str:
-        sources_str = ",".join(sorted(sources))
-        tags_str = ",".join(sorted(tags))
-        return cache.make_key("novels", "search", sources_str, tags_str, page, sort_by)
-
     @staticmethod
     def novel_detail(source: str, novel_id: str) -> str:
         return cache.make_key("novels", "detail", source, novel_id)

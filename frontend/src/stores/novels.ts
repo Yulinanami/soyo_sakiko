@@ -134,18 +134,6 @@ export const useNovelsStore = defineStore('novels', () => {
     await fetchNovels(false);
   }
 
-  function setFilters(sources: NovelSource[], tags: string[]) {
-    selectedSources.value = sources;
-    selectedTags.value = tags;
-    fetchNovels(true);
-  }
-
-  function setSort(by: typeof sortBy.value, order: typeof sortOrder.value) {
-    sortBy.value = by;
-    sortOrder.value = order;
-    fetchNovels(true);
-  }
-
   function rebuildNovels() {
     const combined: Novel[] = [];
     const seen = new Set<string>();
@@ -189,7 +177,5 @@ export const useNovelsStore = defineStore('novels', () => {
     // Actions
     fetchNovels,
     loadMore,
-    setFilters,
-    setSort,
   };
 });

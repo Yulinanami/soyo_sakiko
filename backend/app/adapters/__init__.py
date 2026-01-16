@@ -23,16 +23,10 @@ def get_adapter(source: NovelSource) -> BaseAdapter:
     return _adapters[source]
 
 
-def register_adapter(source: NovelSource, adapter: BaseAdapter):
-    """Register a new adapter"""
-    _adapters[source] = adapter
-
-
 __all__ = [
     "BaseAdapter",
     "AO3Adapter",
     "PixivAdapter",
     "LofterAdapter",
     "get_adapter",
-    "register_adapter",
 ]

@@ -13,7 +13,6 @@ from app.config import settings
 router = APIRouter()
 
 # Cache TTL settings (in seconds)
-SEARCH_CACHE_TTL = 300  # 5 minutes
 DETAIL_CACHE_TTL = 600  # 10 minutes
 CHAPTER_CACHE_TTL = 1800  # 30 minutes
 
