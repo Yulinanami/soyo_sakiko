@@ -11,12 +11,14 @@ import secrets
 import threading
 import time
 import re
+import logging
 from typing import Dict, Optional
 
-import httpx
+from app.services.http_client import get_sync_client
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
 
 PIXIV_CLIENT_ID = "MOBrBDS8blbauoSck0ZfDbtuzpyT"
 PIXIV_CLIENT_SECRET = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
@@ -76,6 +78,16 @@ class CredentialManager:
         if source == "pixiv":
             settings.PIXIV_REFRESH_TOKEN = ""
             self._write_env("PIXIV_REFRESH_TOKEN", "")
+            try:
+                from app.adapters import get_adapter
+                from app.schemas.novel import NovelSource
+
+                adapter = get_adapter(NovelSource.PIXIV)
+                reset = getattr(adapter, "reset", None)
+                if callable(reset):
+                    reset()
+            except Exception as exc:
+                logger.warning("Pixiv adapter reset failed: %s", exc)
         self._set_state(source, "idle", "凭证已清除")
 
     def _set_state(self, source: str, state: str, message: str) -> None:
@@ -107,6 +119,16 @@ class CredentialManager:
             if refresh_token:
                 settings.PIXIV_REFRESH_TOKEN = refresh_token
                 self._write_env("PIXIV_REFRESH_TOKEN", refresh_token)
+                try:
+                    from app.adapters import get_adapter
+                    from app.schemas.novel import NovelSource
+
+                    adapter = get_adapter(NovelSource.PIXIV)
+                    reset = getattr(adapter, "reset", None)
+                    if callable(reset):
+                        reset()
+                except Exception as exc:
+                    logger.warning("Pixiv adapter reset after login failed: %s", exc)
                 self._set_state("pixiv", "success", "Pixiv 登录成功")
             else:
                 self._set_state("pixiv", "error", "未获取到 Pixiv Refresh Token")
@@ -250,11 +272,11 @@ class CredentialManager:
         }
         headers = {"User-Agent": PIXIV_USER_AGENT}
 
-        with httpx.Client(timeout=30.0) as client:
-            response = client.post(PIXIV_TOKEN_URL, data=data, headers=headers)
-            response.raise_for_status()
-            payload = response.json()
-            return payload.get("refresh_token")
+        client = get_sync_client()
+        response = client.post(PIXIV_TOKEN_URL, data=data, headers=headers)
+        response.raise_for_status()
+        payload = response.json()
+        return payload.get("refresh_token")
 
     def _write_env(self, key: str, value: str) -> None:
         env_path = Path(__file__).resolve().parents[2] / ".env"

@@ -3,25 +3,24 @@ Lofter Adapter
 Uses DWR (Direct Web Remoting) API to search for novels by tag
 """
 
+import logging
 import time
-from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 
 from app.adapters.base import BaseAdapter
 from app.adapters.lofter_content import fetch_post_content
 from app.adapters.lofter_dynamic import search_dynamic_sync
-from app.adapters.lofter_common import merge_novel_fields
-from app.adapters.utils import novel_key
+from app.adapters.lofter_common import merge_novel_list
 from app.schemas.novel import Novel, NovelSource
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class LofterAdapter(BaseAdapter):
     """Adapter for Lofter platform"""
 
     source_name = "lofter"
-    _executor = ThreadPoolExecutor(max_workers=2)
-
     # SoyoSaki related tags on Lofter
     SOYOSAKI_TAGS = ["素祥", "祥素", "そよさき"]
     _dynamic_cache = {}
@@ -42,7 +41,7 @@ class LofterAdapter(BaseAdapter):
         """Search for novels by tags on Lofter"""
         cookie = self._get_cookie()
         if not cookie:
-            print("⚠️ Lofter: No cookie configured, skipping")
+            logger.warning("Lofter: no cookie configured, skipping")
             return []
 
         exclude_tags = exclude_tags or []
@@ -75,7 +74,7 @@ class LofterAdapter(BaseAdapter):
         offset = (page - 1) * page_size
 
         if not settings.LOFTER_DYNAMIC_ENABLED:
-            print("⚠️ Lofter: dynamic crawling disabled, skipping")
+            logger.warning("Lofter: dynamic crawling disabled, skipping")
             return []
 
         cache_key = self._dynamic_cache_key(primary_tag, ranking_type, exclude_tags)
@@ -98,17 +97,7 @@ class LofterAdapter(BaseAdapter):
         )
 
         merged = list(cached_items) if cached_items else []
-        index_map = {
-            novel_key(n.source, n.id): idx for idx, n in enumerate(merged)
-        }
-        for novel in ordered:
-            key = novel_key(novel.source, novel.id)
-            idx = index_map.get(key)
-            if idx is None:
-                index_map[key] = len(merged)
-                merged.append(novel)
-            else:
-                merge_novel_fields(merged[idx], novel)
+        index_map = merge_novel_list(merged, ordered)
 
         self._set_dynamic_cache(cache_key, merged, False)
 
@@ -166,5 +155,5 @@ class LofterAdapter(BaseAdapter):
             content = await self.run_in_executor(fetch_post_content, novel_id, cookie)
             return content
         except Exception as e:
-            print(f"Lofter content fetch error: {e}")
+            logger.exception("Lofter content fetch error")
             return f"<p>获取内容失败: {e}</p>"

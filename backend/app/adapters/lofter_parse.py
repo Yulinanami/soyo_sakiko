@@ -2,6 +2,7 @@
 Lofter parsing helpers.
 """
 
+import logging
 import re
 from datetime import datetime
 from typing import List, Optional
@@ -13,6 +14,8 @@ from app.adapters.lofter_common import (
     extract_post_id,
     normalize_lofter_image_url,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def parse_tag_page_html(
@@ -230,7 +233,7 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
                 if looks_like_post(data):
                     post_candidates.append((key, data))
 
-        print(f"📊 Lofter DWR: found {len(post_candidates)} post candidates")
+        logger.info("Lofter DWR: found %s post candidates", len(post_candidates))
 
         parsed_count = 0
         skipped_no_url = 0
@@ -343,17 +346,17 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
             novels.append(novel)
             parsed_count += 1
 
-        print(
-            f"📊 Lofter DWR stats: {parsed_count} parsed, {skipped_no_blog} skipped (no blog), {skipped_no_url} had no URL (used fallback)"
+        logger.info(
+            "Lofter DWR stats: %s parsed, %s skipped (no blog), %s had no URL (used fallback)",
+            parsed_count,
+            skipped_no_blog,
+            skipped_no_url,
         )
-        print(f"✅ Lofter: parsed {len(novels)} novels from response")
+        logger.info("Lofter: parsed %s novels from response", len(novels))
         return novels
 
     except Exception as e:
-        print(f"Lofter parse error: {e}")
-        import traceback
-
-        traceback.print_exc()
+        logger.exception("Lofter parse error")
         return []
 
 

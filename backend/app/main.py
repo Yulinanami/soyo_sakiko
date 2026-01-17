@@ -3,6 +3,8 @@ SoyoSaki 同人文聚合器后端
 FastAPI Application Entry Point
 """
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,6 +12,12 @@ from app.routers import novels, auth, sources, proxy, credentials, user
 from app.database import Base, engine
 import app.models  # noqa: F401
 from app.config import settings
+from app.services.http_client import close_async_client, close_sync_client
+
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 app = FastAPI(title="SoyoSaki API", description="素祥同人文聚合器 API", version="1.0.0")
 
@@ -34,6 +42,12 @@ app.include_router(user.router, prefix="/api/user", tags=["user"])
 @app.on_event("startup")
 def init_database() -> None:
     Base.metadata.create_all(bind=engine)
+
+
+@app.on_event("shutdown")
+async def shutdown_clients() -> None:
+    close_sync_client()
+    await close_async_client()
 
 
 @app.get("/")

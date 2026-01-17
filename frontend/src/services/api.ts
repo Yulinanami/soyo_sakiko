@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { Novel, NovelListResponse, NovelSearchParams } from '../types/novel';
 import type { AuthResponse, LoginRequest, RegisterRequest, User } from '../types/user';
+import type { FavoriteItem, HistoryItem } from '../types/user_data';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 
@@ -61,22 +62,22 @@ export const novelApi = {
     searchParams.append('sort_order', params.sortOrder ?? 'desc');
     
     const { data } = await api.get(`/novels?${searchParams.toString()}`);
-    return data;
+    return unwrapData<NovelListResponse>(data);
   },
 
   getDetail: async (source: string, id: string): Promise<Novel> => {
     const { data } = await api.get(`/novels/${source}/${id}`);
-    return data;
+    return unwrapData<Novel>(data);
   },
 
   getChapters: async (source: string, id: string) => {
     const { data } = await api.get(`/novels/${source}/${id}/chapters`);
-    return data;
+    return unwrapData<Record<string, any>[]>(data);
   },
 
   getChapterContent: async (source: string, id: string, chapter: number): Promise<string> => {
     const { data } = await api.get(`/novels/${source}/${id}/chapters/${chapter}`);
-    return data;
+    return unwrapData<string>(data);
   },
 };
 
@@ -84,30 +85,30 @@ export const novelApi = {
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
     const { data } = await api.post('/auth/login', credentials);
-    return normalizeAuthResponse(data);
+    return normalizeAuthResponse(unwrapData(data));
   },
 
   register: async (info: RegisterRequest): Promise<AuthResponse> => {
     const { data } = await api.post('/auth/register', info);
-    return normalizeAuthResponse(data);
+    return normalizeAuthResponse(unwrapData(data));
   },
 
   getProfile: async (): Promise<User> => {
     const { data } = await api.get('/auth/me');
-    return normalizeUser(data);
+    return normalizeUser(unwrapData(data));
   },
 };
 
 // Favorites API
 export const favoritesApi = {
-  getAll: async () => {
+  getAll: async (): Promise<FavoriteItem[]> => {
     const { data } = await api.get('/user/favorites');
-    return data;
+    return unwrapData<FavoriteItem[]>(data);
   },
 
-  add: async (payload: Record<string, any>) => {
+  add: async (payload: Record<string, any>): Promise<FavoriteItem> => {
     const { data } = await api.post('/user/favorites', payload);
-    return data;
+    return unwrapData<FavoriteItem>(data);
   },
 
   remove: async (id: number) => {
@@ -117,13 +118,13 @@ export const favoritesApi = {
 
 // History API
 export const historyApi = {
-  getAll: async () => {
+  getAll: async (): Promise<HistoryItem[]> => {
     const { data } = await api.get('/user/history');
-    return data;
+    return unwrapData<HistoryItem[]>(data);
   },
-  record: async (payload: Record<string, any>) => {
+  record: async (payload: Record<string, any>): Promise<HistoryItem> => {
     const { data } = await api.post('/user/history', payload);
-    return data;
+    return unwrapData<HistoryItem>(data);
   },
   remove: async (id: number) => {
     await api.delete(`/user/history/${id}`);
@@ -134,15 +135,15 @@ export const historyApi = {
 export const credentialsApi = {
   start: async (source: string) => {
     const { data } = await api.post(`/credentials/${source}/start`);
-    return data;
+    return unwrapData(data);
   },
   status: async (source: string) => {
     const { data } = await api.get(`/credentials/${source}/status`);
-    return data;
+    return unwrapData(data);
   },
   clear: async (source: string) => {
     const { data } = await api.delete(`/credentials/${source}`);
-    return data;
+    return unwrapData(data);
   },
 };
 
@@ -170,4 +171,11 @@ function normalizeAuthResponse(payload: any): AuthResponse {
     tokenType: payload.token_type ?? payload.tokenType ?? 'bearer',
     user: normalizeUser(payload.user ?? {}),
   };
+}
+
+function unwrapData<T>(payload: any): T {
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return payload.data as T;
+  }
+  return payload as T;
 }

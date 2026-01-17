@@ -3,11 +3,13 @@ AO3 Adapter
 Uses ao3-api library for fetching fanfiction from Archive of Our Own
 """
 
+import logging
 from typing import List, Optional
-from concurrent.futures import ThreadPoolExecutor
 from app.adapters.base import BaseAdapter
-from app.adapters.utils import exclude, to_iso_date
+from app.adapters.utils import exclude, to_iso_date, with_retries
 from app.schemas.novel import Novel, NovelSource
+
+logger = logging.getLogger(__name__)
 
 # AO3 API is synchronous, we'll use run_in_executor
 try:
@@ -16,16 +18,13 @@ try:
     AO3_AVAILABLE = True
 except ImportError:
     AO3_AVAILABLE = False
-    print("Warning: AO3 library not installed. Run: pip install ao3-api")
+    logger.warning("AO3 library not installed. Run: pip install ao3-api")
 
 
 class AO3Adapter(BaseAdapter):
     """AO3 data source adapter"""
 
     source_name = "ao3"
-
-    # Use dedicated thread pool for AO3 operations
-    _executor = ThreadPoolExecutor(max_workers=2)
 
     # SoyoSaki related tags on AO3
     SOYOSAKI_TAGS = [
@@ -43,7 +42,7 @@ class AO3Adapter(BaseAdapter):
     ) -> List[Novel]:
         """Search for SoyoSaki works on AO3"""
         if not AO3_AVAILABLE:
-            print("⚠️ AO3: Library not available")
+            logger.warning("AO3 library not available")
             return []
 
         exclude_tags = exclude_tags or []
@@ -80,7 +79,22 @@ class AO3Adapter(BaseAdapter):
                 sort_column=self._map_sort(sort_by),
                 sort_direction="desc",
             )
-            search.update()
+            def _update() -> None:
+                search.update()
+
+            try:
+                with_retries(
+                    _update,
+                    retries=2,
+                    base_delay=0.8,
+                    max_delay=2.0,
+                    on_retry=lambda exc, attempt: logger.warning(
+                        "AO3 search retry %s after error: %s", attempt, exc
+                    ),
+                )
+            except Exception as e:
+                logger.warning("AO3 search update failed: %s", e)
+                return []
 
             novels = []
             start = (page - 1) * page_size
@@ -97,13 +111,13 @@ class AO3Adapter(BaseAdapter):
 
                     novel = self._convert_work(work)
                     novels.append(novel)
-                except Exception as e:
-                    print(f"Error converting work: {e}")
+                except Exception:
+                    logger.warning("AO3 work conversion failed")
                     continue
 
             return novels
         except Exception as e:
-            print(f"AO3 search error: {e}")
+            logger.warning("AO3 search error: %s", e)
             return []
 
     def _map_sort(self, sort_by: str) -> str:
@@ -139,13 +153,19 @@ class AO3Adapter(BaseAdapter):
         if not published_at:
             published_at = updated_at
 
+        summary = ""
+        try:
+            summary = work.summary or ""
+        except Exception:
+            summary = ""
+
         return Novel(
             id=str(work.id),
             source=NovelSource.AO3,
             title=work.title or "Untitled",
             author=author,
             author_url=author_url,
-            summary=work.summary or "",
+            summary=summary,
             tags=tags,
             rating=getattr(work, "rating", None),
             word_count=getattr(work, "words", None),
@@ -168,10 +188,21 @@ class AO3Adapter(BaseAdapter):
     def _get_detail_sync(self, novel_id: str) -> Optional[Novel]:
         """Synchronous get detail"""
         try:
-            work = AO3.Work(int(novel_id))
+            work = with_retries(
+                lambda: AO3.Work(int(novel_id)),
+                retries=2,
+                base_delay=0.6,
+                max_delay=2.0,
+                on_retry=lambda exc, attempt: logger.warning(
+                    "AO3 detail retry %s for %s after error: %s",
+                    attempt,
+                    novel_id,
+                    exc,
+                ),
+            )
             return self._convert_work(work)
-        except Exception as e:
-            print(f"Error fetching work {novel_id}: {e}")
+        except Exception:
+            logger.exception("AO3 detail fetch failed for %s", novel_id)
             return None
 
     async def get_chapters(self, novel_id: str) -> List[dict]:
@@ -184,13 +215,24 @@ class AO3Adapter(BaseAdapter):
     def _get_chapters_sync(self, novel_id: str) -> List[dict]:
         """Synchronous get chapters"""
         try:
-            work = AO3.Work(int(novel_id))
+            work = with_retries(
+                lambda: AO3.Work(int(novel_id)),
+                retries=2,
+                base_delay=0.6,
+                max_delay=2.0,
+                on_retry=lambda exc, attempt: logger.warning(
+                    "AO3 chapters retry %s for %s after error: %s",
+                    attempt,
+                    novel_id,
+                    exc,
+                ),
+            )
             chapters = []
             for i, chapter in enumerate(work.chapters, 1):
                 chapters.append({"number": i, "title": chapter.title or f"Chapter {i}"})
             return chapters
-        except Exception as e:
-            print(f"Error fetching chapters for {novel_id}: {e}")
+        except Exception:
+            logger.exception("AO3 chapters fetch failed for %s", novel_id)
             return []
 
     async def get_chapter_content(
@@ -209,11 +251,26 @@ class AO3Adapter(BaseAdapter):
     ) -> Optional[str]:
         """Synchronous get chapter content"""
         try:
-            work = AO3.Work(int(novel_id))
+            work = with_retries(
+                lambda: AO3.Work(int(novel_id)),
+                retries=2,
+                base_delay=0.6,
+                max_delay=2.0,
+                on_retry=lambda exc, attempt: logger.warning(
+                    "AO3 content retry %s for %s after error: %s",
+                    attempt,
+                    novel_id,
+                    exc,
+                ),
+            )
             if chapter_num <= len(work.chapters):
                 chapter = work.chapters[chapter_num - 1]
                 return chapter.text
             return None
-        except Exception as e:
-            print(f"Error fetching chapter {chapter_num} for {novel_id}: {e}")
+        except Exception:
+            logger.exception(
+                "AO3 chapter content fetch failed for %s (chapter %s)",
+                novel_id,
+                chapter_num,
+            )
             return None

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, toRef, watch } from 'vue';
 import type { Novel } from '../../types/novel';
 import { useFavoritesStore } from '../../stores/favorites';
 import { useUserStore } from '../../stores/user';
@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router';
 import ao3Logo from '../../assets/ao3.png';
 import pixivLogo from '../../assets/pixiv.png';
 import lofterLogo from '../../assets/lofter.png';
+import { useNovelMeta } from '../../composables/useNovelMeta';
 
 const props = withDefaults(defineProps<{
   novel: Novel;
@@ -20,6 +21,9 @@ const props = withDefaults(defineProps<{
 const favoritesStore = useFavoritesStore();
 const userStore = useUserStore();
 const router = useRouter();
+
+const novelRef = toRef(props, 'novel');
+const { formattedDate, truncatedSummary, isHighlightTag } = useNovelMeta(novelRef);
 
 // API base URL
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/+$/, '');
@@ -87,26 +91,6 @@ onMounted(() => {
     favoritesStore.fetchFavorites();
   }
 });
-
-const formattedDate = computed(() => {
-  const rawDate = props.novel.published_at || props.novel.updated_at || '';
-  const date = new Date(rawDate);
-  if (Number.isNaN(date.getTime())) {
-    return '未知日期';
-  }
-  return date.toLocaleDateString('zh-CN');
-});
-
-const truncatedSummary = computed(() => {
-  if (!props.novel.summary) return '';
-  return props.novel.summary.length > 150 
-    ? props.novel.summary.slice(0, 150) + '...' 
-    : props.novel.summary;
-});
-
-function isHighlightTag(tag: string): boolean {
-  return tag.includes('素') || tag.includes('祥') || tag.includes('Soyo') || tag.includes('Sakiko');
-}
 
 function rememberListScroll() {
   sessionStorage.setItem('soyosaki:listScrollY', String(window.scrollY));

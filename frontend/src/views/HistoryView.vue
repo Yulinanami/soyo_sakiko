@@ -1,43 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { historyApi } from '../services/api';
+import { onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
 import NovelCard from '../components/novel/NovelCard.vue';
 import type { Novel } from '../types/novel';
+import type { HistoryItem } from '../types/user_data';
+import { useHistoryStore } from '../stores/history';
 
-interface HistoryItem {
-  id: number;
-  novel_id: string;
-  source: string;
-  title?: string;
-  author?: string;
-  cover_url?: string;
-  source_url?: string;
-  last_read_at: string;
-  last_chapter?: number;
-  progress?: number;
-}
-
-const history = ref<HistoryItem[]>([]);
-const loading = ref(true);
-const error = ref<string | null>(null);
+const historyStore = useHistoryStore();
+const { items, loading, error } = storeToRefs(historyStore);
 
 onMounted(async () => {
-  try {
-    history.value = await historyApi.getAll();
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : '加载阅读记录失败';
-  } finally {
-    loading.value = false;
-  }
+  await historyStore.fetchHistory();
 });
 
 async function removeHistory(id: number) {
-  try {
-    await historyApi.remove(id);
-    history.value = history.value.filter(item => item.id !== id);
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : '移除记录失败';
-  }
+  await historyStore.removeHistory(id);
 }
 
 function toNovel(item: HistoryItem): Novel {
@@ -73,7 +50,7 @@ function formatLastRead(date: string) {
   <div class="min-h-screen bg-gray-50">
     <header class="bg-gradient-to-r from-primary to-secondary text-white py-12 text-center">
       <h1 class="text-3xl font-bold mb-2">📖 阅读记录</h1>
-      <p>共 {{ history.length }} 条记录</p>
+      <p>共 {{ items.length }} 条记录</p>
     </header>
 
     <main class="py-8">
@@ -84,13 +61,13 @@ function formatLastRead(date: string) {
           {{ error }}
         </div>
 
-        <div v-else-if="history.length === 0" class="text-center py-16">
+        <div v-else-if="items.length === 0" class="text-center py-16">
           <p class="text-gray-500 mb-6">还没有阅读记录</p>
           <router-link to="/" class="btn-primary">去发现好文</router-link>
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div v-for="item in history" :key="item.id" class="relative group">
+          <div v-for="item in items" :key="item.id" class="relative group">
             <NovelCard
               :novel="toNovel(item)"
               :footer-note="`最近阅读: ${formatLastRead(item.last_read_at)}`"

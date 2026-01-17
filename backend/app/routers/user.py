@@ -3,7 +3,6 @@ User data router: favorites and reading history.
 """
 
 from datetime import datetime, timedelta
-from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -12,29 +11,26 @@ from app.config import settings
 from app.database import get_db
 from app.models.favorite import Favorite, ReadingHistory
 from app.routers.auth import get_current_user
-from app.schemas.user_data import (
-    FavoriteCreate,
-    FavoriteOut,
-    ReadingHistoryCreate,
-    ReadingHistoryOut,
-)
+from app.schemas.response import ApiResponse
+from app.schemas.user_data import FavoriteCreate, FavoriteOut, ReadingHistoryCreate, ReadingHistoryOut
 
 router = APIRouter()
 
 
-@router.get("/favorites", response_model=List[FavoriteOut])
+@router.get("/favorites", response_model=ApiResponse[list[FavoriteOut]])
 def list_favorites(
     db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):
-    return (
+    favorites = (
         db.query(Favorite)
         .filter(Favorite.user_id == current_user.id)
         .order_by(Favorite.created_at.desc())
         .all()
     )
+    return ApiResponse(data=[FavoriteOut.model_validate(item) for item in favorites])
 
 
-@router.post("/favorites", response_model=FavoriteOut)
+@router.post("/favorites", response_model=ApiResponse[FavoriteOut])
 def add_favorite(
     payload: FavoriteCreate,
     db: Session = Depends(get_db),
@@ -67,10 +63,10 @@ def add_favorite(
         db.add(favorite)
     db.commit()
     db.refresh(favorite)
-    return favorite
+    return ApiResponse(data=FavoriteOut.model_validate(favorite))
 
 
-@router.delete("/favorites/{favorite_id}")
+@router.delete("/favorites/{favorite_id}", response_model=ApiResponse[None])
 def delete_favorite(
     favorite_id: int,
     db: Session = Depends(get_db),
@@ -85,10 +81,10 @@ def delete_favorite(
         raise HTTPException(status_code=404, detail="Favorite not found")
     db.delete(favorite)
     db.commit()
-    return {"status": "ok"}
+    return ApiResponse()
 
 
-@router.get("/history", response_model=List[ReadingHistoryOut])
+@router.get("/history", response_model=ApiResponse[list[ReadingHistoryOut]])
 def list_history(
     db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):
@@ -105,10 +101,11 @@ def list_history(
     query = db.query(ReadingHistory).filter(ReadingHistory.user_id == current_user.id)
     if cutoff:
         query = query.filter(ReadingHistory.last_read_at >= cutoff)
-    return query.order_by(ReadingHistory.last_read_at.desc()).all()
+    records = query.order_by(ReadingHistory.last_read_at.desc()).all()
+    return ApiResponse(data=[ReadingHistoryOut.model_validate(item) for item in records])
 
 
-@router.post("/history", response_model=ReadingHistoryOut)
+@router.post("/history", response_model=ApiResponse[ReadingHistoryOut])
 def record_history(
     payload: ReadingHistoryCreate,
     db: Session = Depends(get_db),
@@ -147,10 +144,10 @@ def record_history(
         db.add(record)
     db.commit()
     db.refresh(record)
-    return record
+    return ApiResponse(data=ReadingHistoryOut.model_validate(record))
 
 
-@router.delete("/history/{history_id}")
+@router.delete("/history/{history_id}", response_model=ApiResponse[None])
 def delete_history(
     history_id: int,
     db: Session = Depends(get_db),
@@ -167,4 +164,4 @@ def delete_history(
         raise HTTPException(status_code=404, detail="History not found")
     db.delete(record)
     db.commit()
-    return {"status": "ok"}
+    return ApiResponse()

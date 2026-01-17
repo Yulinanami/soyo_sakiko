@@ -3,7 +3,8 @@ Adapter utilities.
 """
 
 import re
-from typing import Any, Iterable
+import time
+from typing import Any, Callable, Iterable, Optional, Tuple, Type
 
 
 _SURROGATE_RE = re.compile(r"[\ud800-\udfff]")
@@ -61,3 +62,29 @@ def to_iso_date(date_val: Any) -> str:
 
 def novel_key(source: Any, novel_id: Any) -> str:
     return f"{source}:{novel_id}"
+
+
+def with_retries(
+    func: Callable[[], Any],
+    *,
+    retries: int = 2,
+    base_delay: float = 0.6,
+    max_delay: float = 2.0,
+    exceptions: Tuple[Type[BaseException], ...] = (Exception,),
+    on_retry: Optional[Callable[[BaseException, int], None]] = None,
+) -> Any:
+    last_error: Optional[BaseException] = None
+    for attempt in range(retries + 1):
+        try:
+            return func()
+        except exceptions as exc:
+            last_error = exc
+            if attempt >= retries:
+                break
+            if on_retry:
+                on_retry(exc, attempt + 1)
+            delay = min(base_delay * (2 ** attempt), max_delay)
+            time.sleep(delay)
+    if last_error:
+        raise last_error
+    return func()

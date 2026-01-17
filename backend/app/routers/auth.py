@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, AuthResponse, User as UserSchema, UserLogin
+from app.schemas.response import ApiResponse
 from app.config import settings
 
 router = APIRouter()
@@ -65,7 +66,7 @@ async def get_current_user(
     return user
 
 
-@router.post("/register", response_model=AuthResponse)
+@router.post("/register", response_model=ApiResponse[AuthResponse])
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user"""
     # Check if username exists
@@ -84,10 +85,12 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     # Generate token
     access_token = create_access_token(data={"sub": user.id})
 
-    return AuthResponse(access_token=access_token, user=UserSchema.model_validate(user))
+    return ApiResponse(
+        data=AuthResponse(access_token=access_token, user=UserSchema.model_validate(user))
+    )
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post("/login", response_model=ApiResponse[AuthResponse])
 async def login(payload: UserLogin, db: Session = Depends(get_db)):
     """Login user"""
     user = db.query(User).filter(User.username == payload.username).first()
@@ -107,10 +110,12 @@ async def login(payload: UserLogin, db: Session = Depends(get_db)):
 
     access_token = create_access_token(data={"sub": user.id})
 
-    return AuthResponse(access_token=access_token, user=UserSchema.model_validate(user))
+    return ApiResponse(
+        data=AuthResponse(access_token=access_token, user=UserSchema.model_validate(user))
+    )
 
 
-@router.get("/me", response_model=UserSchema)
+@router.get("/me", response_model=ApiResponse[UserSchema])
 async def get_me(current_user: User = Depends(get_current_user)):
     """Get current user profile"""
-    return UserSchema.model_validate(current_user)
+    return ApiResponse(data=UserSchema.model_validate(current_user))

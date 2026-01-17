@@ -5,7 +5,7 @@ Lofter shared helpers.
 import re
 from typing import List
 
-from app.adapters.utils import sanitize
+from app.adapters.utils import novel_key, sanitize
 from app.schemas.novel import Novel
 
 
@@ -132,3 +132,21 @@ def merge_novel_fields(existing: Novel, incoming: Novel) -> bool:
         existing.tags = incoming.tags
         updated = True
     return updated
+
+
+def merge_novel_list(
+    novels: List[Novel],
+    incoming: List[Novel],
+    index_map: dict | None = None,
+) -> dict:
+    if index_map is None:
+        index_map = {novel_key(n.source, n.id): idx for idx, n in enumerate(novels)}
+    for novel in incoming:
+        key = novel_key(novel.source, novel.id)
+        idx = index_map.get(key)
+        if idx is None:
+            index_map[key] = len(novels)
+            novels.append(novel)
+        else:
+            merge_novel_fields(novels[idx], novel)
+    return index_map

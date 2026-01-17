@@ -2,25 +2,15 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { favoritesApi } from '../services/api';
 import type { Novel } from '../types/novel';
-
-interface FavoriteItem {
-  id: number;
-  novel_id: string;
-  source: string;
-  title: string;
-  author?: string;
-  cover_url?: string;
-  source_url?: string;
-  created_at: string;
-}
+import type { FavoriteItem } from '../types/user_data';
+import { useAsyncState } from '../composables/useAsyncState';
 
 const buildKey = (source: string, novelId: string) => `${source}:${novelId}`;
 
 export const useFavoritesStore = defineStore('favorites', () => {
   const items = ref<FavoriteItem[]>([]);
-  const loading = ref(false);
+  const { loading, error, start, stop, setError } = useAsyncState();
   const loaded = ref(false);
-  const error = ref<string | null>(null);
   const itemMap = ref<Record<string, FavoriteItem>>({});
 
   function setItems(list: FavoriteItem[]) {
@@ -35,15 +25,14 @@ export const useFavoritesStore = defineStore('favorites', () => {
   async function fetchFavorites(force = false) {
     if (loading.value) return;
     if (loaded.value && !force) return;
-    loading.value = true;
-    error.value = null;
+    start();
     try {
       const data = await favoritesApi.getAll();
       setItems(data);
     } catch (err) {
-      error.value = err instanceof Error ? err.message : '加载收藏失败';
+      setError(err instanceof Error ? err.message : '加载收藏失败');
     } finally {
-      loading.value = false;
+      stop();
     }
   }
 
@@ -92,7 +81,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
     items.value = [];
     itemMap.value = {};
     loaded.value = false;
-    error.value = null;
+    setError(null);
   }
 
   return {

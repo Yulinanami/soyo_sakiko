@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.services.credential_service import credential_manager
 from app.config import settings
+from app.schemas.response import ApiResponse
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ def _serialize_state(source: str):
     }
 
 
-@router.post("/{source}/start")
+@router.post("/{source}/start", response_model=ApiResponse[dict])
 async def start_credential_flow(source: str):
     if source not in ("lofter", "pixiv"):
         raise HTTPException(status_code=404, detail="Unsupported source")
@@ -34,19 +35,19 @@ async def start_credential_flow(source: str):
         credential_manager.start_lofter()
     else:
         credential_manager.start_pixiv()
-    return _serialize_state(source)
+    return ApiResponse(data=_serialize_state(source))
 
 
-@router.get("/{source}/status")
+@router.get("/{source}/status", response_model=ApiResponse[dict])
 async def credential_status(source: str):
     if source not in ("lofter", "pixiv"):
         raise HTTPException(status_code=404, detail="Unsupported source")
-    return _serialize_state(source)
+    return ApiResponse(data=_serialize_state(source))
 
 
-@router.delete("/{source}")
+@router.delete("/{source}", response_model=ApiResponse[dict])
 async def clear_credentials(source: str):
     if source not in ("lofter", "pixiv"):
         raise HTTPException(status_code=404, detail="Unsupported source")
     credential_manager.clear(source)
-    return _serialize_state(source)
+    return ApiResponse(data=_serialize_state(source))

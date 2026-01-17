@@ -5,48 +5,55 @@ Pixiv requires OAuth authentication with a refresh token.
 Users need to obtain their refresh token using: https://gist.github.com/ZipFile/c9ebedb224406f4f11845ab700124362
 """
 
+import logging
 from typing import List, Optional
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 
 from app.adapters.base import BaseAdapter
-from app.adapters.utils import exclude
+from app.adapters.utils import exclude, with_retries
 from app.schemas.novel import Novel, NovelSource
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class PixivAdapter(BaseAdapter):
     """Adapter for Pixiv novel data source"""
 
     def __init__(self):
+        super().__init__()
         self._api = None
-        self._executor = ThreadPoolExecutor(max_workers=2)
-        self._initialized = False
+        self._token = None
+
+    def reset(self) -> None:
+        """Clear cached API client so credentials are re-read."""
+        self._api = None
+        self._token = None
 
     def _init_api(self):
         """Initialize Pixiv API with refresh token"""
-        if self._initialized:
-            return self._api is not None
-
-        self._initialized = True
-
         refresh_token = settings.PIXIV_REFRESH_TOKEN
         if not refresh_token:
-            print("⚠️ Pixiv: No refresh token configured")
+            logger.warning("Pixiv: no refresh token configured")
+            self._api = None
+            self._token = None
             return False
+        if self._api is not None and self._token == refresh_token:
+            return True
 
         try:
             from pixivpy3 import AppPixivAPI
 
             self._api = AppPixivAPI()
             self._api.auth(refresh_token=refresh_token)
-            print("✅ Pixiv: API authenticated successfully")
+            self._token = refresh_token
+            logger.info("Pixiv API authenticated successfully")
             return True
         except ImportError:
-            print("❌ Pixiv: pixivpy3 not installed. Run: pip install pixivpy3")
+            logger.warning("Pixiv: pixivpy3 not installed. Run: pip install pixivpy3")
             return False
         except Exception as e:
-            print(f"❌ Pixiv: Authentication failed: {e}")
+            logger.exception("Pixiv authentication failed")
             self._api = None
             return False
 
@@ -78,11 +85,24 @@ class PixivAdapter(BaseAdapter):
                 for tag in search_tags:
                     try:
                         # Search for novels with the tag
-                        result = self._api.search_novel(
-                            word=tag,
-                            sort="date_desc" if sort_by == "date" else "popular_desc",
-                            search_target="partial_match_for_tags",
-                            offset=offset,  # Use offset for pagination
+                        result = with_retries(
+                            lambda: self._api.search_novel(
+                                word=tag,
+                                sort="date_desc"
+                                if sort_by == "date"
+                                else "popular_desc",
+                                search_target="partial_match_for_tags",
+                                offset=offset,  # Use offset for pagination
+                            ),
+                            retries=2,
+                            base_delay=0.8,
+                            max_delay=2.0,
+                            on_retry=lambda exc, attempt: logger.warning(
+                                "Pixiv search retry %s for tag %s after error: %s",
+                                attempt,
+                                tag,
+                                exc,
+                            ),
                         )
 
                         for novel_data in result.get("novels", []):
@@ -97,14 +117,14 @@ class PixivAdapter(BaseAdapter):
                                 continue
                             all_novels.append(self._parse_novel(novel_data))
                     except Exception as e:
-                        print(f"Pixiv search error for tag '{tag}': {e}")
+                        logger.exception("Pixiv search error for tag %s", tag)
                         continue
 
                 # Sort by date and return page_size items
                 all_novels.sort(key=lambda x: x.published_at or "", reverse=True)
                 return all_novels[:page_size]
             except Exception as e:
-                print(f"Pixiv search error: {e}")
+                logger.exception("Pixiv search error")
                 return []
 
         return await self.run_in_executor(_search)
@@ -116,12 +136,23 @@ class PixivAdapter(BaseAdapter):
 
         def _get_detail():
             try:
-                result = self._api.novel_detail(int(novel_id))
+                result = with_retries(
+                    lambda: self._api.novel_detail(int(novel_id)),
+                    retries=2,
+                    base_delay=0.6,
+                    max_delay=2.0,
+                    on_retry=lambda exc, attempt: logger.warning(
+                        "Pixiv detail retry %s for %s after error: %s",
+                        attempt,
+                        novel_id,
+                        exc,
+                    ),
+                )
                 if "novel" in result:
                     return self._parse_novel(result["novel"])
                 return None
             except Exception as e:
-                print(f"Pixiv detail error: {e}")
+                logger.exception("Pixiv detail error for %s", novel_id)
                 return None
 
         return await self.run_in_executor(_get_detail)
@@ -139,7 +170,18 @@ class PixivAdapter(BaseAdapter):
 
         def _get_content():
             try:
-                result = self._api.novel_text(int(novel_id))
+                result = with_retries(
+                    lambda: self._api.novel_text(int(novel_id)),
+                    retries=2,
+                    base_delay=0.6,
+                    max_delay=2.0,
+                    on_retry=lambda exc, attempt: logger.warning(
+                        "Pixiv content retry %s for %s after error: %s",
+                        attempt,
+                        novel_id,
+                        exc,
+                    ),
+                )
                 if "novel_text" in result:
                     # Convert newlines to HTML paragraphs
                     text = result["novel_text"]
@@ -148,7 +190,7 @@ class PixivAdapter(BaseAdapter):
                     return html
                 return None
             except Exception as e:
-                print(f"Pixiv content error: {e}")
+                logger.exception("Pixiv content error for %s", novel_id)
                 return None
 
         return await self.run_in_executor(_get_content)

@@ -56,6 +56,7 @@ export const useNovelsStore = defineStore('novels', () => {
       total.value = 0;
       hasMore.value = false;
       loading.value = false;
+      loadingSources.value = { ao3: false, pixiv: false, lofter: false };
       return;
     }
 
@@ -65,6 +66,9 @@ export const useNovelsStore = defineStore('novels', () => {
       hasMore.value = false;
       loading.value = false;
       novels.value = [];
+      selectedSources.value.forEach((source) => {
+        loadingSources.value[source] = false;
+      });
       return;
     }
 
@@ -77,21 +81,25 @@ export const useNovelsStore = defineStore('novels', () => {
     const updateAggregates = () => {
       rebuildNovels();
       hasMore.value = selectedSources.value.some(source => hasMoreBySource.value[source]);
-      total.value = novels.value.length + (hasMore.value ? pageSize.value : 0);
+      total.value = novels.value.length;
       loading.value = selectedSources.value.some(source => loadingSources.value[source]);
     };
 
     try {
+      const baseParams: Omit<NovelSearchParams, 'sources'> = {
+        tags: selectedTags.value,
+        excludeTags: excludeTags.value,
+        page: currentPage.value,
+        pageSize: pageSize.value,
+        sortBy: sortBy.value,
+        sortOrder: sortOrder.value,
+      };
+
       await Promise.allSettled(
         selectedSources.value.map(async (source) => {
           const params: NovelSearchParams = {
+            ...baseParams,
             sources: [source],
-            tags: selectedTags.value,
-            excludeTags: excludeTags.value,
-            page: currentPage.value,
-            pageSize: pageSize.value,
-            sortBy: sortBy.value,
-            sortOrder: sortOrder.value,
           };
 
           try {
@@ -125,6 +133,13 @@ export const useNovelsStore = defineStore('novels', () => {
       );
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取小说列表失败';
+    } finally {
+      if (activeRequestId === requestId) {
+        selectedSources.value.forEach((source) => {
+          loadingSources.value[source] = false;
+        });
+        loading.value = false;
+      }
     }
   }
 

@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # Logging
+    LOG_LEVEL: str = "INFO"
+
+    # Adapter concurrency (per adapter pool)
+    ADAPTER_MAX_WORKERS: int = 8
+
     # JWT
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
@@ -28,12 +34,12 @@ class Settings(BaseSettings):
     # Lofter (optional) - requires login cookie
     LOFTER_COOKIE: str = ""
     LOFTER_CAPTTOKEN: str = ""
-    LOFTER_DYNAMIC_ENABLED: bool = False
-    LOFTER_DYNAMIC_HEADLESS: bool = True
-    LOFTER_DYNAMIC_MAX_ITEMS: int = 30
-    LOFTER_DYNAMIC_MAX_SCROLLS: int = 8
-    LOFTER_DYNAMIC_SCROLL_WAIT_MS: int = 1200
-    LOFTER_DYNAMIC_INITIAL_WAIT_MS: int = 1500
+    LOFTER_DYNAMIC_ENABLED: bool = False  # enable Playwright crawling
+    LOFTER_DYNAMIC_HEADLESS: bool = True  # headless browser for Playwright
+    LOFTER_DYNAMIC_MAX_ITEMS: int = 30  # per-search target items
+    LOFTER_DYNAMIC_MAX_SCROLLS: int = 8  # max scrolls per crawl
+    LOFTER_DYNAMIC_SCROLL_WAIT_MS: int = 1200  # wait after each scroll
+    LOFTER_DYNAMIC_INITIAL_WAIT_MS: int = 1500  # initial load wait
     LOFTER_MAX_PAGE_SIZE: int = 30
     LOFTER_DYNAMIC_CACHE_TTL: int = 300
 

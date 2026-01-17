@@ -1,28 +1,27 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { User } from '../types/user';
 import { authApi, setAuthToken } from '../services/api';
 import type { AxiosError } from 'axios';
+import { useAsyncState } from '../composables/useAsyncState';
 
 export const useUserStore = defineStore('user', () => {
   // State
   const user = ref<User | null>(null);
   const token = ref<string | null>(readToken());
-  const loading = ref(false);
-  const error = ref<string | null>(null);
+  const { loading, error, start, stop, setError } = useAsyncState();
 
   // Computed
   const isLoggedIn = computed(() => !!token.value);
 
   // Actions
   async function login(username: string, password: string) {
-    loading.value = true;
-    error.value = null;
+    start();
 
     try {
       const response = await authApi.login({ username, password });
       if (!response.accessToken) {
-        error.value = '登录失败，请重试';
+        setError('登录失败，请重试');
         return false;
       }
       token.value = response.accessToken;
@@ -33,21 +32,20 @@ export const useUserStore = defineStore('user', () => {
       return true;
     } catch (err) {
       const axiosError = err as AxiosError<{ detail?: string }>;
-      error.value = axiosError.response?.data?.detail || '登录失败';
+      setError(axiosError.response?.data?.detail || '登录失败');
       return false;
     } finally {
-      loading.value = false;
+      stop();
     }
   }
 
   async function register(username: string, password: string) {
-    loading.value = true;
-    error.value = null;
+    start();
 
     try {
       const response = await authApi.register({ username, password });
       if (!response.accessToken) {
-        error.value = '注册失败，请重试';
+        setError('注册失败，请重试');
         return false;
       }
       token.value = response.accessToken;
@@ -58,10 +56,10 @@ export const useUserStore = defineStore('user', () => {
       return true;
     } catch (err) {
       const axiosError = err as AxiosError<{ detail?: string }>;
-      error.value = axiosError.response?.data?.detail || '注册失败';
+      setError(axiosError.response?.data?.detail || '注册失败');
       return false;
     } finally {
-      loading.value = false;
+      stop();
     }
   }
 

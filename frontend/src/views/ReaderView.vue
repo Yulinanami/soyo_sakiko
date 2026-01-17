@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { novelApi, historyApi } from '../services/api';
+import { novelApi } from '../services/api';
 import type { Novel } from '../types/novel';
 import { useUserStore } from '../stores/user';
 import { useFavoritesStore } from '../stores/favorites';
+import { useHistoryStore } from '../stores/history';
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const favoritesStore = useFavoritesStore();
+const historyStore = useHistoryStore();
 
 const novel = ref<Novel | null>(null);
 const chapterContent = ref<string>('');
@@ -115,7 +117,8 @@ async function recordHistory(chapter: number) {
     ? Math.min(100, Math.round((chapter / totalChapters) * 100))
     : 0;
   try {
-    await historyApi.record({
+    await historyStore.recordHistory(
+      {
       novel_id: novel.value.id,
       source: novel.value.source,
       title: novel.value.title,
@@ -124,7 +127,9 @@ async function recordHistory(chapter: number) {
       source_url: novel.value.source_url,
       last_chapter: chapter,
       progress,
-    });
+      },
+      { silent: true }
+    );
   } catch {
     // Ignore history errors to avoid blocking reading.
   }

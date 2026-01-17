@@ -8,17 +8,22 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, List, Optional
 
 from app.schemas.novel import Novel
+from app.config import settings
 
 
 class BaseAdapter(ABC):
     """Abstract base class for data source adapters"""
 
     source_name: str
-    _executor: Optional[ThreadPoolExecutor] = None
+    max_workers: Optional[int] = None
+
+    def __init__(self) -> None:
+        self._executor: Optional[ThreadPoolExecutor] = None
 
     def _get_executor(self) -> ThreadPoolExecutor:
         if self._executor is None:
-            self._executor = ThreadPoolExecutor(max_workers=2)
+            workers = self.max_workers or settings.ADAPTER_MAX_WORKERS
+            self._executor = ThreadPoolExecutor(max_workers=workers)
         return self._executor
 
     async def run_in_executor(self, func: Callable[..., Any], *args: Any) -> Any:

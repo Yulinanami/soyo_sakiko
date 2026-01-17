@@ -3,10 +3,13 @@ Redis Cache Service
 """
 
 import json
+import logging
 from typing import Optional, Any
 from datetime import timedelta
 import redis.asyncio as redis
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class CacheService:
@@ -25,7 +28,7 @@ class CacheService:
                 # Test connection
                 await self._redis.ping()
             except Exception as e:
-                print(f"Redis connection failed (cache disabled): {e}")
+                logger.warning("Redis connection failed (cache disabled): %s", e)
                 self._redis = None
 
     async def get(self, key: str) -> Optional[Any]:
@@ -39,7 +42,7 @@ class CacheService:
                 return json.loads(data)
             return None
         except Exception as e:
-            print(f"Cache get error: {e}")
+            logger.warning("Cache get error: %s", e)
             return None
 
     async def set(
@@ -52,7 +55,7 @@ class CacheService:
                 key, timedelta(seconds=ttl_seconds), json.dumps(value, default=str)
             )
         except Exception as e:
-            print(f"Cache set error: {e}")
+            logger.warning("Cache set error: %s", e)
 
     @staticmethod
     def make_key(*parts) -> str:

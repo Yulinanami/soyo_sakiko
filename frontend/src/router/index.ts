@@ -51,8 +51,7 @@ const router = createRouter({
   },
 });
 
-// Navigation guard for protected routes
-router.beforeEach((to, _from, next) => {
+function authGuard(to: any) {
   const userStore = useUserStore();
   if (!userStore.token) {
     userStore.syncFromStorage();
@@ -60,10 +59,12 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.requiresAuth && !userStore.token) {
     const reason =
       to.name === 'favorites' ? 'favorites' : to.name === 'history' ? 'history' : '';
-    next({ name: 'login', query: { redirect: to.fullPath, reason } });
-  } else {
-    next();
+    return { name: 'login', query: { redirect: to.fullPath, reason } };
   }
-});
+  return true;
+}
+
+// Navigation guard for protected routes
+router.beforeEach((to) => authGuard(to));
 
 export default router;

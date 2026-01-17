@@ -2,13 +2,15 @@
 Lofter dynamic crawling via Playwright.
 """
 
+import logging
 from typing import List, Optional
 
-from app.adapters.lofter_common import merge_novel_fields, parse_cookie_header
+from app.adapters.lofter_common import merge_novel_list, parse_cookie_header
 from app.adapters.lofter_parse import parse_dwr_response, parse_tag_page_html
-from app.adapters.utils import novel_key
 from app.config import settings
 from app.schemas.novel import Novel
+
+logger = logging.getLogger(__name__)
 
 
 def search_dynamic_sync(
@@ -27,7 +29,7 @@ def search_dynamic_sync(
     try:
         from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
     except ImportError:
-        print("⚠️ Lofter: Playwright not installed, skip dynamic crawl")
+        logger.warning("Lofter: Playwright not installed, skip dynamic crawl")
         return []
 
     try:
@@ -60,8 +62,11 @@ def search_dynamic_sync(
                 return
 
         with sync_playwright() as p:
+            headless = True
+            if not settings.LOFTER_DYNAMIC_HEADLESS:
+                logger.info("Lofter: forcing headless mode to avoid browser popups")
             browser = p.chromium.launch(
-                headless=True,
+                headless=headless,
                 args=["--disable-blink-features=AutomationControlled"],
             )
             context = browser.new_context(
@@ -90,7 +95,7 @@ def search_dynamic_sync(
             try:
                 page.wait_for_selector("div.m-mlist", timeout=20000)
             except PWTimeout:
-                print("⚠️ Lofter: tag page did not load list in time")
+                logger.warning("Lofter: tag page did not load list in time")
             page.wait_for_timeout(initial_wait_ms)
 
             ordered: List[Novel] = []
@@ -110,26 +115,16 @@ def search_dynamic_sync(
                 parsed = parse_tag_page_html(
                     html, exclude_tags, ranking_type, limit=target_total
                 )
-                for novel in parsed:
-                    key = novel_key(novel.source, novel.id)
-                    idx = index_map.get(key)
-                    if idx is None:
-                        index_map[key] = len(ordered)
-                        ordered.append(novel)
-                    else:
-                        merge_novel_fields(ordered[idx], novel)
+                index_map = merge_novel_list(ordered, parsed, index_map)
 
                 while processed_dwr < len(dwr_payloads):
                     payload = dwr_payloads[processed_dwr]
                     processed_dwr += 1
-                    for novel in parse_dwr_response(payload, exclude_tags):
-                        key = novel_key(novel.source, novel.id)
-                        idx = index_map.get(key)
-                        if idx is None:
-                            index_map[key] = len(ordered)
-                            ordered.append(novel)
-                        else:
-                            merge_novel_fields(ordered[idx], novel)
+                    index_map = merge_novel_list(
+                        ordered,
+                        parse_dwr_response(payload, exclude_tags),
+                        index_map,
+                    )
 
                 if len(ordered) == last_count:
                     if processed_dwr == last_dwr:
@@ -151,19 +146,16 @@ def search_dynamic_sync(
         while processed_dwr < len(dwr_payloads):
             payload = dwr_payloads[processed_dwr]
             processed_dwr += 1
-            for novel in parse_dwr_response(payload, exclude_tags):
-                key = novel_key(novel.source, novel.id)
-                idx = index_map.get(key)
-                if idx is None:
-                    index_map[key] = len(ordered)
-                    ordered.append(novel)
-                else:
-                    merge_novel_fields(ordered[idx], novel)
+            index_map = merge_novel_list(
+                ordered,
+                parse_dwr_response(payload, exclude_tags),
+                index_map,
+            )
 
         if not ordered:
-            print("⚠️ Lofter: dynamic crawl found 0 items")
+            logger.warning("Lofter: dynamic crawl found 0 items")
         else:
-            print(f"✅ Lofter: dynamic crawl collected {len(ordered)} items")
+            logger.info("Lofter: dynamic crawl collected %s items", len(ordered))
 
         if return_all:
             return ordered
@@ -171,5 +163,5 @@ def search_dynamic_sync(
             return []
         return ordered[offset : offset + page_size]
     except Exception as e:
-        print(f"Lofter dynamic crawl error: {e}")
+        logger.exception("Lofter dynamic crawl error")
         return []
