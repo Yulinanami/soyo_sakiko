@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { ChevronRight, ChevronDown } from 'lucide-vue-next';
 
 const props = defineProps<{
   selectedTags: string[];
@@ -53,7 +54,8 @@ function isSelected(tag: string) {
       :title="props.excludeOpen ? '收起排除标签' : '展开排除标签'"
       aria-label="切换排除标签"
     >
-      {{ props.excludeOpen ? '▾' : '▸' }}
+      <ChevronDown v-if="props.excludeOpen" class="w-4 h-4" />
+      <ChevronRight v-else class="w-4 h-4" />
     </button>
     <span class="font-medium text-gray-700 whitespace-nowrap">标签:</span>
     <div class="flex gap-1.5 flex-wrap">

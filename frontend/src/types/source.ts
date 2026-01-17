@@ -35,3 +35,9 @@ export const DEFAULT_SOURCES: SourceConfig[] = [
     searchTags: ['素祥', '祥素'],
   },
 ];
+
+export interface CredentialState {
+  state: string;
+  message: string;
+  configured: boolean;
+}

@@ -2,6 +2,7 @@ import axios from 'axios';
 import type { Novel, NovelListResponse, NovelSearchParams } from '../types/novel';
 import type { AuthResponse, LoginRequest, RegisterRequest, User } from '../types/user';
 import type { FavoriteItem, HistoryItem } from '../types/user_data';
+import type { CredentialState } from '../types/source';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 
@@ -132,9 +133,9 @@ export const credentialsApi = {
     const { data } = await api.post(`/credentials/${source}/start`);
     return unwrapData(data);
   },
-  status: async (source: string) => {
+  status: async (source: string): Promise<CredentialState> => {
     const { data } = await api.get(`/credentials/${source}/status`);
-    return unwrapData(data);
+    return unwrapData<CredentialState>(data);
   },
   clear: async (source: string) => {
     const { data } = await api.delete(`/credentials/${source}`);
@@ -142,7 +143,7 @@ export const credentialsApi = {
   },
 };
 
-export default api;
+
 
 export function setAuthToken(token: string | null) {
   if (token && token !== 'undefined' && token !== 'null') {

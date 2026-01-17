@@ -3,6 +3,7 @@ import { useSourcesStore } from '../../stores/sources';
 import ao3Logo from '../../assets/ao3.png';
 import pixivLogo from '../../assets/pixiv.png';
 import lofterLogo from '../../assets/lofter.png';
+import { Lock } from 'lucide-vue-next';
 
 const sourcesStore = useSourcesStore();
 const props = defineProps<{
@@ -56,7 +57,7 @@ function toggle(name: string) {
         </span>
         <span v-else class="text-base">{{ source.icon }}</span>
         <span>{{ source.displayName }}</span>
-        <span v-if="source.requiresAuth && !source.enabled" class="text-xs">🔒</span>
+        <Lock v-if="source.requiresAuth && !source.enabled" class="w-3 h-3" />
       </button>
     </div>
   </div>

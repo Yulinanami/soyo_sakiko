@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { credentialsApi } from '../services/api';
+import type { CredentialState } from '../types/source';
 
-type CredentialState = {
-  state: string;
-  message: string;
-  configured: boolean;
-};
 
-const credentialStatus = ref<Record<string, CredentialState>>({
+
+const credentialStatus = ref<{
+  pixiv: CredentialState;
+  lofter: CredentialState;
+}>({
   pixiv: { state: 'idle', message: '', configured: false },
   lofter: { state: 'idle', message: '', configured: false },
 });
@@ -27,7 +27,7 @@ function startPolling() {
   if (pollingTimer.value) return;
   pollingTimer.value = window.setInterval(async () => {
     await refreshCredentialStatus();
-    const running = ['pixiv', 'lofter'].some(
+    const running = (['pixiv', 'lofter'] as const).some(
       (key) => credentialStatus.value[key].state === 'running'
     );
     if (!running && pollingTimer.value) {

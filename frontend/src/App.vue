@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import ao3Logo from './assets/ao3.png';
 import pixivLogo from './assets/pixiv.png';
 import lofterLogo from './assets/lofter.png';
+import { Home, Heart, BookOpen, Settings, Menu } from 'lucide-vue-next';
 
 const userStore = useUserStore();
 const favoritesStore = useFavoritesStore();
@@ -45,7 +46,7 @@ watch(
     >
       <div class="p-4 flex items-center gap-3 border-b border-sakiko">
         <button @click="toggleSidebar" class="text-xl hover:text-white transition-colors">
-          ☰
+          <Menu class="w-6 h-6" />
         </button>
         <router-link v-if="sidebarOpen" to="/" class="text-xl font-bold text-white no-underline">
           🎸 SoyoSaki
@@ -57,7 +58,7 @@ watch(
           to="/" 
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko no-underline text-white transition-colors"
         >
-          <span>🏠</span>
+          <Home class="w-5 h-5" />
           <span>首页</span>
         </router-link>
         
@@ -65,7 +66,7 @@ watch(
           to="/favorites" 
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko no-underline text-white transition-colors"
         >
-          <span>❤️</span>
+          <Heart class="w-5 h-5" />
           <span>我的收藏</span>
           <span v-if="!userStore.isLoggedIn" class="text-xs text-white/70">请登录</span>
         </router-link>
@@ -73,7 +74,7 @@ watch(
           to="/history"
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko no-underline text-white transition-colors"
         >
-          <span>📖</span>
+          <BookOpen class="w-5 h-5" />
           <span>阅读记录</span>
           <span v-if="!userStore.isLoggedIn" class="text-xs text-white/70">请登录</span>
         </router-link>
@@ -82,7 +83,7 @@ watch(
           to="/settings"
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko no-underline text-white transition-colors"
         >
-          <span>⚙️</span>
+          <Settings class="w-5 h-5" />
           <span>设置</span>
         </router-link>
         
@@ -141,7 +142,7 @@ watch(
       @click="toggleSidebar" 
       class="fixed left-0 top-4 z-50 bg-sakiko-dark text-white p-3 rounded-r-lg hover:bg-sakiko transition-colors"
     >
-      ☰
+      <Menu class="w-6 h-6" />
     </button>
     
     <!-- 主内容区域 -->

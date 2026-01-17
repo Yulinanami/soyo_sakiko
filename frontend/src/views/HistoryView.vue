@@ -3,6 +3,7 @@ import { onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import NovelCard from '../components/novel/NovelCard.vue';
 import type { Novel } from '../types/novel';
+import { BookOpen } from 'lucide-vue-next';
 import type { HistoryItem } from '../types/user_data';
 import { useHistoryStore } from '../stores/history';
 
@@ -49,7 +50,9 @@ function formatLastRead(date: string) {
 <template>
   <div class="min-h-screen bg-gray-50">
     <header class="bg-gradient-to-r from-primary to-secondary text-white py-12 text-center">
-      <h1 class="text-3xl font-bold mb-2">📖 阅读记录</h1>
+      <h1 class="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
+        <BookOpen class="w-8 h-8" /> 阅读记录
+      </h1>
       <p>共 {{ items.length }} 条记录</p>
     </header>
 

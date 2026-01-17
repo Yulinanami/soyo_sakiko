@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue';
 import { useFavoritesStore } from '../stores/favorites';
 import NovelCard from '../components/novel/NovelCard.vue';
+import { Heart } from 'lucide-vue-next';
 import type { Novel } from '../types/novel';
 
 interface FavoriteItem {
@@ -53,7 +54,9 @@ function toNovel(fav: FavoriteItem): Novel {
 <template>
   <div class="min-h-screen bg-gray-50">
     <header class="bg-gradient-to-r from-primary to-secondary text-white py-12 text-center">
-      <h1 class="text-3xl font-bold mb-2">❤️ 我的收藏</h1>
+      <h1 class="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
+        <Heart class="w-8 h-8" /> 我的收藏
+      </h1>
       <p>共收藏 {{ favorites.length }} 篇小说</p>
     </header>
     

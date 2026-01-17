@@ -8,6 +8,7 @@ import ao3Logo from '../../assets/ao3.png';
 import pixivLogo from '../../assets/pixiv.png';
 import lofterLogo from '../../assets/lofter.png';
 import { useNovelMeta } from '../../composables/useNovelMeta';
+import { FileText, BookOpen, Heart, AlignLeft } from 'lucide-vue-next';
 
 const props = withDefaults(defineProps<{
   novel: Novel;
@@ -165,7 +166,7 @@ async function toggleFavorite(event: Event) {
         class="h-40 bg-sakiko-light flex items-center justify-center"
       >
         <img v-if="sourceLogo" :src="sourceLogo" alt="source" class="w-16 h-16 object-contain opacity-60" />
-        <span v-else class="text-5xl opacity-80">📄</span>
+        <FileText v-else class="w-16 h-16 text-gray-400 opacity-60" />
       </div>
       
       <!-- Content -->
@@ -202,9 +203,15 @@ async function toggleFavorite(event: Event) {
         </div>
         
         <div class="flex flex-wrap gap-3 text-xs text-gray-500">
-          <span v-if="novel.word_count">📝 {{ novel.word_count.toLocaleString() }} 字</span>
-          <span v-if="novel.chapter_count">📖 {{ novel.chapter_count }} 章</span>
-          <span v-if="novel.kudos">❤️ {{ novel.kudos }}</span>
+          <span v-if="novel.word_count" class="flex items-center gap-1">
+            <AlignLeft class="w-3.5 h-3.5" /> {{ novel.word_count.toLocaleString() }} 字
+          </span>
+          <span v-if="novel.chapter_count" class="flex items-center gap-1">
+            <BookOpen class="w-3.5 h-3.5" /> {{ novel.chapter_count }} 章
+          </span>
+          <span v-if="novel.kudos" class="flex items-center gap-1">
+            <Heart class="w-3.5 h-3.5" /> {{ novel.kudos }}
+          </span>
           <span class="ml-auto">{{ formattedDate }}</span>
         </div>
         
