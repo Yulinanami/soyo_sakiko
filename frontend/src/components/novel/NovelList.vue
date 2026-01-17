@@ -15,7 +15,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="w-full">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <NovelCard 
         v-for="novel in novels" 
         :key="`${novel.source}-${novel.id}`"
@@ -23,19 +23,19 @@ const emit = defineEmits<{
       />
     </div>
     
-    <div v-if="loading" class="flex items-center justify-center gap-3 py-12 text-gray-500">
-      <div class="w-6 h-6 border-3 border-gray-200 border-t-primary rounded-full animate-spin"></div>
+    <div v-if="loading" class="flex items-center justify-center gap-3 py-12 text-gray-500 dark:text-gray-400">
+      <div class="w-6 h-6 border-3 border-gray-200 border-t-primary rounded-full animate-spin dark:border-gray-700"></div>
       <span>加载中...</span>
     </div>
     
     <div v-if="!loading && hasMore" class="flex flex-col items-center gap-3 py-8">
-      <span class="text-sm text-gray-500">已加载 {{ novels.length }} 篇同人文</span>
+      <span class="text-sm text-gray-500 dark:text-gray-400">已加载 {{ novels.length }} 篇同人文</span>
       <button @click="emit('load-more')" class="btn-primary">
         加载更多
       </button>
     </div>
     
-    <div v-if="!loading && !hasMore && novels.length > 0" class="text-center py-8 text-gray-400 text-sm">
+    <div v-if="!loading && !hasMore && novels.length > 0" class="text-center py-8 text-gray-400 text-sm dark:text-gray-500">
       已加载全部 {{ novels.length }} 篇同人文
     </div>
   </div>

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 /* SoyoSaki 主题配色 */
 @theme {
   /* 素世 - 亚麻色/栗色系 */
@@ -33,17 +35,17 @@
 }
 
 .card {
-  @apply bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-200;
+  @apply bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-200 dark:bg-gray-800 dark:border dark:border-gray-700;
 }
 
 .input {
   @apply w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base
-         focus:outline-none focus:border-sakiko transition-colors;
+         focus:outline-none focus:border-sakiko transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-white;
 }
 
 /* 普通标签 */
 .tag {
-  @apply px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-full;
+  @apply px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-full dark:bg-gray-700 dark:text-gray-300;
 }
 
 /* 素祥相关标签高亮 - 使用祥子的淡蓝色 */
@@ -53,11 +55,11 @@
 
 /* 阅读器内容样式 */
 .reader-content {
-  font-family: "Noto Serif SC", "Source Han Serif CN", "Songti SC", "SimSun",
-    serif;
+  font-family:
+    "Noto Serif SC", "Source Han Serif CN", "Songti SC", "SimSun", serif;
   font-size: 1.125rem;
   line-height: 2;
-  color: #333;
+  @apply text-gray-800 dark:text-gray-300;
   text-align: justify;
 }
 

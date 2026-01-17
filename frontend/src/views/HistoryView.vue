@@ -48,8 +48,8 @@ function formatLastRead(date: string) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <header class="bg-gradient-to-r from-primary to-secondary text-white py-12 text-center">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <header class="bg-gradient-to-r from-primary to-secondary text-white py-12 text-center dark:from-primary-dark dark:to-secondary-dark transition-colors duration-300">
       <h1 class="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
         <BookOpen class="w-8 h-8" /> 阅读记录
       </h1>
@@ -58,18 +58,18 @@ function formatLastRead(date: string) {
 
     <main class="py-8">
       <div class="max-w-7xl mx-auto px-4">
-        <div v-if="loading" class="text-center py-16 text-gray-500">加载中...</div>
+        <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">加载中...</div>
 
-        <div v-else-if="error" class="text-center text-red-500 p-8 bg-red-50 rounded-lg">
+        <div v-else-if="error" class="text-center text-red-500 p-8 bg-red-50 rounded-lg dark:bg-red-900/20 dark:text-red-400">
           {{ error }}
         </div>
 
         <div v-else-if="items.length === 0" class="text-center py-16">
-          <p class="text-gray-500 mb-6">还没有阅读记录</p>
+          <p class="text-gray-500 mb-6 dark:text-gray-400">还没有阅读记录</p>
           <router-link to="/" class="btn-primary">去发现好文</router-link>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <div v-for="item in items" :key="item.id" class="relative group">
             <NovelCard
               :novel="toNovel(item)"

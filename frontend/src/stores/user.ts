@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { User } from '../types/user';
 import { authApi, setAuthToken } from '../services/api';
 import type { AxiosError } from 'axios';
@@ -9,6 +9,7 @@ export const useUserStore = defineStore('user', () => {
   // State
   const user = ref<User | null>(null);
   const token = ref<string | null>(readToken());
+  const darkMode = ref<boolean>(readDarkMode());
   const { loading, error, start, stop, setError } = useAsyncState();
 
   // Computed
@@ -97,13 +98,34 @@ export const useUserStore = defineStore('user', () => {
       user.value = storedUser;
     }
     setAuthToken(token.value);
+    setAuthToken(token.value);
     fetchProfile();
+  }
+
+  // Watch for Dark Mode changes
+  watch(
+    darkMode,
+    (isDark) => {
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('darkMode', '1');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.removeItem('darkMode');
+      }
+    },
+    { immediate: true }
+  );
+
+  function toggleDarkMode() {
+    darkMode.value = !darkMode.value;
   }
 
   return {
     // State
     user,
     token,
+    darkMode,
     loading,
     error,
     // Computed
@@ -114,6 +136,7 @@ export const useUserStore = defineStore('user', () => {
     logout,
     fetchProfile,
     syncFromStorage,
+    toggleDarkMode,
   };
 });
 
@@ -135,4 +158,8 @@ function readUser(): User | null {
     localStorage.removeItem('user');
     return null;
   }
+}
+
+function readDarkMode(): boolean {
+  return localStorage.getItem('darkMode') === '1';
 }

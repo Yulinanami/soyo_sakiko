@@ -213,9 +213,9 @@ async function toggleFavorite() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
     <!-- Header -->
-    <header v-if="novel" class="bg-soyo text-white py-8">
+    <header v-if="novel" class="bg-soyo text-white py-8 dark:bg-gray-800 transition-colors duration-300 border-b border-white/10">
       <div class="max-w-3xl mx-auto px-4">
         <button
           type="button"
@@ -252,22 +252,22 @@ async function toggleFavorite() {
     </header>
 
     <!-- Chapter Navigation -->
-    <nav v-if="novel" class="bg-white border-b border-gray-200 py-4">
+    <nav v-if="novel" class="bg-white border-b border-gray-200 py-4 dark:bg-gray-800 dark:border-gray-700">
       <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
         <button 
           @click="prevChapter" 
           :disabled="currentChapter <= 1"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500"
         >
           ← 上一章
         </button>
-        <span class="text-gray-600">
+        <span class="text-gray-600 dark:text-gray-300">
           第 {{ currentChapter }} / {{ novel.chapter_count || 1 }} 章
         </span>
         <button 
           @click="nextChapter" 
           :disabled="currentChapter >= (novel.chapter_count || 1)"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500"
         >
           下一章 →
         </button>
@@ -275,34 +275,34 @@ async function toggleFavorite() {
     </nav>
 
     <!-- Content -->
-    <main class="py-12 bg-gray-50">
+    <main class="py-12 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       <div class="max-w-2xl mx-auto px-6">
-        <div v-if="loading" class="text-center py-16 text-gray-500">加载中...</div>
-        <div v-else-if="error" class="text-center py-16 text-red-500">{{ error }}</div>
+        <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">加载中...</div>
+        <div v-else-if="error" class="text-center py-16 text-red-500 dark:text-red-400">{{ error }}</div>
         <article 
           v-else 
           ref="contentRef"
-          class="reader-content bg-white px-10 py-12 rounded-xl shadow-sm"
+          class="reader-content bg-white px-10 py-12 rounded-xl shadow-sm dark:bg-gray-800 dark:shadow-none transition-colors duration-300"
           v-html="chapterContent"
         ></article>
       </div>
     </main>
 
     <!-- Bottom Navigation -->
-    <nav v-if="novel && !loading" class="bg-white border-t border-gray-200 py-4 mt-8">
+    <nav v-if="novel && !loading" class="bg-white border-t border-gray-200 py-4 mt-8 dark:bg-gray-800 dark:border-gray-700">
       <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
         <button 
           @click="prevChapter" 
           :disabled="currentChapter <= 1"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500"
         >
           ← 上一章
         </button>
-        <span class="text-gray-500 text-sm">{{ source.toUpperCase() }}</span>
+        <span class="text-gray-500 text-sm dark:text-gray-400">{{ source.toUpperCase() }}</span>
         <button 
           @click="nextChapter" 
           :disabled="currentChapter >= (novel.chapter_count || 1)"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500"
         >
           下一章 →
         </button>

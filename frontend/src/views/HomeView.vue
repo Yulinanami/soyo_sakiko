@@ -57,7 +57,7 @@ function toggleExclude() {
 <template>
   <div class="min-h-screen">
     <!-- 顶部标签栏 -->
-    <header class="bg-white border-b border-gray-200">
+    <header class="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-30 shadow-sm transition-colors duration-300">
       <div class="px-6 py-4 space-y-4">
         <!-- 标签过滤 -->
         <TagFilter 
@@ -84,7 +84,7 @@ function toggleExclude() {
           <select 
             v-model="novelsStore.sortBy" 
             @change="novelsStore.fetchNovels(true)"
-            class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none focus:border-sakiko"
+            class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none focus:border-sakiko dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
           >
             <option value="date">最新更新</option>
             <option value="kudos">最多点赞</option>
@@ -111,7 +111,7 @@ function toggleExclude() {
         {{ novelsStore.error }}
       </div>
       
-      <div v-if="novelsStore.isEmpty" class="text-center py-16 text-gray-500">
+      <div v-if="novelsStore.isEmpty" class="text-center py-16 text-gray-500 dark:text-gray-400">
         <p class="text-lg">暂无符合条件的小说</p>
         <p class="text-sm opacity-70 mt-2">尝试调整筛选条件或切换数据源</p>
       </div>

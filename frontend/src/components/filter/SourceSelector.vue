@@ -29,7 +29,7 @@ function toggle(name: string) {
 
 <template>
   <div class="flex items-center gap-3">
-    <span class="font-medium text-gray-700 whitespace-nowrap">数据源:</span>
+    <span class="font-medium text-gray-700 whitespace-nowrap dark:text-gray-300">数据源:</span>
     <div class="flex gap-2 flex-wrap">
       <button
         v-for="source in sourcesStore.sources"
@@ -38,7 +38,7 @@ function toggle(name: string) {
           'flex items-center gap-1.5 px-3 py-2 border-2 rounded-lg cursor-pointer transition-all text-sm',
           source.enabled 
             ? 'border-sakiko bg-sakiko text-white' 
-            : 'border-gray-200 bg-white hover:border-sakiko hover:text-sakiko-dark',
+            : 'border-gray-200 bg-white hover:border-sakiko hover:text-sakiko-dark dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-sakiko dark:hover:text-sakiko-light',
           source.requiresAuth && !source.enabled ? 'opacity-60' : ''
         ]"
         @click="toggle(source.name)"
