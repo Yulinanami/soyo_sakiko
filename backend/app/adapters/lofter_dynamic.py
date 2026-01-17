@@ -1,0 +1,175 @@
+"""
+Lofter dynamic crawling via Playwright.
+"""
+
+from typing import List, Optional
+
+from app.adapters.lofter_common import merge_novel_fields, parse_cookie_header
+from app.adapters.lofter_parse import parse_dwr_response, parse_tag_page_html
+from app.adapters.utils import novel_key
+from app.config import settings
+from app.schemas.novel import Novel
+
+
+def search_dynamic_sync(
+    tag: str,
+    ranking_type: str,
+    page_size: int,
+    offset: int,
+    exclude_tags: List[str],
+    cookie: str,
+    target_total: Optional[int] = None,
+    return_all: bool = False,
+) -> List[Novel]:
+    """Use Playwright to scroll tag page and collect more posts."""
+    if not settings.LOFTER_DYNAMIC_ENABLED:
+        return []
+    try:
+        from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+    except ImportError:
+        print("⚠️ Lofter: Playwright not installed, skip dynamic crawl")
+        return []
+
+    try:
+        from urllib.parse import quote
+
+        encoded_tag = quote(tag, safe="")
+        tag_path = "new" if ranking_type == "new" else "total"
+        url = f"https://www.lofter.com/tag/{encoded_tag}/{tag_path}"
+
+        headers = {
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        }
+        if settings.LOFTER_CAPTTOKEN:
+            headers["capttoken"] = settings.LOFTER_CAPTTOKEN
+
+        if target_total is None:
+            target_total = offset + page_size
+        base_scrolls = settings.LOFTER_DYNAMIC_MAX_SCROLLS or 8
+        max_scrolls = max(base_scrolls, target_total // 8 + 6)
+        scroll_wait_ms = settings.LOFTER_DYNAMIC_SCROLL_WAIT_MS or 1200
+        initial_wait_ms = settings.LOFTER_DYNAMIC_INITIAL_WAIT_MS or 1500
+
+        dwr_payloads: List[str] = []
+
+        def on_response(response):
+            try:
+                if "TagBean.search.dwr" in response.url:
+                    dwr_payloads.append(response.text())
+            except Exception:
+                return
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(
+                headless=True,
+                args=["--disable-blink-features=AutomationControlled"],
+            )
+            context = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36"
+                ),
+                locale="zh-CN",
+                extra_http_headers=headers,
+            )
+            context.add_init_script(
+                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
+            )
+            cookies = parse_cookie_header(cookie)
+            if cookies:
+                context.add_cookies(cookies)
+
+            page = context.new_page()
+            page.on("response", on_response)
+            page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            try:
+                page.wait_for_load_state("networkidle", timeout=20000)
+            except PWTimeout:
+                pass
+            try:
+                page.wait_for_selector("div.m-mlist", timeout=20000)
+            except PWTimeout:
+                print("⚠️ Lofter: tag page did not load list in time")
+            page.wait_for_timeout(initial_wait_ms)
+
+            ordered: List[Novel] = []
+            index_map = {}
+            processed_dwr = 0
+            last_count = 0
+            last_dwr = 0
+            stable_rounds = 0
+            scrolls = 0
+
+            while (
+                scrolls < max_scrolls
+                and len(ordered) < target_total
+                and stable_rounds < 4
+            ):
+                html = page.content()
+                parsed = parse_tag_page_html(
+                    html, exclude_tags, ranking_type, limit=target_total
+                )
+                for novel in parsed:
+                    key = novel_key(novel.source, novel.id)
+                    idx = index_map.get(key)
+                    if idx is None:
+                        index_map[key] = len(ordered)
+                        ordered.append(novel)
+                    else:
+                        merge_novel_fields(ordered[idx], novel)
+
+                while processed_dwr < len(dwr_payloads):
+                    payload = dwr_payloads[processed_dwr]
+                    processed_dwr += 1
+                    for novel in parse_dwr_response(payload, exclude_tags):
+                        key = novel_key(novel.source, novel.id)
+                        idx = index_map.get(key)
+                        if idx is None:
+                            index_map[key] = len(ordered)
+                            ordered.append(novel)
+                        else:
+                            merge_novel_fields(ordered[idx], novel)
+
+                if len(ordered) == last_count:
+                    if processed_dwr == last_dwr:
+                        stable_rounds += 1
+                    else:
+                        stable_rounds = 0
+                else:
+                    stable_rounds = 0
+                last_count = len(ordered)
+                last_dwr = processed_dwr
+
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                page.wait_for_timeout(scroll_wait_ms)
+                scrolls += 1
+
+            context.close()
+            browser.close()
+
+        while processed_dwr < len(dwr_payloads):
+            payload = dwr_payloads[processed_dwr]
+            processed_dwr += 1
+            for novel in parse_dwr_response(payload, exclude_tags):
+                key = novel_key(novel.source, novel.id)
+                idx = index_map.get(key)
+                if idx is None:
+                    index_map[key] = len(ordered)
+                    ordered.append(novel)
+                else:
+                    merge_novel_fields(ordered[idx], novel)
+
+        if not ordered:
+            print("⚠️ Lofter: dynamic crawl found 0 items")
+        else:
+            print(f"✅ Lofter: dynamic crawl collected {len(ordered)} items")
+
+        if return_all:
+            return ordered
+        if offset >= len(ordered):
+            return []
+        return ordered[offset : offset + page_size]
+    except Exception as e:
+        print(f"Lofter dynamic crawl error: {e}")
+        return []

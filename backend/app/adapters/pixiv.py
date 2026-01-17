@@ -5,20 +5,18 @@ Pixiv requires OAuth authentication with a refresh token.
 Users need to obtain their refresh token using: https://gist.github.com/ZipFile/c9ebedb224406f4f11845ab700124362
 """
 
-import asyncio
 from typing import List, Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 from app.adapters.base import BaseAdapter
+from app.adapters.utils import exclude
 from app.schemas.novel import Novel, NovelSource
 from app.config import settings
 
 
 class PixivAdapter(BaseAdapter):
     """Adapter for Pixiv novel data source"""
-
-    source = NovelSource.PIXIV
 
     def __init__(self):
         self._api = None
@@ -95,7 +93,7 @@ class PixivAdapter(BaseAdapter):
 
                             # Filter by title - exclude works containing exclude_tags
                             title = novel_data.get("title", "")
-                            if any(pattern in title for pattern in exclude_tags):
+                            if exclude(title, exclude_tags):
                                 continue
                             all_novels.append(self._parse_novel(novel_data))
                     except Exception as e:
@@ -109,8 +107,7 @@ class PixivAdapter(BaseAdapter):
                 print(f"Pixiv search error: {e}")
                 return []
 
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(self._executor, _search)
+        return await self.run_in_executor(_search)
 
     async def get_detail(self, novel_id: str) -> Optional[Novel]:
         """Get novel detail by ID"""
@@ -127,8 +124,7 @@ class PixivAdapter(BaseAdapter):
                 print(f"Pixiv detail error: {e}")
                 return None
 
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(self._executor, _get_detail)
+        return await self.run_in_executor(_get_detail)
 
     async def get_chapters(self, novel_id: str) -> List[dict]:
         """Get chapter list for a novel"""
@@ -155,8 +151,7 @@ class PixivAdapter(BaseAdapter):
                 print(f"Pixiv content error: {e}")
                 return None
 
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(self._executor, _get_content)
+        return await self.run_in_executor(_get_content)
 
     def _parse_novel(self, data: dict) -> Novel:
         """Parse Pixiv novel data into unified Novel schema"""

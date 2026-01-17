@@ -4,9 +4,9 @@ Uses ao3-api library for fetching fanfiction from Archive of Our Own
 """
 
 from typing import List, Optional
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from app.adapters.base import BaseAdapter
+from app.adapters.utils import exclude, to_iso_date
 from app.schemas.novel import Novel, NovelSource
 
 # AO3 API is synchronous, we'll use run_in_executor
@@ -52,9 +52,7 @@ class AO3Adapter(BaseAdapter):
         search_tags = list(set(tags + self.SOYOSAKI_TAGS))
 
         # Run synchronous AO3 search in executor
-        loop = asyncio.get_running_loop()
-        novels = await loop.run_in_executor(
-            self._executor,
+        return await self.run_in_executor(
             self._search_sync,
             search_tags,
             exclude_tags,
@@ -62,8 +60,6 @@ class AO3Adapter(BaseAdapter):
             page_size,
             sort_by,
         )
-
-        return novels
 
 
     def _search_sync(
@@ -96,7 +92,7 @@ class AO3Adapter(BaseAdapter):
                     break
                 try:
                     title = getattr(work, "title", "") or ""
-                    if self._should_exclude(title, exclude_tags):
+                    if exclude(title, exclude_tags):
                         continue
 
                     novel = self._convert_work(work)
@@ -109,13 +105,6 @@ class AO3Adapter(BaseAdapter):
         except Exception as e:
             print(f"AO3 search error: {e}")
             return []
-
-    def _should_exclude(self, title: str, exclude_tags: List[str]) -> bool:
-        """Check if title contains any of the exclude tags"""
-        for pattern in exclude_tags:
-            if pattern in title:
-                return True
-        return False
 
     def _map_sort(self, sort_by: str) -> str:
         """Map sort parameter to AO3 sort column"""
@@ -145,16 +134,6 @@ class AO3Adapter(BaseAdapter):
             pass
 
         # Parse dates to ISO format for consistent sorting
-        def to_iso_date(date_val):
-            if date_val is None:
-                return ""
-            try:
-                if hasattr(date_val, "isoformat"):
-                    return date_val.isoformat()
-                return str(date_val)
-            except:
-                return ""
-
         published_at = to_iso_date(getattr(work, "date_published", None))
         updated_at = to_iso_date(getattr(work, "date_updated", None))
         if not published_at:
@@ -184,10 +163,7 @@ class AO3Adapter(BaseAdapter):
         if not AO3_AVAILABLE:
             return None
 
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            self._executor, self._get_detail_sync, novel_id
-        )
+        return await self.run_in_executor(self._get_detail_sync, novel_id)
 
     def _get_detail_sync(self, novel_id: str) -> Optional[Novel]:
         """Synchronous get detail"""
@@ -203,10 +179,7 @@ class AO3Adapter(BaseAdapter):
         if not AO3_AVAILABLE:
             return []
 
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            self._executor, self._get_chapters_sync, novel_id
-        )
+        return await self.run_in_executor(self._get_chapters_sync, novel_id)
 
     def _get_chapters_sync(self, novel_id: str) -> List[dict]:
         """Synchronous get chapters"""
@@ -227,9 +200,8 @@ class AO3Adapter(BaseAdapter):
         if not AO3_AVAILABLE:
             return None
 
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            self._executor, self._get_chapter_content_sync, novel_id, chapter_num
+        return await self.run_in_executor(
+            self._get_chapter_content_sync, novel_id, chapter_num
         )
 
     def _get_chapter_content_sync(

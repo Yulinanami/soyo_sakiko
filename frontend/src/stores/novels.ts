@@ -149,6 +149,7 @@ export const useNovelsStore = defineStore('novels', () => {
         const list = novelsBySource.value[source] || [];
         if (i >= list.length) continue;
         const novel = list[i];
+        if (!novel) continue;
         const key = `${novel.source}:${novel.id}`;
         if (seen.has(key)) continue;
         seen.add(key);
