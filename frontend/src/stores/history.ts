@@ -61,12 +61,6 @@ export const useHistoryStore = defineStore('history', () => {
     }
   }
 
-  function reset() {
-    items.value = [];
-    loaded.value = false;
-    setError(null);
-  }
-
   return {
     items,
     loading,
@@ -75,6 +69,5 @@ export const useHistoryStore = defineStore('history', () => {
     fetchHistory,
     recordHistory,
     removeHistory,
-    reset,
   };
 });

@@ -9,8 +9,7 @@ export const useNovelsStore = defineStore('novels', () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
   const currentPage = ref(1);
-  const pageSize = ref(30);
-  const total = ref(0);
+  const pageSize = 30;
   const hasMore = ref(true);
   const novelsBySource = ref<Record<NovelSource, Novel[]>>({
     ao3: [],
@@ -34,7 +33,6 @@ export const useNovelsStore = defineStore('novels', () => {
   const selectedTags = ref<string[]>(['素祥', '祥素']);
   const excludeTags = ref<string[]>(['爱素', '愛素', '素爱', '素愛']);  // Default exclude tags
   const sortBy = ref<'date' | 'kudos' | 'hits' | 'wordCount'>('date');
-  const sortOrder = ref<'asc' | 'desc'>('desc');
 
   // Computed
   const isEmpty = computed(() => novels.value.length === 0 && !loading.value);
@@ -53,7 +51,6 @@ export const useNovelsStore = defineStore('novels', () => {
 
     if (selectedSources.value.length === 0) {
       error.value = null;
-      total.value = 0;
       hasMore.value = false;
       loading.value = false;
       loadingSources.value = { ao3: false, pixiv: false, lofter: false };
@@ -62,7 +59,6 @@ export const useNovelsStore = defineStore('novels', () => {
 
     if (selectedTags.value.length === 0) {
       error.value = '请先选择至少一个标签';
-      total.value = 0;
       hasMore.value = false;
       loading.value = false;
       novels.value = [];
@@ -81,7 +77,6 @@ export const useNovelsStore = defineStore('novels', () => {
     const updateAggregates = () => {
       rebuildNovels();
       hasMore.value = selectedSources.value.some(source => hasMoreBySource.value[source]);
-      total.value = novels.value.length;
       loading.value = selectedSources.value.some(source => loadingSources.value[source]);
     };
 
@@ -90,9 +85,8 @@ export const useNovelsStore = defineStore('novels', () => {
         tags: selectedTags.value,
         excludeTags: excludeTags.value,
         page: currentPage.value,
-        pageSize: pageSize.value,
+        pageSize,
         sortBy: sortBy.value,
-        sortOrder: sortOrder.value,
       };
 
       await Promise.allSettled(
@@ -180,13 +174,11 @@ export const useNovelsStore = defineStore('novels', () => {
     loading,
     error,
     currentPage,
-    total,
     hasMore,
     selectedSources,
     selectedTags,
     excludeTags,  // Export for UI
     sortBy,
-    sortOrder,
     loadingSources,
     // Computed
     isEmpty,

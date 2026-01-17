@@ -15,10 +15,6 @@ export const useSourcesStore = defineStore('sources', () => {
     }
   }
 
-  function getEnabledSources() {
-    return sources.value.filter(s => s.enabled);
-  }
-
   function getEnabledSourceNames() {
     return sources.value.filter(s => s.enabled).map(s => s.name);
   }
@@ -26,7 +22,6 @@ export const useSourcesStore = defineStore('sources', () => {
   return {
     sources,
     toggleSource,
-    getEnabledSources,
     getEnabledSourceNames,
   };
 });

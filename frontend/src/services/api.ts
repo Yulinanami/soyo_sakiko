@@ -70,11 +70,6 @@ export const novelApi = {
     return unwrapData<Novel>(data);
   },
 
-  getChapters: async (source: string, id: string) => {
-    const { data } = await api.get(`/novels/${source}/${id}/chapters`);
-    return unwrapData<Record<string, any>[]>(data);
-  },
-
   getChapterContent: async (source: string, id: string, chapter: number): Promise<string> => {
     const { data } = await api.get(`/novels/${source}/${id}/chapters/${chapter}`);
     return unwrapData<string>(data);

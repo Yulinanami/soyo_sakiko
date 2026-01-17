@@ -8,7 +8,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import novels, auth, sources, proxy, credentials, user
+from app.routers import novels, auth, proxy, credentials, user
 from app.database import Base, engine
 import app.models  # noqa: F401
 from app.config import settings
@@ -33,7 +33,6 @@ app.add_middleware(
 # Include routers
 app.include_router(novels.router, prefix="/api/novels", tags=["novels"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-app.include_router(sources.router, prefix="/api/sources", tags=["sources"])
 app.include_router(proxy.router, prefix="/api/proxy", tags=["proxy"])
 app.include_router(credentials.router, prefix="/api/credentials", tags=["credentials"])
 app.include_router(user.router, prefix="/api/user", tags=["user"])

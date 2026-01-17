@@ -27,11 +27,6 @@ class User(UserBase):
         from_attributes = True
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
 class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

@@ -2,10 +2,10 @@
 Novel Schemas
 """
 
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class NovelSource(str, Enum):
@@ -37,29 +37,9 @@ class Novel(BaseModel):
         from_attributes = True
 
 
-class NovelSearchParams(BaseModel):
-    sources: List[NovelSource] = [NovelSource.AO3]
-    tags: List[str] = ["素祥", "祥素"]
-    page: int = 1
-    page_size: int = 20
-    sort_by: str = "date"
-    sort_order: str = "desc"
-
-
 class NovelListResponse(BaseModel):
     novels: List[Novel]
     total: int
     page: int
     page_size: int
     has_more: bool
-
-
-class ChapterInfo(BaseModel):
-    number: int
-    title: str
-
-
-class ChapterContent(BaseModel):
-    chapter_number: int
-    title: str
-    content: str
