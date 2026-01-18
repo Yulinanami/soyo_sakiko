@@ -213,9 +213,9 @@ async function toggleFavorite() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+  <div class="min-h-screen bg-soyo-cream dark:bg-gray-900 transition-colors duration-300">
     <!-- Header -->
-    <header v-if="novel" class="bg-soyo text-white py-8 dark:bg-gray-800 transition-colors duration-300 border-b border-white/10">
+    <header v-if="novel" class="relative z-10 bg-soyo text-white py-8 dark:bg-gray-800 transition-colors duration-300 shadow-sm">
       <div class="max-w-3xl mx-auto px-4">
         <button
           type="button"
@@ -252,7 +252,7 @@ async function toggleFavorite() {
     </header>
 
     <!-- Chapter Navigation -->
-    <nav v-if="novel" class="bg-white border-b border-gray-200 py-4 dark:bg-gray-800 dark:border-gray-700">
+    <nav v-if="novel" class="bg-soyo-cream border-b border-soyo-light/30 py-4 dark:bg-gray-800 dark:border-gray-700">
       <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
         <button 
           @click="prevChapter" 
@@ -275,21 +275,21 @@ async function toggleFavorite() {
     </nav>
 
     <!-- Content -->
-    <main class="py-12 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <main class="py-12 bg-soyo-cream dark:bg-gray-900 transition-colors duration-300">
       <div class="max-w-2xl mx-auto px-6">
         <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">加载中...</div>
         <div v-else-if="error" class="text-center py-16 text-red-500 dark:text-red-400">{{ error }}</div>
-        <article 
-          v-else 
-          ref="contentRef"
-          class="reader-content bg-white px-10 py-12 rounded-xl shadow-sm dark:bg-gray-800 dark:shadow-none transition-colors duration-300"
+          <article 
+            v-else 
+            ref="contentRef"
+            class="reader-content bg-soyo-cream/50 px-10 py-12 rounded-xl shadow-xl dark:bg-gray-800 dark:shadow-none transition-colors duration-300"
           v-html="chapterContent"
         ></article>
       </div>
     </main>
 
     <!-- Bottom Navigation -->
-    <nav v-if="novel && !loading" class="bg-white border-t border-gray-200 py-4 mt-8 dark:bg-gray-800 dark:border-gray-700">
+    <nav v-if="novel && !loading" class="bg-soyo-cream border-t border-soyo-light/30 py-4 mt-8 dark:bg-gray-800 dark:border-gray-700">
       <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
         <button 
           @click="prevChapter" 

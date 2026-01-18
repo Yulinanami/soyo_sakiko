@@ -49,7 +49,7 @@ function formatLastRead(date: string) {
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-    <header class="bg-gradient-to-r from-primary to-secondary text-white py-12 text-center dark:from-primary-dark dark:to-secondary-dark transition-colors duration-300">
+    <header class="bg-linear-to-r from-primary to-secondary text-white py-12 text-center dark:bg-none dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300 shadow-sm border-b border-transparent">
       <h1 class="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
         <BookOpen class="w-8 h-8" /> 阅读记录
       </h1>

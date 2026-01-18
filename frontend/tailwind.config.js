@@ -10,7 +10,7 @@ export default {
           DEFAULT: "#C4A77D", // 亚麻色
           light: "#D4BC94",
           dark: "#8B6914", // 栗色
-          cream: "#F5E6D3",
+          cream: "#D6C6B0",
         },
         // 祥子 (Sakiko) - 淡蓝色系
         sakiko: {

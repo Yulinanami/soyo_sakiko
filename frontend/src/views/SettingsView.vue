@@ -62,7 +62,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-    <header class="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300">
+    <header class="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300 shadow-sm">
       <div class="px-6 py-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">设置</h1>
         <p class="text-sm text-gray-500 mt-1 dark:text-gray-400">登录并配置需要凭证的数据源。</p>

@@ -48,7 +48,7 @@ function isSelected(tag: string) {
 
 <template>
   <div v-if="props.open" class="flex items-center gap-3 flex-wrap">
-    <span class="font-medium text-gray-700 whitespace-nowrap">排除:</span>
+    <span class="font-medium text-gray-700 whitespace-nowrap dark:text-gray-300">排除:</span>
     <div class="flex gap-1.5 flex-wrap">
       <button
         v-for="tag in allTags"
@@ -57,7 +57,7 @@ function isSelected(tag: string) {
           'px-3 py-1.5 border rounded-full text-sm cursor-pointer transition-all',
           isSelected(tag) 
             ? 'bg-red-500 text-white border-red-500' 
-            : 'border-gray-200 bg-white hover:border-red-400 hover:text-red-500'
+            : 'border-gray-200 bg-white hover:border-red-400 hover:text-red-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-red-400 dark:hover:text-red-400'
         ]"
         @click="toggleTag(tag)"
         :title="isSelected(tag) ? '点击取消排除' : '点击排除此标签'"
@@ -71,14 +71,15 @@ function isSelected(tag: string) {
         type="text"
         placeholder="添加排除..."
         @keyup.enter="addCustomTag"
-        class="px-3 py-1.5 border border-gray-200 rounded-full text-sm w-28 focus:outline-none focus:border-red-400"
+        class="px-3 py-1.5 border border-gray-200 rounded-full text-sm w-28 focus:outline-none focus:border-red-400 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
       />
       <button 
         @click="addCustomTag" 
         :disabled="!newTag.trim()"
         class="w-8 h-8 border border-gray-200 bg-white rounded-full cursor-pointer text-lg flex items-center justify-center
                hover:bg-red-500 hover:text-white hover:border-red-500 transition-all
-               disabled:opacity-50 disabled:cursor-not-allowed"
+               disabled:opacity-50 disabled:cursor-not-allowed
+               dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:hover:bg-red-500"
       >
         +
       </button>

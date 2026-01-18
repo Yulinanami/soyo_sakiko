@@ -32,7 +32,7 @@ async function handleRegister() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-r from-primary to-secondary p-8 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+  <div class="min-h-screen flex items-center justify-center bg-linear-to-r from-primary to-secondary p-8 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
     <div class="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md dark:bg-gray-800 dark:shadow-none transition-colors duration-300">
       <h1 class="text-center text-2xl font-bold text-gray-800 mb-2 dark:text-white">🎸 注册账号</h1>
       <p class="text-center text-gray-600 text-sm mb-8 dark:text-gray-400">创建账号以保存收藏和阅读记录</p>

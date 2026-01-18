@@ -1,6 +1,6 @@
 # 🎸 SoyoSaki (素祥同人文聚合阅读器)
 
-SoyoSaki 是一个聚合了 AO3、Pixiv 和 Lofter 平台的同人小说阅读器。长崎素世 (Soyo) 和丰川祥子 (Sakiko) 的 CP。
+SoyoSaki 是一个聚合了 AO3、Pixiv 和 Lofter 平台的同人小说阅读器。用于快速获取长崎素世 (Soyo) 和丰川祥子 (Sakiko) 的 CP同人文。
 
 ---
 

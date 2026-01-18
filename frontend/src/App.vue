@@ -40,7 +40,7 @@ watch(
     <!-- 左侧边栏 - 祥子淡蓝色 -->
     <aside 
       :class="[
-        'fixed left-0 top-0 h-full bg-sakiko-dark dark:bg-slate-900 text-white z-40 transition-all duration-300 flex flex-col',
+        'fixed left-0 top-0 h-full bg-sakiko-dark dark:bg-slate-900 text-white z-40 transition-all duration-300 flex flex-col shadow-2xl',
         sidebarOpen ? 'w-56' : 'w-0'
       ]"
     >
