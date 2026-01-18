@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
 import { novelApi } from '../services/api';
 import type { Novel } from '../types/novel';
 import { useUserStore } from '../stores/user';
@@ -210,6 +210,15 @@ async function toggleFavorite() {
     favoriteLoading.value = false;
   }
 }
+
+onBeforeRouteLeave(() => {
+  if (novel.value) {
+    sessionStorage.setItem('soyosaki:lastRead', JSON.stringify({
+      source: novel.value.source,
+      id: novel.value.id
+    }));
+  }
+});
 </script>
 
 <template>

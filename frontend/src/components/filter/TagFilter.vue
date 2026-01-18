@@ -79,12 +79,12 @@ function isSelected(tag: string) {
         type="text"
         placeholder="添加标签..."
         @keyup.enter="addCustomTag"
-        class="px-3 py-1.5 border border-gray-200 rounded-full text-sm w-28 focus:outline-none focus:border-primary dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+        class="px-3 py-1.5 border border-gray-200 rounded-full text-sm w-28 focus:outline-none focus:border-primary bg-white text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
       />
       <button 
         @click="addCustomTag" 
         :disabled="!customTag.trim()"
-        class="w-8 h-8 border border-gray-200 bg-white rounded-full cursor-pointer text-lg flex items-center justify-center
+        class="w-8 h-8 border border-gray-200 bg-white rounded-full cursor-pointer text-lg flex items-center justify-center text-gray-500
                hover:bg-primary hover:text-white hover:border-primary transition-all
                disabled:opacity-50 disabled:cursor-not-allowed
                dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:hover:bg-primary"

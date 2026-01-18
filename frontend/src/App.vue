@@ -93,7 +93,7 @@ watch(
         >
           <Moon v-if="!userStore.darkMode" class="w-5 h-5" />
           <Sun v-else class="w-5 h-5" />
-          <span>{{ userStore.darkMode ? '浅色模式' : '深色模式' }}</span>
+          <span>{{ userStore.darkMode ? '切换浅色模式' : '切换深色模式' }}</span>
         </button>
         
         <div class="border-t border-sakiko dark:border-gray-700 my-4"></div>

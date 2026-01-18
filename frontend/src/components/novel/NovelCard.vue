@@ -61,6 +61,19 @@ const lofterDomains = [
 const coverLoaded = ref(false);
 const favoriteLoading = ref(false);
 const isFavorite = computed(() => favoritesStore.isFavorite(props.novel));
+const isLastRead = ref(false);
+
+onMounted(() => {
+  try {
+    const raw = sessionStorage.getItem('soyosaki:lastRead');
+    if (raw) {
+      const last = JSON.parse(raw);
+      if (last.source === props.novel.source && String(last.id) === String(props.novel.id)) {
+        isLastRead.value = true;
+      }
+    }
+  } catch {}
+});
 
 const coverImageUrl = computed(() => {
   if (!props.novel.cover_image) return null;
@@ -141,32 +154,42 @@ async function toggleFavorite(event: Event) {
       class="block no-underline text-inherit"
       @click="rememberListScroll"
     >
-      <!-- Cover Image -->
-      <div 
-        v-if="coverImageUrl" 
-        class="h-40 overflow-hidden bg-sakiko-pale relative"
-      >
-        <div
-          v-if="!coverLoaded"
-          class="absolute inset-0 flex items-center justify-center bg-sakiko-pale/70"
+      <div class="relative">
+        <!-- Cover Image -->
+        <div 
+          v-if="coverImageUrl" 
+          class="h-40 overflow-hidden bg-sakiko-pale relative"
         >
-          <span class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          <div
+            v-if="!coverLoaded"
+            class="absolute inset-0 flex items-center justify-center bg-sakiko-pale/70"
+          >
+            <span class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          </div>
+          <img 
+            :src="coverImageUrl" 
+            :alt="novel.title" 
+            class="w-full h-full object-cover transition-opacity duration-200"
+            :class="coverLoaded ? 'opacity-100' : 'opacity-0'"
+            @load="coverLoaded = true"
+            @error="coverLoaded = true"
+          />
         </div>
-        <img 
-          :src="coverImageUrl" 
-          :alt="novel.title" 
-          class="w-full h-full object-cover transition-opacity duration-200"
-          :class="coverLoaded ? 'opacity-100' : 'opacity-0'"
-          @load="coverLoaded = true"
-          @error="coverLoaded = true"
-        />
-      </div>
-      <div 
-        v-else 
-        class="h-40 bg-sakiko-light flex items-center justify-center"
-      >
-        <img v-if="sourceLogo" :src="sourceLogo" alt="source" class="w-16 h-16 object-contain opacity-60" />
-        <FileText v-else class="w-16 h-16 text-gray-400 opacity-60" />
+        <div 
+          v-else 
+          class="h-40 bg-sakiko-light flex items-center justify-center"
+        >
+          <img v-if="sourceLogo" :src="sourceLogo" alt="source" class="w-16 h-16 object-contain opacity-60" />
+          <FileText v-else class="w-16 h-16 text-gray-400 opacity-60" />
+        </div>
+
+        <!-- Just Read Marker -->
+        <div 
+          v-if="isLastRead"
+          class="absolute top-0 right-0 bg-soyo text-white text-xs px-2 py-1 rounded-bl-lg shadow-sm font-medium z-10"
+        >
+          刚才看过
+        </div>
       </div>
       
       <!-- Content -->

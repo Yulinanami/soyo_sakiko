@@ -71,12 +71,12 @@ function isSelected(tag: string) {
         type="text"
         placeholder="添加排除..."
         @keyup.enter="addCustomTag"
-        class="px-3 py-1.5 border border-gray-200 rounded-full text-sm w-28 focus:outline-none focus:border-red-400 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+        class="px-3 py-1.5 border border-gray-200 rounded-full text-sm w-28 focus:outline-none focus:border-red-400 bg-white text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
       />
       <button 
         @click="addCustomTag" 
         :disabled="!newTag.trim()"
-        class="w-8 h-8 border border-gray-200 bg-white rounded-full cursor-pointer text-lg flex items-center justify-center
+        class="w-8 h-8 border border-gray-200 bg-white rounded-full cursor-pointer text-lg flex items-center justify-center text-gray-500
                hover:bg-red-500 hover:text-white hover:border-red-500 transition-all
                disabled:opacity-50 disabled:cursor-not-allowed
                dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:hover:bg-red-500"
