@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import ao3Logo from './assets/ao3.png';
 import pixivLogo from './assets/pixiv.png';
 import lofterLogo from './assets/lofter.png';
+import bilibiliLogo from './assets/bilibili.png';
 import { Home, Heart, BookOpen, Settings, Menu, Moon, Sun } from 'lucide-vue-next';
 
 const userStore = useUserStore();
@@ -110,6 +111,10 @@ watch(
         <a href="https://www.lofter.com/" target="_blank" class="flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-sakiko dark:hover:bg-gray-800 rounded-lg transition-colors no-underline">
           <img :src="lofterLogo" alt="Lofter" class="w-5 h-5 object-contain" />
           <span>Lofter</span>
+        </a>
+        <a href="https://www.bilibili.com/read/home/" target="_blank" class="flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-sakiko dark:hover:bg-gray-800 rounded-lg transition-colors no-underline">
+          <img :src="bilibiliLogo" alt="Bilibili" class="w-5 h-5 object-contain" />
+          <span>Bilibili</span>
         </a>
       </nav>
       

@@ -15,23 +15,30 @@ export const useNovelsStore = defineStore('novels', () => {
     ao3: [],
     pixiv: [],
     lofter: [],
+    bilibili: [],
   });
   const hasMoreBySource = ref<Record<NovelSource, boolean>>({
     ao3: false,
     pixiv: false,
     lofter: false,
+    bilibili: false,
   });
   const loadingSources = ref<Record<NovelSource, boolean>>({
     ao3: false,
     pixiv: false,
     lofter: false,
+    bilibili: false,
   });
   let requestId = 0;
 
   // Filters
   const selectedSources = ref<NovelSource[]>(['ao3']);
   const selectedTags = ref<string[]>(['素祥', '祥素']);
-  const excludeTags = ref<string[]>(['爱素', '愛素', '素爱', '素愛']);  // Default exclude tags
+  const excludeTags = ref<string[]>([
+    'all祥', '祥睦', '睦祥', '祥希', '希祥', 'mujica', '明日方舟', '要乐奈', 
+    'avemujica', 'mygo', '素爱', '祥爱', '爱祥', '祥初', '祥灯', '高松灯', 
+    '千早爱音', '三角初华', '海祥', '灯祥', '初祥', 'ansy', '爱素'
+  ]);
   const sortBy = ref<'date' | 'kudos' | 'hits' | 'wordCount'>('date');
 
   // Computed
@@ -45,15 +52,15 @@ export const useNovelsStore = defineStore('novels', () => {
     if (reset) {
       currentPage.value = 1;
       novels.value = [];
-      novelsBySource.value = { ao3: [], pixiv: [], lofter: [] };
-      hasMoreBySource.value = { ao3: false, pixiv: false, lofter: false };
+      novelsBySource.value = { ao3: [], pixiv: [], lofter: [], bilibili: [] };
+      hasMoreBySource.value = { ao3: false, pixiv: false, lofter: false, bilibili: false };
     }
 
     if (selectedSources.value.length === 0) {
       error.value = null;
       hasMore.value = false;
       loading.value = false;
-      loadingSources.value = { ao3: false, pixiv: false, lofter: false };
+      loadingSources.value = { ao3: false, pixiv: false, lofter: false, bilibili: false };
       return;
     }
 

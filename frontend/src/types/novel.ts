@@ -1,4 +1,4 @@
-export type NovelSource = "ao3" | "pixiv" | "lofter";
+export type NovelSource = "ao3" | "pixiv" | "lofter" | "bilibili";
 
 export interface Novel {
   id: string;

@@ -6,6 +6,7 @@ from app.adapters.base import BaseAdapter
 from app.adapters.ao3 import AO3Adapter
 from app.adapters.pixiv import PixivAdapter
 from app.adapters.lofter import LofterAdapter
+from app.adapters.bilibili import BilibiliAdapter
 from app.schemas.novel import NovelSource
 
 # Adapter registry
@@ -13,6 +14,7 @@ _adapters = {
     NovelSource.AO3: AO3Adapter(),
     NovelSource.PIXIV: PixivAdapter(),
     NovelSource.LOFTER: LofterAdapter(),
+    NovelSource.BILIBILI: BilibiliAdapter(),
 }
 
 
@@ -28,5 +30,6 @@ __all__ = [
     "AO3Adapter",
     "PixivAdapter",
     "LofterAdapter",
+    "BilibiliAdapter",
     "get_adapter",
 ]

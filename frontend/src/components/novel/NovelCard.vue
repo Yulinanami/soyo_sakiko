@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router';
 import ao3Logo from '../../assets/ao3.png';
 import pixivLogo from '../../assets/pixiv.png';
 import lofterLogo from '../../assets/lofter.png';
+import bilibiliLogo from '../../assets/bilibili.png';
 import { useNovelMeta } from '../../composables/useNovelMeta';
 import { FileText, BookOpen, Heart, AlignLeft } from 'lucide-vue-next';
 
@@ -34,6 +35,7 @@ const sourceLogos: Record<string, string> = {
   ao3: ao3Logo,
   pixiv: pixivLogo,
   lofter: lofterLogo,
+  bilibili: bilibiliLogo,
 };
 
 const sourceLogo = computed(() => sourceLogos[props.novel.source]);
@@ -43,6 +45,7 @@ const sourceClass = computed(() => {
     ao3: 'bg-red-700 text-white',
     pixiv: 'bg-sakiko text-white',
     lofter: 'bg-soyo text-white',
+    bilibili: 'bg-pink-500 text-white',
   };
   return classes[props.novel.source] || 'bg-gray-500 text-white';
 });
@@ -91,6 +94,11 @@ const coverImageUrl = computed(() => {
     if (lofterDomains.some(domain => imageUrl.includes(domain))) {
       return `${API_BASE}/proxy/lofter?url=${encodeURIComponent(imageUrl)}`;
     }
+  }
+  
+  // Bilibili images need proxy due to Referer check
+  if (props.novel.source === 'bilibili' && (imageUrl.includes('hdslb.com') || imageUrl.includes('bilibili.com'))) {
+    return `${API_BASE}/proxy/bilibili?url=${encodeURIComponent(imageUrl)}`;
   }
   
   return imageUrl;

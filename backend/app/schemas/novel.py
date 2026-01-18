@@ -12,6 +12,7 @@ class NovelSource(str, Enum):
     AO3 = "ao3"
     PIXIV = "pixiv"
     LOFTER = "lofter"
+    BILIBILI = "bilibili"
 
 
 class Novel(BaseModel):

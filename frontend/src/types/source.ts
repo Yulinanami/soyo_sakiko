@@ -19,6 +19,14 @@ export const DEFAULT_SOURCES: SourceConfig[] = [
     searchTags: ['Nagasaki Soyo/Toyokawa Sakiko', 'Toyokawa Sakiko/Nagasaki Soyo', '素祥', '祥素'],
   },
   {
+    name: 'bilibili',
+    displayName: 'Bilibili',
+    icon: '📺',
+    enabled: false,
+    requiresAuth: false,
+    searchTags: ['素祥', '祥素'],
+  },
+  {
     name: 'pixiv',
     displayName: 'Pixiv',
     icon: '🎨',

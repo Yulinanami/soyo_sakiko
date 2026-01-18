@@ -3,6 +3,7 @@ import { useSourcesStore } from '../../stores/sources';
 import ao3Logo from '../../assets/ao3.png';
 import pixivLogo from '../../assets/pixiv.png';
 import lofterLogo from '../../assets/lofter.png';
+import bilibiliLogo from '../../assets/bilibili.png';
 import { Lock } from 'lucide-vue-next';
 
 const sourcesStore = useSourcesStore();
@@ -19,6 +20,7 @@ const sourceLogos: Record<string, string> = {
   ao3: ao3Logo,
   pixiv: pixivLogo,
   lofter: lofterLogo,
+  bilibili: bilibiliLogo,
 };
 
 function toggle(name: string) {

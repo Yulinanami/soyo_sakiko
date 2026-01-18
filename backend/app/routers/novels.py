@@ -99,12 +99,11 @@ async def search_novels(
         # If we got the full count, there might be more
         if len(novels) >= per_source_count:
             any_has_more = True
-        if (
-            source == NovelSource.LOFTER
-            and settings.LOFTER_DYNAMIC_ENABLED
-            and novels
-        ):
+        if source == NovelSource.LOFTER and settings.LOFTER_DYNAMIC_ENABLED and novels:
             # Dynamic crawling doesn't expose total; allow manual "load more"
+            any_has_more = True
+        # Bilibili search returns recent articles only; always allow load more if results exist
+        if source == NovelSource.BILIBILI and novels:
             any_has_more = True
 
     # If multiple sources, interleave results for balanced display

@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     LOFTER_MAX_PAGE_SIZE: int = 30
     LOFTER_DYNAMIC_CACHE_TTL: int = 300
 
+    # Bilibili (optional)
+    BILIBILI_SESSDATA: str = ""  # 登录 cookie，可选
+
     # Reading history
     READING_HISTORY_TTL_DAYS: int = 30
 
