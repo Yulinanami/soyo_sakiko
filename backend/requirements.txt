@@ -17,10 +17,6 @@ passlib[bcrypt]>=1.7.0
 bcrypt<4.0.0
 python-multipart>=0.0.6
 
-# Redis
-redis>=5.0.0
-aioredis>=2.0.0
-
 # AO3
 ao3-api>=2.3.0
 

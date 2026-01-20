@@ -11,9 +11,6 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./soyosaki.db"
 
-    # Redis
-    REDIS_URL: str = "redis://localhost:6379/0"
-
     # Logging
     LOG_LEVEL: str = "INFO"
 

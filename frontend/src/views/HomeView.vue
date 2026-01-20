@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, nextTick, ref } from 'vue';
+import { onMounted, onBeforeUnmount, nextTick, ref } from 'vue';
 import { useNovelsStore } from '../stores/novels';
 import { useSourcesStore } from '../stores/sources';
 import NovelList from '../components/novel/NovelList.vue';
@@ -11,24 +11,44 @@ const novelsStore = useNovelsStore();
 const sourcesStore = useSourcesStore();
 const isExcludeOpen = ref(false);
 
+// Save scroll position when leaving the page
+function saveScrollPosition() {
+  sessionStorage.setItem('soyosaki:listScrollY', String(window.scrollY));
+}
+
 function restoreListScroll() {
   const raw = sessionStorage.getItem('soyosaki:listScrollY');
   if (!raw) return;
-  sessionStorage.removeItem('soyosaki:listScrollY');
   const y = Number(raw);
-  if (Number.isFinite(y)) {
-    window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+  if (Number.isFinite(y) && y > 0) {
+    // Use setTimeout to ensure DOM is fully rendered before scrolling
+    setTimeout(() => {
+      window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+    }, 50);
   }
 }
 
+onBeforeUnmount(() => {
+  // Save scroll position when leaving home page
+  saveScrollPosition();
+});
+
 onMounted(async () => {
+  // Check if we should preserve the list (coming from reader)
   const preserve = sessionStorage.getItem('soyosaki:preserveList') === '1';
-  if (preserve && novelsStore.novels.length > 0) {
-    sessionStorage.removeItem('soyosaki:preserveList');
+  
+  // Skip re-fetch if novels already exist in store (returning from other page)
+  if (novelsStore.novels.length > 0) {
+    if (preserve) {
+      sessionStorage.removeItem('soyosaki:preserveList');
+    }
     await nextTick();
     restoreListScroll();
     return;
   }
+  
+  // Only fetch if no novels in store
+  sessionStorage.removeItem('soyosaki:preserveList');
   await novelsStore.fetchNovels(true);
   await nextTick();
   restoreListScroll();

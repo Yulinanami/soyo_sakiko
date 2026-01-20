@@ -9,15 +9,10 @@ from typing import List
 from app.schemas.novel import Novel, NovelListResponse, NovelSource
 from app.schemas.response import ApiResponse
 from app.adapters import get_adapter
-from app.services.cache_service import cache, CacheKeys
 from app.config import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-# Cache TTL settings (in seconds)
-DETAIL_CACHE_TTL = 600  # 10 minutes
-CHAPTER_CACHE_TTL = 1800  # 30 minutes
 
 
 @router.get("", response_model=ApiResponse[NovelListResponse])
@@ -146,40 +141,21 @@ async def search_novels(
 
 @router.get("/{source}/{novel_id}", response_model=ApiResponse[Novel])
 async def get_novel_detail(source: NovelSource, novel_id: str):
-    """Get novel details with caching"""
-
-    # Try cache first
-    cache_key = CacheKeys.novel_detail(source.value, novel_id)
-    cached = await cache.get(cache_key)
-    if cached:
-        return ApiResponse(data=Novel(**cached))
-
-    # Fetch from adapter
+    """Get novel details"""
     adapter = get_adapter(source)
     novel = await adapter.get_detail(novel_id)
 
     if not novel:
         raise HTTPException(status_code=404, detail="Novel not found")
 
-    # Cache the result
-    await cache.set(cache_key, novel.model_dump(), DETAIL_CACHE_TTL)
-
     return ApiResponse(data=novel)
 
 
 @router.get("/{source}/{novel_id}/chapters", response_model=ApiResponse[List[dict]])
 async def get_chapters(source: NovelSource, novel_id: str):
-    """Get chapter list for a novel with caching"""
-
-    cache_key = CacheKeys.novel_chapters(source.value, novel_id)
-    cached = await cache.get(cache_key)
-    if cached:
-        return ApiResponse(data=cached)
-
+    """Get chapter list for a novel"""
     adapter = get_adapter(source)
     chapters = await adapter.get_chapters(novel_id)
-
-    await cache.set(cache_key, chapters, DETAIL_CACHE_TTL)
 
     return ApiResponse(data=chapters)
 
@@ -189,19 +165,11 @@ async def get_chapters(source: NovelSource, novel_id: str):
     response_model=ApiResponse[str],
 )
 async def get_chapter_content(source: NovelSource, novel_id: str, chapter_num: int):
-    """Get chapter content with caching"""
-
-    cache_key = CacheKeys.chapter_content(source.value, novel_id, chapter_num)
-    cached = await cache.get(cache_key)
-    if cached:
-        return ApiResponse(data=cached)
-
+    """Get chapter content"""
     adapter = get_adapter(source)
     content = await adapter.get_chapter_content(novel_id, chapter_num)
 
     if not content:
         raise HTTPException(status_code=404, detail="Chapter not found")
-
-    await cache.set(cache_key, content, CHAPTER_CACHE_TTL)
 
     return ApiResponse(data=content)

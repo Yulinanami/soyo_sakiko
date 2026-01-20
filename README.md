@@ -1,12 +1,13 @@
 # 🎸 SoyoSaki (素祥同人文聚合阅读器)
 
-SoyoSaki 是一个聚合了 AO3、Pixiv 和 Lofter 平台的同人小说阅读器。用于快速获取长崎素世 (Soyo) 和丰川祥子 (Sakiko) 的 CP同人文。
+SoyoSaki 是一个聚合了 AO3、Pixiv、Lofter 和 Bilibili 平台的同人小说阅读器。用于快速获取长崎素世 (Soyo) 和丰川祥子 (Sakiko) 的 CP同人文。
 
 ---
 
 ## 功能
 
-- **多源聚合搜索**：同时搜索 AO3、Pixiv 和 Lofter 上的同人文。
+- **多源聚合搜索**：同时搜索 AO3、Pixiv、Lofter 和 Bilibili 上的同人文。
+- **标签过滤**：支持排除不想看的 CP 标签。
 - **收藏与历史**：用户注册/登录，收藏夹和阅读历史存于本地数据库。
 - **凭证管理**：配置 Pixiv 和 Lofter 的用户凭证，获取同人文内容（AO3 无需凭证）。
 - **本地部署**：本地环境部署，无需服务器。
@@ -31,7 +32,7 @@ SoyoSaki 是一个聚合了 AO3、Pixiv 和 Lofter 平台的同人小说阅读�
   - `ao3-api` (AO3)
   - `pixivpy3` (Pixiv)
   - `playwright` (Lofter dynamic scraping)
-- **Caching**: Redis (Optional but recommended for performance)
+  - `httpx` (Bilibili)
 
 ---
 
@@ -40,7 +41,6 @@ SoyoSaki 是一个聚合了 AO3、Pixiv 和 Lofter 平台的同人小说阅读�
 ### 运行环境
 - Node.js (v18+)
 - Python (v3.10+)
-- Redis
 
 ### 克隆项目
 
