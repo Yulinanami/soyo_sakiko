@@ -60,9 +60,6 @@ python -m venv .venv
 # Linux/Mac
 source .venv/bin/activate
 
-# 安装 Playwright 浏览器内核
-playwright install chromium
-
 # 配置环境变量 (Windows)
 copy .env.example .env
 # 配置环境变量 (Linux/Mac)
@@ -70,6 +67,9 @@ cp .env.example .env
 
 # 安装依赖
 pip install -r requirements.txt
+
+# 安装 Playwright 浏览器内核
+playwright install chromium
 
 # 启动后端服务
 uvicorn app.main:app --reload
