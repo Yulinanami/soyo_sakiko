@@ -35,8 +35,8 @@ export const useNovelsStore = defineStore('novels', () => {
   const selectedSources = ref<NovelSource[]>(['ao3']);
   const selectedTags = ref<string[]>(['素祥', '祥素']);
   const excludeTags = ref<string[]>([
-    'all祥', '祥睦', '睦祥', '祥希', '希祥', 'mujica', '明日方舟', '要乐奈', 
-    'avemujica', 'mygo', '素爱', '祥爱', '爱祥', '祥初', '祥灯', '高松灯', 
+    'all祥', '祥睦', '睦祥', '祥希', '希祥', '要乐奈', 
+    '素爱', '祥爱', '爱祥', '祥初', '祥灯', '高松灯', 
     '千早爱音', '三角初华', '海祥', '灯祥', '初祥', 'ansy', '爱素'
   ]);
   const sortBy = ref<'date' | 'kudos' | 'hits' | 'wordCount'>('date');

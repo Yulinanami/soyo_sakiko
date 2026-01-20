@@ -10,7 +10,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.adapters.base import BaseAdapter
-from app.adapters.utils import exclude
+from app.adapters.utils import exclude, exclude_any_tag
 from app.schemas.novel import Novel, NovelSource
 from app.config import settings
 from app.services.http_client import get_sync_client
@@ -88,7 +88,8 @@ class BilibiliAdapter(BaseAdapter):
             novels = await self.run_in_executor(
                 self._search_sync, keyword, page, page_size, order
             )
-            # Apply exclude filter - filter out novels with excluded tags in title/summary
+
+            # Apply basic exclude filter first (title/summary)
             if exclude_tags and novels:
                 novels = [
                     n
@@ -96,6 +97,46 @@ class BilibiliAdapter(BaseAdapter):
                     if not exclude(n.title, exclude_tags)
                     and not exclude(n.summary, exclude_tags)
                 ]
+
+            # Enhanced filtering: fetch details to get real tags
+            if exclude_tags and novels:
+                import asyncio
+
+                # Limit concurrent requests to avoid rate limiting
+                semaphore = asyncio.Semaphore(3)
+
+                async def check_and_filter(novel: Novel, index: int) -> Optional[Novel]:
+                    async with semaphore:
+                        try:
+                            # Add small delay between requests
+                            if index > 0:
+                                await asyncio.sleep(0.3)
+
+                            # Fetch detail to get real tags
+                            detail = await self.get_detail(novel.id)
+                            if detail and detail.tags:
+                                # Check if any real tag matches exclude patterns
+                                if exclude_any_tag(detail.tags, exclude_tags):
+                                    logger.info(
+                                        f"Filtered out article {novel.id} due to tag match"
+                                    )
+                                    return None
+                                # Update novel with real tags
+                                novel.tags = detail.tags
+                            return novel
+                        except Exception as e:
+                            logger.warning(f"Error fetching detail for {novel.id}: {e}")
+                            return novel  # Keep on error
+
+                results = await asyncio.gather(
+                    *[check_and_filter(n, i) for i, n in enumerate(novels)],
+                    return_exceptions=True,
+                )
+                novels = [
+                    r for r in results if r is not None and not isinstance(r, Exception)
+                ]
+                logger.info(f"After enhanced filter: {len(novels)} novels remaining")
+
             return novels
         except Exception:
             logger.exception("Bilibili search error")
@@ -256,12 +297,23 @@ class BilibiliAdapter(BaseAdapter):
 
         summary = article_data.get("summary", "")
 
-        # Tags
+        # Tags - get from both categories and actual tags field
         tags = []
         categories = article_data.get("categories", [])
         for cat in categories:
             if cat.get("name"):
                 tags.append(cat["name"])
+
+        # Also get actual article tags
+        actual_tags = article_data.get("tags", [])
+        for tag_item in actual_tags:
+            tag_name = (
+                tag_item.get("name", "")
+                if isinstance(tag_item, dict)
+                else str(tag_item)
+            )
+            if tag_name and tag_name not in tags:
+                tags.append(tag_name)
 
         # Stats
         stats = article_data.get("stats", {})

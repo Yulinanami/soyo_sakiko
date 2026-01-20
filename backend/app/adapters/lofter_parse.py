@@ -7,7 +7,7 @@ import re
 from datetime import datetime
 from typing import List, Optional
 
-from app.adapters.utils import decode_unicode, exclude, sanitize
+from app.adapters.utils import decode_unicode, exclude, exclude_any_tag, sanitize
 from app.schemas.novel import Novel, NovelSource
 from app.adapters.lofter_common import (
     extract_blog_name,
@@ -101,6 +101,9 @@ def parse_tag_page_html(
 
         if title and exclude(title, exclude_tags):
             continue
+        # Also filter by actual tags
+        if exclude_any_tag(tags, exclude_tags):
+            continue
 
         kudos = None
         opt_text = item.get_text(" ", strip=True)
@@ -155,7 +158,7 @@ def parse_tag_page_html(
                 style = el.get("style") or ""
                 match = re.search(r"background-image\\s*:\\s*url\\(([^)]+)\\)", style)
                 if match:
-                    cover_image = match.group(1).strip('"\'')
+                    cover_image = match.group(1).strip("\"'")
                     break
         if cover_image:
             cover_image = normalize_lofter_image_url(cover_image)
@@ -300,6 +303,9 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
                 tag_matches = re.findall(r'"([^"]+)"', tag_list_str)
                 tags = tag_matches if tag_matches else []
             tags = [sanitize(tag) for tag in tags if tag]
+            # Filter by actual tags (in addition to title filter above)
+            if exclude_any_tag(tags, exclude_tags):
+                continue
 
             # Get hot/bookmark count
             hot = post.get("hot", "0")

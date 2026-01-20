@@ -4,7 +4,7 @@ Adapter utilities.
 
 import re
 import time
-from typing import Any, Callable, Iterable, Optional, Tuple, Type
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 
 _SURROGATE_RE = re.compile(r"[\ud800-\udfff]")
@@ -40,12 +40,27 @@ def sanitize_html(html: str) -> str:
 
 
 def exclude(text: str, patterns: Iterable[str]) -> bool:
-    """Return True when text contains any pattern."""
+    """Return True when text contains any pattern (case-insensitive)."""
     if not text:
         return False
+    text_lower = text.lower()
     for pattern in patterns or []:
-        if pattern and pattern in text:
+        if pattern and pattern.lower() in text_lower:
             return True
+    return False
+
+
+def exclude_any_tag(tags: List[str], exclude_patterns: Iterable[str]) -> bool:
+    """Return True when any tag matches any exclude pattern (case-insensitive)."""
+    if not tags:
+        return False
+    for tag in tags:
+        if not tag:
+            continue
+        tag_lower = tag.lower()
+        for pattern in exclude_patterns or []:
+            if pattern and pattern.lower() in tag_lower:
+                return True
     return False
 
 
@@ -83,7 +98,7 @@ def with_retries(
                 break
             if on_retry:
                 on_retry(exc, attempt + 1)
-            delay = min(base_delay * (2 ** attempt), max_delay)
+            delay = min(base_delay * (2**attempt), max_delay)
             time.sleep(delay)
     if last_error:
         raise last_error

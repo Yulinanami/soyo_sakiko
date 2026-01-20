@@ -168,9 +168,11 @@ async def proxy_bilibili_image(url: str):
             headers={"Cache-Control": "public, max-age=86400"},
         )
 
-    # Fetch with proper headers
+    # Fetch with proper headers (use no-proxy client for Chinese sites)
     try:
-        client = get_async_client()
+        from app.services.http_client import get_no_proxy_async_client
+
+        client = get_no_proxy_async_client()
         response = await client.get(
             url,
             headers={

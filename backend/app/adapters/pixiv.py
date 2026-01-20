@@ -10,7 +10,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.adapters.base import BaseAdapter
-from app.adapters.utils import exclude, with_retries
+from app.adapters.utils import exclude, exclude_any_tag, with_retries
 from app.schemas.novel import Novel, NovelSource
 from app.config import settings
 
@@ -88,9 +88,9 @@ class PixivAdapter(BaseAdapter):
                         result = with_retries(
                             lambda: self._api.search_novel(
                                 word=tag,
-                                sort="date_desc"
-                                if sort_by == "date"
-                                else "popular_desc",
+                                sort=(
+                                    "date_desc" if sort_by == "date" else "popular_desc"
+                                ),
                                 search_target="partial_match_for_tags",
                                 offset=offset,  # Use offset for pagination
                             ),
@@ -115,7 +115,11 @@ class PixivAdapter(BaseAdapter):
                             title = novel_data.get("title", "")
                             if exclude(title, exclude_tags):
                                 continue
-                            all_novels.append(self._parse_novel(novel_data))
+                            novel = self._parse_novel(novel_data)
+                            # Also filter by actual work tags
+                            if exclude_any_tag(novel.tags, exclude_tags):
+                                continue
+                            all_novels.append(novel)
                     except Exception as e:
                         logger.exception("Pixiv search error for tag %s", tag)
                         continue

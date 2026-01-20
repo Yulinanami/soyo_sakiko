@@ -6,7 +6,7 @@ Uses ao3-api library for fetching fanfiction from Archive of Our Own
 import logging
 from typing import List, Optional
 from app.adapters.base import BaseAdapter
-from app.adapters.utils import exclude, to_iso_date, with_retries
+from app.adapters.utils import exclude, exclude_any_tag, to_iso_date, with_retries
 from app.schemas.novel import Novel, NovelSource
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,6 @@ class AO3Adapter(BaseAdapter):
             sort_by,
         )
 
-
     def _search_sync(
         self,
         tags: List[str],
@@ -79,6 +78,7 @@ class AO3Adapter(BaseAdapter):
                 sort_column=self._map_sort(sort_by),
                 sort_direction="desc",
             )
+
             def _update() -> None:
                 search.update()
 
@@ -110,6 +110,9 @@ class AO3Adapter(BaseAdapter):
                         continue
 
                     novel = self._convert_work(work)
+                    # Also filter by actual work tags
+                    if exclude_any_tag(novel.tags, exclude_tags):
+                        continue
                     novels.append(novel)
                 except Exception:
                     logger.warning("AO3 work conversion failed")
