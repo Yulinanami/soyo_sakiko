@@ -1,0 +1,88 @@
+name: build-windows
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装前端依赖
+        working-directory: frontend
+        run: npm ci
+
+      - name: 构建前端
+        working-directory: frontend
+        run: npm run build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: 安装后端依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pyinstaller
+
+      - name: 安装浏览器内核
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: backend/playwright-browsers
+        run: python -m playwright install chromium
+
+      - name: 生成后端启动脚本
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          Path("backend/run_backend.py").write_text(
+              "import os\n"
+              "import sys\n"
+              "from pathlib import Path\n"
+              "\n"
+              "import uvicorn\n"
+              "\n"
+              "if not os.environ.get('PLAYWRIGHT_BROWSERS_PATH') and getattr(sys, 'frozen', False):\n"
+              "    browsers_path = Path(sys.executable).parent / 'playwright-browsers'\n"
+              "    if browsers_path.exists():\n"
+              "        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(browsers_path)\n"
+              "\n"
+              "if __name__ == '__main__':\n"
+              "    uvicorn.run('app.main:app', host='127.0.0.1', port=8000)\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: 构建后端
+        run: |
+          pyinstaller --noconfirm --clean --onedir --console --name SoyoSakiBackend --collect-all playwright backend/run_backend.py --paths backend
+
+      - name: 组装产物
+        run: |
+          APP_DIR="release/SoyoSaki-${{ github.ref_name }}"
+          mkdir -p "$APP_DIR"
+          cp -R backend/playwright-browsers dist/SoyoSakiBackend/playwright-browsers
+          cp -R dist/SoyoSakiBackend "$APP_DIR/backend"
+          cp -R frontend/dist "$APP_DIR/frontend"
+          cd release
+          7z a SoyoSaki-${{ github.ref_name }}-x64-windows.zip "SoyoSaki-${{ github.ref_name }}"
+
+      - name: 上传产物
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/SoyoSaki-${{ github.ref_name }}-x64-windows.zip
