@@ -81,7 +81,7 @@ playwright install chromium
 # 启动后端服务
 uvicorn app.main:app --reload
 ```
-后端服务将运行在 `http://localhost:8000`
+后端服务运行在 `http://localhost:8000`
 
 ### 2. 前端设置
 
@@ -94,6 +94,7 @@ npm install
 # 启动开发服务器
 npm run dev
 ```
+使用浏览器进入 `http://localhost:5173` 即可打开程序
 
 ---
 
