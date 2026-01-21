@@ -1,7 +1,7 @@
 """Pixiv 数据整理"""
 
 from datetime import datetime
-from typing import Any, List
+from typing import List
 
 from app.schemas.novel import Novel, NovelSource
 

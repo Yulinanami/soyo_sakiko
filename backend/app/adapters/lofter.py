@@ -8,7 +8,7 @@ from app.adapters.base import BaseAdapter
 from app.adapters.lofter_content import fetch_post_content
 from app.adapters.lofter_dynamic import search_dynamic_sync
 from app.adapters.lofter_common import merge_novel_list
-from app.schemas.novel import Novel, NovelSource
+from app.schemas.novel import Novel
 from app.config import settings
 
 logger = logging.getLogger(__name__)
