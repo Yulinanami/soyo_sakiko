@@ -27,6 +27,9 @@ jobs:
 
       - name: 构建前端
         working-directory: frontend
+        env:
+          VITE_API_BASE: /api
+          VITE_API_URL: /api
         run: npm run build
 
       - uses: actions/setup-python@v5
@@ -53,31 +56,56 @@ jobs:
           Path("backend/run_backend.py").write_text(
               "import os\n"
               "import sys\n"
+              "import threading\n"
+              "import webbrowser\n"
               "from pathlib import Path\n"
               "\n"
+              "from fastapi.staticfiles import StaticFiles\n"
               "import uvicorn\n"
               "\n"
+              "def get_root():\n"
+              "    if getattr(sys, 'frozen', False):\n"
+              "        return Path(sys.executable).parent\n"
+              "    return Path(__file__).resolve().parent\n"
+              "\n"
+              "def setup_frontend(app):\n"
+              "    root = get_root()\n"
+              "    frontend_dir = root / 'frontend'\n"
+              "    if frontend_dir.is_dir():\n"
+              "        app.mount('/', StaticFiles(directory=str(frontend_dir), html=True), name='frontend')\n"
+              "        return True\n"
+              "    return False\n"
+              "\n"
               "if not os.environ.get('PLAYWRIGHT_BROWSERS_PATH') and getattr(sys, 'frozen', False):\n"
-              "    browsers_path = Path(sys.executable).parent / 'playwright-browsers'\n"
+              "    browsers_path = get_root() / 'playwright-browsers'\n"
               "    if browsers_path.exists():\n"
               "        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(browsers_path)\n"
               "\n"
+              "from app.main import app\n"
+              "\n"
+              "has_frontend = setup_frontend(app)\n"
+              "\n"
+              "def open_browser():\n"
+              "    webbrowser.open('http://127.0.0.1:8000')\n"
+              "\n"
               "if __name__ == '__main__':\n"
-              "    uvicorn.run('app.main:app', host='127.0.0.1', port=8000)\n",
+              "    if has_frontend:\n"
+              "        threading.Timer(1.0, open_browser).start()\n"
+              "    uvicorn.run(app, host='127.0.0.1', port=8000)\n",
               encoding="utf-8",
           )
           PY
 
       - name: 构建后端
         run: |
-          pyinstaller --noconfirm --clean --onedir --console --name SoyoSakiBackend --collect-all playwright --collect-submodules app --collect-submodules passlib --hidden-import app.main --hidden-import passlib.handlers.bcrypt backend/run_backend.py --paths backend
+          pyinstaller --noconfirm --clean --onedir --console --name SoyoSaki --collect-all playwright --collect-submodules app --collect-submodules passlib --hidden-import app.main --hidden-import passlib.handlers.bcrypt backend/run_backend.py --paths backend
 
       - name: 组装产物
         run: |
           APP_DIR="release/SoyoSaki-${{ github.ref_name }}"
           mkdir -p "$APP_DIR"
-          cp -R backend/playwright-browsers dist/SoyoSakiBackend/playwright-browsers
-          cp -R dist/SoyoSakiBackend "$APP_DIR/backend"
+          cp -R backend/playwright-browsers dist/SoyoSaki/playwright-browsers
+          cp -R dist/SoyoSaki/* "$APP_DIR/"
           cp -R frontend/dist "$APP_DIR/frontend"
           cd release
           tar -czf SoyoSaki-${{ github.ref_name }}-x64-linux.tar.gz "SoyoSaki-${{ github.ref_name }}"
