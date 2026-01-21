@@ -3,7 +3,6 @@
 import logging
 import uuid
 from typing import Optional, List, Dict, Any, Tuple
-
 from app.config import settings
 from app.services.http_client import get_sync_client
 

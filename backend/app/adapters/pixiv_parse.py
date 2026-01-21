@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from typing import List
-
 from app.schemas.novel import Novel, NovelSource
 
 

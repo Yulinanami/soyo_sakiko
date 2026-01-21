@@ -4,7 +4,6 @@ import logging
 import re
 from datetime import datetime
 from typing import List, Optional
-
 from app.adapters.utils import decode_unicode, exclude, exclude_any_tag, sanitize
 from app.schemas.novel import Novel, NovelSource
 from app.adapters.lofter_common import (

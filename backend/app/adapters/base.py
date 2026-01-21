@@ -1,10 +1,9 @@
 """来源处理基类"""
 
-from abc import ABC, abstractmethod
 import asyncio
+from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, List, Optional
-
 from app.schemas.novel import Novel
 from app.config import settings
 

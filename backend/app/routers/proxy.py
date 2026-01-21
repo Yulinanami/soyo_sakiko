@@ -1,11 +1,11 @@
 """图片转发入口"""
 
 import logging
-
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
 import httpx
 import hashlib
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
+
 
 from app.services.http_client import get_async_client
 

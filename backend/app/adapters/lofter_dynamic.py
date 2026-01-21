@@ -2,7 +2,6 @@
 
 import logging
 from typing import List, Optional
-
 from app.adapters.lofter_common import merge_novel_list, parse_cookie_header
 from app.adapters.lofter_parse import parse_dwr_response, parse_tag_page_html
 from app.config import settings

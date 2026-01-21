@@ -17,11 +17,13 @@ from app.adapters.bilibili_parse import (
 
 logger = logging.getLogger(__name__)
 
+
 class BilibiliAdapter(BaseAdapter):
     """处理 Bilibili 数据"""
 
     source_name = "bilibili"
     SOYOSAKI_TAGS = ["素祥", "祥素", "长崎素世", "丰川祥子"]
+
     def __init__(self) -> None:
         """初始化所需状态"""
         super().__init__()

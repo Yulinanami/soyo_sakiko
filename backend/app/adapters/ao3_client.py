@@ -2,7 +2,6 @@
 
 import logging
 from typing import Any, List
-
 from app.adapters.utils import with_retries
 
 logger = logging.getLogger(__name__)

@@ -1,14 +1,14 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { historyApi } from '@services/api';
-import type { HistoryItem } from '@app-types/user_data';
-import { useAsyncState } from '@composables/useAsyncState';
+import { defineStore } from "pinia";
+import { ref } from "vue";
+import { historyApi } from "@services/api";
+import type { HistoryItem } from "@app-types/user_data";
+import { useAsyncState } from "@composables/useAsyncState";
 
 type RecordOptions = {
   silent?: boolean;
 };
 
-export const useHistoryStore = defineStore('history', () => {
+export const useHistoryStore = defineStore("history", () => {
   const items = ref<HistoryItem[]>([]);
   const { loading, error, start, stop, setError } = useAsyncState();
   const loaded = ref(false);
@@ -28,13 +28,16 @@ export const useHistoryStore = defineStore('history', () => {
       const data = await historyApi.getAll();
       setItems(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '加载阅读记录失败');
+      setError(err instanceof Error ? err.message : "加载阅读记录失败");
     } finally {
       stop();
     }
   }
 
-  async function recordHistory(payload: Record<string, any>, options: RecordOptions = {}) {
+  async function recordHistory(
+    payload: Record<string, any>,
+    options: RecordOptions = {},
+  ) {
     // 记录阅读进度
     try {
       const item = await historyApi.record(payload);
@@ -47,7 +50,7 @@ export const useHistoryStore = defineStore('history', () => {
       return item;
     } catch (err) {
       if (!options.silent) {
-        setError(err instanceof Error ? err.message : '记录阅读进度失败');
+        setError(err instanceof Error ? err.message : "记录阅读进度失败");
       }
       return null;
     }
@@ -60,7 +63,7 @@ export const useHistoryStore = defineStore('history', () => {
       items.value = items.value.filter((item) => item.id !== id);
     } catch (err) {
       if (!options.silent) {
-        setError(err instanceof Error ? err.message : '移除记录失败');
+        setError(err instanceof Error ? err.message : "移除记录失败");
       }
     }
   }

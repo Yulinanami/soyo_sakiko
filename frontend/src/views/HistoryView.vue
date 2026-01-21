@@ -53,7 +53,8 @@ function formatLastRead(date: string) {
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-    <header class="bg-linear-to-r from-primary to-secondary text-white py-12 text-center dark:bg-none dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300 shadow-sm border-b border-transparent">
+    <header
+      class="bg-linear-to-r from-primary to-secondary text-white py-12 text-center dark:bg-none dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300 shadow-sm border-b border-transparent">
       <h1 class="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
         <BookOpen class="w-8 h-8" /> 阅读记录
       </h1>
@@ -64,7 +65,8 @@ function formatLastRead(date: string) {
       <div class="max-w-7xl mx-auto px-4">
         <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">加载中...</div>
 
-        <div v-else-if="error" class="text-center text-red-500 p-8 bg-red-50 rounded-lg dark:bg-red-900/20 dark:text-red-400">
+        <div v-else-if="error"
+          class="text-center text-red-500 p-8 bg-red-50 rounded-lg dark:bg-red-900/20 dark:text-red-400">
           {{ error }}
         </div>
 
@@ -75,16 +77,11 @@ function formatLastRead(date: string) {
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <div v-for="item in items" :key="item.id" class="relative group">
-            <NovelCard
-              :novel="toNovel(item)"
-              :footer-note="`最近阅读: ${formatLastRead(item.last_read_at)}`"
-              :show-favorite-action="false"
-            />
-            <button
-              class="absolute top-2 right-2 px-3 py-1 bg-red-500/90 text-white text-sm rounded
+            <NovelCard :novel="toNovel(item)" :footer-note="`最近阅读: ${formatLastRead(item.last_read_at)}`"
+              :show-favorite-action="false" />
+            <button class="absolute top-2 right-2 px-3 py-1 bg-red-500/90 text-white text-sm rounded
                      opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-              @click="removeHistory(item.id)"
-            >
+              @click="removeHistory(item.id)">
               移除记录
             </button>
           </div>

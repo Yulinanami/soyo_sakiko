@@ -3,7 +3,6 @@
 import logging
 import time
 from typing import List, Optional
-
 from app.adapters.base import BaseAdapter
 from app.adapters.lofter_content import fetch_post_content
 from app.adapters.lofter_dynamic import search_dynamic_sync

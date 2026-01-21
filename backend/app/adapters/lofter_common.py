@@ -2,7 +2,6 @@
 
 import re
 from typing import List
-
 from app.adapters.utils import novel_key, sanitize
 from app.schemas.novel import Novel
 

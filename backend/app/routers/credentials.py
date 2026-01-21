@@ -1,7 +1,6 @@
 """凭证相关路由"""
 
 from fastapi import APIRouter, HTTPException
-
 from app.services.credential_service import credential_manager
 from app.config import settings
 from app.schemas.response import ApiResponse

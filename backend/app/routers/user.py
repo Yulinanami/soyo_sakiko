@@ -1,10 +1,8 @@
 """用户数据路由"""
 
 from datetime import datetime, timedelta
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
 from app.config import settings
 from app.database import get_db
 from app.models.favorite import Favorite, ReadingHistory

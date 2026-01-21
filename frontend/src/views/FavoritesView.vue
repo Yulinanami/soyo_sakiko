@@ -56,34 +56,34 @@ function toNovel(fav: FavoriteItem): Novel {
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-    <header class="bg-linear-to-r from-primary to-secondary text-white py-12 text-center dark:bg-none dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300 shadow-sm border-b border-transparent">
+    <header
+      class="bg-linear-to-r from-primary to-secondary text-white py-12 text-center dark:bg-none dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300 shadow-sm border-b border-transparent">
       <h1 class="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
         <Heart class="w-8 h-8" /> 收藏
       </h1>
       <p>共收藏 {{ favorites.length }} 篇小说</p>
     </header>
-    
+
     <main class="py-8">
       <div class="max-w-7xl mx-auto px-4">
         <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">加载中...</div>
-        
-        <div v-else-if="error" class="text-center text-red-500 p-8 bg-red-50 rounded-lg dark:bg-red-900/20 dark:text-red-400">
+
+        <div v-else-if="error"
+          class="text-center text-red-500 p-8 bg-red-50 rounded-lg dark:bg-red-900/20 dark:text-red-400">
           {{ error }}
         </div>
-        
+
         <div v-else-if="favorites.length === 0" class="text-center py-16">
           <p class="text-gray-500 mb-6 dark:text-gray-400">还没有收藏任何小说</p>
           <router-link to="/" class="btn-primary">去发现好文</router-link>
         </div>
-        
+
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <div v-for="fav in favorites" :key="fav.id" class="relative group">
             <NovelCard :novel="toNovel(fav)" :show-favorite-action="false" />
-            <button 
-              class="absolute top-2 right-2 px-3 py-1 bg-red-500/90 text-white text-sm rounded
+            <button class="absolute top-2 right-2 px-3 py-1 bg-red-500/90 text-white text-sm rounded
                      opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-              @click="removeFavorite(fav.id)"
-            >
+              @click="removeFavorite(fav.id)">
               取消收藏
             </button>
           </div>

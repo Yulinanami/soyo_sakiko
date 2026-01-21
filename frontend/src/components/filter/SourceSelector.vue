@@ -39,15 +39,15 @@ const credentialSources = ['pixiv', 'lofter'];
 function toggle(name: string) {
   // 切换来源
   const source = sourcesStore.sources.find(s => s.name === name);
-  
+
   if (source && !source.enabled && credentialSources.includes(name)) {
     sourcesStore.toggleSource(name);
     emit('change');
-    
+
     checkCredentialsAsync(name, source.displayName);
     return;
   }
-  
+
   sourcesStore.toggleSource(name);
   emit('change');
 }
@@ -87,41 +87,27 @@ function continueWithoutCredentials() {
   <div class="flex items-center gap-3">
     <span class="font-medium text-gray-700 whitespace-nowrap dark:text-gray-300">数据源:</span>
     <div class="flex gap-2 flex-wrap">
-      <button
-        v-for="source in sourcesStore.sources"
-        :key="source.name"
-        :class="[
-          'flex items-center gap-1.5 px-3 py-2 border-2 rounded-lg cursor-pointer transition-all text-sm',
-          source.enabled 
-            ? 'border-sakiko bg-sakiko text-white' 
-            : 'border-gray-200 bg-white hover:border-sakiko hover:text-sakiko-dark dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-sakiko dark:hover:text-sakiko-light',
-          source.requiresAuth && !source.enabled ? 'opacity-60' : ''
-        ]"
-        @click="toggle(source.name)"
-        :title="source.requiresAuth ? '需要配置账号' : ''"
-      >
-        <span
-          v-if="source.enabled && props.loadingSources?.[source.name]"
-          class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"
-        ></span>
+      <button v-for="source in sourcesStore.sources" :key="source.name" :class="[
+        'flex items-center gap-1.5 px-3 py-2 border-2 rounded-lg cursor-pointer transition-all text-sm',
+        source.enabled
+          ? 'border-sakiko bg-sakiko text-white'
+          : 'border-gray-200 bg-white hover:border-sakiko hover:text-sakiko-dark dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-sakiko dark:hover:text-sakiko-light',
+        source.requiresAuth && !source.enabled ? 'opacity-60' : ''
+      ]" @click="toggle(source.name)" :title="source.requiresAuth ? '需要配置账号' : ''">
+        <span v-if="source.enabled && props.loadingSources?.[source.name]"
+          class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
         <span v-else-if="sourceLogos[source.name]" class="text-base">
-          <img 
-            :src="sourceLogos[source.name]" 
-            :alt="source.displayName"
-            class="w-4 h-4 object-contain"
-          />
+          <img :src="sourceLogos[source.name]" :alt="source.displayName" class="w-4 h-4 object-contain" />
         </span>
-        <span v-else class="text-base">{{ source.icon }}</span>
+
         <span>{{ source.displayName }}</span>
         <Lock v-if="source.requiresAuth && !source.enabled" class="w-3 h-3" />
       </button>
-      
+
       <!-- 刷新 -->
-      <button
-        @click="emit('refresh')"
+      <button @click="emit('refresh')"
         class="flex items-center gap-1.5 px-3 py-2 border-2 border-gray-200 bg-white rounded-lg cursor-pointer transition-all text-sm hover:border-sakiko hover:text-sakiko-dark dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-sakiko dark:hover:text-sakiko-light"
-        title="刷新数据"
-      >
+        title="刷新数据">
         <RefreshCw class="w-4 h-4" />
       </button>
     </div>
@@ -129,30 +115,24 @@ function continueWithoutCredentials() {
 
   <!-- 登录提示 -->
   <Teleport to="body">
-    <div 
-      v-if="showCredentialDialog" 
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      @click.self="showCredentialDialog = false"
-    >
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
+    <div v-if="showCredentialDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      @click.self="showCredentialDialog = false">
+      <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">
           需要配置登录凭证
         </h3>
         <p class="text-gray-600 dark:text-gray-300 mb-6">
-          <span class="font-medium text-sakiko">{{ pendingSourceName }}</span> 
+          <span class="font-medium text-sakiko">{{ pendingSourceName }}</span>
           需要登录凭证才能获取内容。请先前往设置页面完成配置。
         </p>
         <div class="flex gap-3 justify-end">
-          <button
-            @click="continueWithoutCredentials"
-            class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
+          <button @click="continueWithoutCredentials"
+            class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
             仍然启用
           </button>
-          <button
-            @click="goToSettings"
-            class="px-4 py-2 bg-sakiko text-white rounded-lg hover:bg-sakiko/90 transition-colors"
-          >
+          <button @click="goToSettings"
+            class="px-4 py-2 bg-sakiko text-white rounded-lg hover:bg-sakiko/90 transition-colors">
             去设置
           </button>
         </div>

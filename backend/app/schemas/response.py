@@ -1,7 +1,6 @@
 """通用返回结构"""
 
 from typing import Generic, Optional, TypeVar
-
 from pydantic import BaseModel
 
 T = TypeVar("T")

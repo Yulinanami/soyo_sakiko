@@ -3,7 +3,6 @@
 import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-
 from app.schemas.novel import Novel, NovelSource
 
 
@@ -71,7 +70,9 @@ def parse_article_summary(article: Dict[str, Any]) -> Optional[Novel]:
     )
 
 
-def parse_article_detail(article_data: Dict[str, Any], fallback_id: str) -> Optional[Novel]:
+def parse_article_detail(
+    article_data: Dict[str, Any], fallback_id: str
+) -> Optional[Novel]:
     """整理文章详细信息"""
     if not article_data:
         return None
@@ -94,9 +95,7 @@ def parse_article_detail(article_data: Dict[str, Any], fallback_id: str) -> Opti
     actual_tags = article_data.get("tags", [])
     for tag_item in actual_tags:
         tag_name = (
-            tag_item.get("name", "")
-            if isinstance(tag_item, dict)
-            else str(tag_item)
+            tag_item.get("name", "") if isinstance(tag_item, dict) else str(tag_item)
         )
         if tag_name and tag_name not in tags:
             tags.append(tag_name)
@@ -113,8 +112,7 @@ def parse_article_detail(article_data: Dict[str, Any], fallback_id: str) -> Opti
     )
 
     cover_image = (
-        article_data.get("banner_url", "")
-        or article_data.get("image_urls", [""])[0]
+        article_data.get("banner_url", "") or article_data.get("image_urls", [""])[0]
         if article_data.get("image_urls")
         else None
     )
@@ -226,9 +224,7 @@ def parse_bilibili_content(content: str) -> str:
                 if isinstance(op, dict):
                     insert = op.get("insert", "")
                     if isinstance(insert, str):
-                        text = insert.replace("\n\n", "</p><p>").replace(
-                            "\n", "<br>"
-                        )
+                        text = insert.replace("\n\n", "</p><p>").replace("\n", "<br>")
                         html_parts.append(text)
                     elif isinstance(insert, dict):
                         if "image" in insert:

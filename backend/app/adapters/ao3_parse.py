@@ -1,7 +1,6 @@
 """AO3 数据整理"""
 
 from typing import Any, List
-
 from app.adapters.utils import to_iso_date
 from app.schemas.novel import Novel, NovelSource
 

@@ -1,11 +1,11 @@
-import { defineStore } from 'pinia';
-import { computed, ref, watch } from 'vue';
-import type { User } from '@app-types/user';
-import { authApi, setAuthToken } from '@services/api';
-import type { AxiosError } from 'axios';
-import { useAsyncState } from '@composables/useAsyncState';
+import { defineStore } from "pinia";
+import { computed, ref, watch } from "vue";
+import type { User } from "@app-types/user";
+import { authApi, setAuthToken } from "@services/api";
+import type { AxiosError } from "axios";
+import { useAsyncState } from "@composables/useAsyncState";
 
-export const useUserStore = defineStore('user', () => {
+export const useUserStore = defineStore("user", () => {
   // 用户状态
   const user = ref<User | null>(null);
   const token = ref<string | null>(readToken());
@@ -22,18 +22,18 @@ export const useUserStore = defineStore('user', () => {
     try {
       const response = await authApi.login({ username, password });
       if (!response.accessToken) {
-        setError('登录失败，请重试');
+        setError("登录失败，请重试");
         return false;
       }
       token.value = response.accessToken;
       user.value = response.user;
-      localStorage.setItem('token', response.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem("token", response.accessToken);
+      localStorage.setItem("user", JSON.stringify(response.user));
       setAuthToken(response.accessToken);
       return true;
     } catch (err) {
       const axiosError = err as AxiosError<{ detail?: string }>;
-      setError(axiosError.response?.data?.detail || '登录失败');
+      setError(axiosError.response?.data?.detail || "登录失败");
       return false;
     } finally {
       stop();
@@ -47,18 +47,18 @@ export const useUserStore = defineStore('user', () => {
     try {
       const response = await authApi.register({ username, password });
       if (!response.accessToken) {
-        setError('注册失败，请重试');
+        setError("注册失败，请重试");
         return false;
       }
       token.value = response.accessToken;
       user.value = response.user;
-      localStorage.setItem('token', response.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem("token", response.accessToken);
+      localStorage.setItem("user", JSON.stringify(response.user));
       setAuthToken(response.accessToken);
       return true;
     } catch (err) {
       const axiosError = err as AxiosError<{ detail?: string }>;
-      setError(axiosError.response?.data?.detail || '注册失败');
+      setError(axiosError.response?.data?.detail || "注册失败");
       return false;
     } finally {
       stop();
@@ -80,8 +80,8 @@ export const useUserStore = defineStore('user', () => {
     // 退出登录
     token.value = null;
     user.value = null;
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setAuthToken(null);
   }
 
@@ -112,14 +112,14 @@ export const useUserStore = defineStore('user', () => {
     (isDark) => {
       // 应用外观变化
       if (isDark) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('darkMode', '1');
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("darkMode", "1");
       } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.removeItem('darkMode');
+        document.documentElement.classList.remove("dark");
+        localStorage.removeItem("darkMode");
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   function toggleDarkMode() {
@@ -145,9 +145,9 @@ export const useUserStore = defineStore('user', () => {
 
 function readToken(): string | null {
   // 读取本地登录信息
-  const stored = localStorage.getItem('token');
-  if (!stored || stored === 'undefined' || stored === 'null') {
-    localStorage.removeItem('token');
+  const stored = localStorage.getItem("token");
+  if (!stored || stored === "undefined" || stored === "null") {
+    localStorage.removeItem("token");
     return null;
   }
   return stored;
@@ -155,17 +155,17 @@ function readToken(): string | null {
 
 function readUser(): User | null {
   // 读取本地用户信息
-  const stored = localStorage.getItem('user');
+  const stored = localStorage.getItem("user");
   if (!stored) return null;
   try {
     return JSON.parse(stored) as User;
   } catch {
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
     return null;
   }
 }
 
 function readDarkMode(): boolean {
   // 读取外观设置
-  return localStorage.getItem('darkMode') === '1';
+  return localStorage.getItem("darkMode") === "1";
 }

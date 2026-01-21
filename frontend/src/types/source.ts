@@ -1,39 +1,34 @@
-import type { NovelSource } from '@app-types/novel';
+import type { NovelSource } from "@app-types/novel";
 
 export interface SourceConfig {
   name: NovelSource;
   displayName: string;
-  icon: string;
   enabled: boolean;
   requiresAuth: boolean;
 }
 
 export const DEFAULT_SOURCES: SourceConfig[] = [
   {
-    name: 'ao3',
-    displayName: 'Archive of Our Own',
-    icon: '📚',
+    name: "ao3",
+    displayName: "Archive of Our Own",
     enabled: true,
     requiresAuth: false,
   },
   {
-    name: 'bilibili',
-    displayName: 'Bilibili',
-    icon: '📺',
+    name: "bilibili",
+    displayName: "Bilibili",
     enabled: false,
     requiresAuth: false,
   },
   {
-    name: 'pixiv',
-    displayName: 'Pixiv',
-    icon: '🎨',
+    name: "pixiv",
+    displayName: "Pixiv",
     enabled: false,
     requiresAuth: true,
   },
   {
-    name: 'lofter',
-    displayName: 'Lofter',
-    icon: '📝',
+    name: "lofter",
+    displayName: "Lofter",
     enabled: false,
     requiresAuth: true,
   },

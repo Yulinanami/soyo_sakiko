@@ -53,7 +53,7 @@ async function loadNovel() {
     }
   } catch (err) {
     console.warn('Could not load novel detail:', err);
-    
+
     const cached = readCachedNovel();
 
     let sourceUrl = '';
@@ -119,14 +119,14 @@ async function recordHistory(chapter: number) {
   try {
     await historyStore.recordHistory(
       {
-      novel_id: novel.value.id,
-      source: novel.value.source,
-      title: novel.value.title,
-      author: novel.value.author,
-      cover_url: novel.value.cover_image,
-      source_url: novel.value.source_url,
-      last_chapter: chapter,
-      progress,
+        novel_id: novel.value.id,
+        source: novel.value.source,
+        title: novel.value.title,
+        author: novel.value.author,
+        cover_url: novel.value.cover_image,
+        source_url: novel.value.source_url,
+        last_chapter: chapter,
+        progress,
       },
       { silent: true }
     );
@@ -250,31 +250,23 @@ onBeforeRouteLeave(() => {
 <template>
   <div class="min-h-screen bg-soyo-cream dark:bg-gray-900 transition-colors duration-300">
     <!-- 顶部信息 -->
-    <header v-if="novel" class="relative z-10 bg-soyo text-white py-8 dark:bg-gray-800 transition-colors duration-300 shadow-sm">
+    <header v-if="novel"
+      class="relative z-10 bg-soyo text-white py-8 dark:bg-gray-800 transition-colors duration-300 shadow-sm">
       <div class="max-w-3xl mx-auto px-4">
-        <button
-          type="button"
-          @click="goBack"
-          class="text-white/80 text-sm hover:text-white no-underline"
-        >
+        <button type="button" @click="goBack" class="text-white/80 text-sm hover:text-white no-underline">
           ← 返回列表
         </button>
         <h1 class="mt-4 mb-2 text-2xl md:text-3xl font-bold">{{ novel.title }}</h1>
         <p class="opacity-90 mb-2">作者: {{ novel.author }}</p>
         <div class="flex flex-wrap items-center gap-3 mb-2">
-          <a
-            :href="novel.source_url"
-            target="_blank"
-            class="inline-block text-sm text-white/90 hover:text-white underline-offset-4 hover:underline"
-          >
+          <a :href="novel.source_url" target="_blank"
+            class="inline-block text-sm text-white/90 hover:text-white underline-offset-4 hover:underline">
             在 {{ source.toUpperCase() }} 查看原文
           </a>
-          <button
-            type="button"
-            class="text-xs px-3 py-1 rounded-full bg-white/20 text-white hover:bg-white/30"
-            @click="toggleFavorite"
-          >
-            <span v-if="favoriteLoading" class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          <button type="button" class="text-xs px-3 py-1 rounded-full bg-white/20 text-white hover:bg-white/30"
+            @click="toggleFavorite">
+            <span v-if="favoriteLoading"
+              class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             <span v-else>{{ isFavorite ? '已收藏' : '收藏' }}</span>
           </button>
         </div>
@@ -289,21 +281,15 @@ onBeforeRouteLeave(() => {
     <!-- 章节导航 -->
     <nav v-if="novel" class="bg-soyo-cream border-b border-soyo-light/30 py-4 dark:bg-gray-800 dark:border-gray-700">
       <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
-        <button 
-          @click="prevChapter" 
-          :disabled="currentChapter <= 1"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500"
-        >
+        <button @click="prevChapter" :disabled="currentChapter <= 1"
+          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500">
           ← 上一章
         </button>
         <span class="text-gray-600 dark:text-gray-300">
           第 {{ currentChapter }} / {{ novel.chapter_count || 1 }} 章
         </span>
-        <button 
-          @click="nextChapter" 
-          :disabled="currentChapter >= (novel.chapter_count || 1)"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500"
-        >
+        <button @click="nextChapter" :disabled="currentChapter >= (novel.chapter_count || 1)"
+          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500">
           下一章 →
         </button>
       </div>
@@ -314,31 +300,23 @@ onBeforeRouteLeave(() => {
       <div class="max-w-2xl mx-auto px-6">
         <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">加载中...</div>
         <div v-else-if="error" class="text-center py-16 text-red-500 dark:text-red-400">{{ error }}</div>
-          <article 
-            v-else 
-            ref="contentRef"
-            class="reader-content bg-soyo-cream/50 px-10 py-12 rounded-xl shadow-xl dark:bg-gray-800 dark:shadow-none transition-colors duration-300"
-          v-html="chapterContent"
-        ></article>
+        <article v-else ref="contentRef"
+          class="reader-content bg-soyo-cream/50 px-10 py-12 rounded-xl shadow-xl dark:bg-gray-800 dark:shadow-none transition-colors duration-300"
+          v-html="chapterContent"></article>
       </div>
     </main>
 
     <!-- 底部导航 -->
-    <nav v-if="novel && !loading" class="bg-soyo-cream border-t border-soyo-light/30 py-4 mt-8 dark:bg-gray-800 dark:border-gray-700">
+    <nav v-if="novel && !loading"
+      class="bg-soyo-cream border-t border-soyo-light/30 py-4 mt-8 dark:bg-gray-800 dark:border-gray-700">
       <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
-        <button 
-          @click="prevChapter" 
-          :disabled="currentChapter <= 1"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500"
-        >
+        <button @click="prevChapter" :disabled="currentChapter <= 1"
+          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500">
           ← 上一章
         </button>
         <span class="text-gray-500 text-sm dark:text-gray-400">{{ source.toUpperCase() }}</span>
-        <button 
-          @click="nextChapter" 
-          :disabled="currentChapter >= (novel.chapter_count || 1)"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500"
-        >
+        <button @click="nextChapter" :disabled="currentChapter >= (novel.chapter_count || 1)"
+          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500">
           下一章 →
         </button>
       </div>

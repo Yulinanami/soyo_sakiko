@@ -1,14 +1,14 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { favoritesApi } from '@services/api';
-import type { Novel } from '@app-types/novel';
-import type { FavoriteItem } from '@app-types/user_data';
-import { useAsyncState } from '@composables/useAsyncState';
+import { defineStore } from "pinia";
+import { ref } from "vue";
+import { favoritesApi } from "@services/api";
+import type { Novel } from "@app-types/novel";
+import type { FavoriteItem } from "@app-types/user_data";
+import { useAsyncState } from "@composables/useAsyncState";
 
 // 生成唯一标识
 const buildKey = (source: string, novelId: string) => `${source}:${novelId}`;
 
-export const useFavoritesStore = defineStore('favorites', () => {
+export const useFavoritesStore = defineStore("favorites", () => {
   const items = ref<FavoriteItem[]>([]);
   const { loading, error, start, stop, setError } = useAsyncState();
   const loaded = ref(false);
@@ -33,13 +33,13 @@ export const useFavoritesStore = defineStore('favorites', () => {
       const data = await favoritesApi.getAll();
       setItems(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '加载收藏失败');
+      setError(err instanceof Error ? err.message : "加载收藏失败");
     } finally {
       stop();
     }
   }
 
-  function isFavorite(novel: Pick<Novel, 'source' | 'id'>) {
+  function isFavorite(novel: Pick<Novel, "source" | "id">) {
     // 判断是否已收藏
     return Boolean(itemMap.value[buildKey(novel.source, novel.id)]);
   }
@@ -55,7 +55,10 @@ export const useFavoritesStore = defineStore('favorites', () => {
       source_url: novel.source_url,
     };
     const item = await favoritesApi.add(payload);
-    items.value = [item, ...items.value.filter((existing) => existing.id !== item.id)];
+    items.value = [
+      item,
+      ...items.value.filter((existing) => existing.id !== item.id),
+    ];
     itemMap.value[buildKey(item.source, item.novel_id)] = item;
     return item;
   }

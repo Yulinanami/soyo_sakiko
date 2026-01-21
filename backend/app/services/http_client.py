@@ -1,8 +1,8 @@
 """共享访问工具"""
 
+import httpx
 from typing import Optional
 
-import httpx
 
 _sync_client: Optional[httpx.Client] = None
 _async_client: Optional[httpx.AsyncClient] = None
