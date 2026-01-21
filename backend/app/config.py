@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7天
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 365  # 365天登录有效期
 
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 

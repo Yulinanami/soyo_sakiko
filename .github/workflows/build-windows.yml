@@ -107,6 +107,7 @@ jobs:
           cp -R backend/playwright-browsers dist/SoyoSaki/playwright-browsers
           cp -R dist/SoyoSaki/* "$APP_DIR/"
           cp -R frontend/dist "$APP_DIR/frontend"
+          cp backend/.env.example "$APP_DIR/.env"
           cd release
           7z a SoyoSaki-${{ github.ref_name }}-x64-windows.zip "SoyoSaki-${{ github.ref_name }}"
 
