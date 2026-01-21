@@ -2,7 +2,7 @@
 import { ref, onMounted, nextTick, computed } from 'vue';
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
 import { novelApi } from '@services/api';
-import type { Novel } from '@types/novel';
+import type { Novel } from '@app-types/novel';
 import { useUserStore } from '@stores/user';
 import { useFavoritesStore } from '@stores/favorites';
 import { useHistoryStore } from '@stores/history';

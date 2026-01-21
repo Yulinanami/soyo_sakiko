@@ -2,9 +2,9 @@
 import { onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import NovelCard from '@components/novel/NovelCard.vue';
-import type { Novel } from '@types/novel';
+import type { Novel } from '@app-types/novel';
 import { BookOpen } from 'lucide-vue-next';
-import type { HistoryItem } from '@types/user_data';
+import type { HistoryItem } from '@app-types/user_data';
 import { useHistoryStore } from '@stores/history';
 
 const historyStore = useHistoryStore();

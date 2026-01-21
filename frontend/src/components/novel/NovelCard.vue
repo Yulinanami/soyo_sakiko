@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, toRef, watch } from 'vue';
-import type { Novel } from '@types/novel';
+import type { Novel } from '@app-types/novel';
 import { useFavoritesStore } from '@stores/favorites';
 import { useUserStore } from '@stores/user';
 import { useRouter } from 'vue-router';

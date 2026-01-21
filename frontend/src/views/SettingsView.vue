@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { credentialsApi } from '@services/api';
-import type { CredentialState } from '@types/source';
+import type { CredentialState } from '@app-types/source';
 
 
 

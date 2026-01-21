@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Novel, NovelSearchParams, NovelSource } from '@types/novel';
+import type { Novel, NovelSearchParams, NovelSource } from '@app-types/novel';
 import { novelApi } from '@services/api';
 
 export const useNovelsStore = defineStore('novels', () => {

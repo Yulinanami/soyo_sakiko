@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue';
-import type { Novel } from '@types/novel';
+import type { Novel } from '@app-types/novel';
 
 export function useNovelMeta(novel: Ref<Novel>) {
   // 生成展示用信息

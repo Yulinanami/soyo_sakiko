@@ -1,4 +1,4 @@
-import type { NovelSource } from '@types/novel';
+import type { NovelSource } from '@app-types/novel';
 
 export interface SourceConfig {
   name: NovelSource;

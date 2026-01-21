@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { favoritesApi } from '@services/api';
-import type { Novel } from '@types/novel';
-import type { FavoriteItem } from '@types/user_data';
+import type { Novel } from '@app-types/novel';
+import type { FavoriteItem } from '@app-types/user_data';
 import { useAsyncState } from '@composables/useAsyncState';
 
 // 生成唯一标识

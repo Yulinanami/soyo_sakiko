@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
-import type { User } from '@types/user';
+import type { User } from '@app-types/user';
 import { authApi, setAuthToken } from '@services/api';
 import type { AxiosError } from 'axios';
 import { useAsyncState } from '@composables/useAsyncState';
