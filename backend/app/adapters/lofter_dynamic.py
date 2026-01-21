@@ -67,7 +67,10 @@ def search_dynamic_sync(
                 logger.info("Lofter: forcing headless mode to avoid browser popups")
             browser = p.chromium.launch(
                 headless=headless,
-                args=["--disable-blink-features=AutomationControlled"],
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-proxy-server",  # Bypass system proxy for direct connection
+                ],
             )
             context = browser.new_context(
                 user_agent=(

@@ -1,19 +1,29 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useSourcesStore } from '../../stores/sources';
+import { credentialsApi } from '../../services/api';
 import ao3Logo from '../../assets/ao3.png';
 import pixivLogo from '../../assets/pixiv.png';
 import lofterLogo from '../../assets/lofter.png';
 import bilibiliLogo from '../../assets/bilibili.png';
-import { Lock } from 'lucide-vue-next';
+import { Lock, RefreshCw } from 'lucide-vue-next';
 
 const sourcesStore = useSourcesStore();
+const router = useRouter();
 const props = defineProps<{
   loadingSources?: Record<string, boolean>;
 }>();
 
 const emit = defineEmits<{
   (e: 'change'): void;
+  (e: 'refresh'): void;
 }>();
+
+// Dialog state
+const showCredentialDialog = ref(false);
+const pendingSource = ref<string | null>(null);
+const pendingSourceName = ref('');
 
 // Source logos
 const sourceLogos: Record<string, string> = {
@@ -23,9 +33,52 @@ const sourceLogos: Record<string, string> = {
   bilibili: bilibiliLogo,
 };
 
+// Sources that require credentials
+const credentialSources = ['pixiv', 'lofter'];
+
 function toggle(name: string) {
+  const source = sourcesStore.sources.find(s => s.name === name);
+  
+  // If enabling a credential-required source, check credentials in background
+  if (source && !source.enabled && credentialSources.includes(name)) {
+    // First, toggle immediately for responsive UI
+    sourcesStore.toggleSource(name);
+    emit('change');
+    
+    // Then check credentials in background
+    checkCredentialsAsync(name, source.displayName);
+    return;
+  }
+  
   sourcesStore.toggleSource(name);
   emit('change');
+}
+
+async function checkCredentialsAsync(name: string, displayName: string) {
+  try {
+    const status = await credentialsApi.status(name) as { configured: boolean };
+    if (!status.configured) {
+      pendingSource.value = name;
+      pendingSourceName.value = displayName;
+      showCredentialDialog.value = true;
+    }
+  } catch {
+    console.warn(`Failed to check ${name} credentials`);
+  }
+}
+
+function goToSettings() {
+  showCredentialDialog.value = false;
+  router.push('/settings');
+}
+
+function continueWithoutCredentials() {
+  showCredentialDialog.value = false;
+  if (pendingSource.value) {
+    sourcesStore.toggleSource(pendingSource.value);
+    emit('change');
+  }
+  pendingSource.value = null;
 }
 </script>
 
@@ -61,6 +114,48 @@ function toggle(name: string) {
         <span>{{ source.displayName }}</span>
         <Lock v-if="source.requiresAuth && !source.enabled" class="w-3 h-3" />
       </button>
+      
+      <!-- Refresh Button -->
+      <button
+        @click="emit('refresh')"
+        class="flex items-center gap-1.5 px-3 py-2 border-2 border-gray-200 bg-white rounded-lg cursor-pointer transition-all text-sm hover:border-sakiko hover:text-sakiko-dark dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-sakiko dark:hover:text-sakiko-light"
+        title="刷新数据"
+      >
+        <RefreshCw class="w-4 h-4" />
+      </button>
     </div>
   </div>
+
+  <!-- Credential Dialog -->
+  <Teleport to="body">
+    <div 
+      v-if="showCredentialDialog" 
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      @click.self="showCredentialDialog = false"
+    >
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">
+          需要配置登录凭证
+        </h3>
+        <p class="text-gray-600 dark:text-gray-300 mb-6">
+          <span class="font-medium text-sakiko">{{ pendingSourceName }}</span> 
+          需要登录凭证才能获取内容。请先前往设置页面完成配置。
+        </p>
+        <div class="flex gap-3 justify-end">
+          <button
+            @click="continueWithoutCredentials"
+            class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            仍然启用
+          </button>
+          <button
+            @click="goToSettings"
+            class="px-4 py-2 bg-sakiko text-white rounded-lg hover:bg-sakiko/90 transition-colors"
+          >
+            去设置
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>

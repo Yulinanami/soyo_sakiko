@@ -56,7 +56,8 @@ onMounted(async () => {
 
 function handleSourceChange() {
   novelsStore.selectedSources = sourcesStore.getEnabledSourceNames();
-  novelsStore.fetchNovels(true);
+  // Use smart caching - only fetch sources without cached data
+  novelsStore.fetchSourcesWithCache();
 }
 
 function handleTagChange(tags: string[]) {
@@ -71,6 +72,11 @@ function handleExcludeChange(tags: string[]) {
 
 function toggleExclude() {
   isExcludeOpen.value = !isExcludeOpen.value;
+}
+
+function handleRefresh() {
+  // Force re-fetch all data by clearing cache
+  novelsStore.fetchNovels(true);
 }
 </script>
 
@@ -99,6 +105,7 @@ function toggleExclude() {
           <SourceSelector
             :loading-sources="novelsStore.loadingSources"
             @change="handleSourceChange"
+            @refresh="handleRefresh"
           />
           
           <select 
@@ -126,9 +133,15 @@ function toggleExclude() {
       
       <div 
         v-if="novelsStore.error" 
-        class="text-center text-red-500 p-8 bg-red-50 rounded-lg mt-4"
+        class="text-center p-8 bg-red-50 dark:bg-red-900/20 rounded-lg mt-4"
       >
-        {{ novelsStore.error }}
+        <p class="text-red-500 dark:text-red-400 mb-4">{{ novelsStore.error }}</p>
+        <button
+          @click="novelsStore.retry"
+          class="px-6 py-2 bg-sakiko text-white rounded-lg hover:bg-sakiko/90 transition-colors"
+        >
+          重试
+        </button>
       </div>
       
       <div v-if="novelsStore.isEmpty" class="text-center py-16 text-gray-500 dark:text-gray-400">

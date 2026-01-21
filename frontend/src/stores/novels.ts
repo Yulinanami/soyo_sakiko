@@ -52,8 +52,11 @@ export const useNovelsStore = defineStore('novels', () => {
     if (reset) {
       currentPage.value = 1;
       novels.value = [];
-      novelsBySource.value = { ao3: [], pixiv: [], lofter: [], bilibili: [] };
-      hasMoreBySource.value = { ao3: false, pixiv: false, lofter: false, bilibili: false };
+      // Only clear cache for sources we're about to fetch
+      selectedSources.value.forEach(source => {
+        novelsBySource.value[source] = [];
+        hasMoreBySource.value[source] = false;
+      });
     }
 
     if (selectedSources.value.length === 0) {
@@ -150,6 +153,66 @@ export const useNovelsStore = defineStore('novels', () => {
     await fetchNovels(false);
   }
 
+  // Smart fetch - only fetch sources that don't have cached results
+  async function fetchSourcesWithCache() {
+    // First rebuild with existing cached data immediately (for instant UI response)
+    rebuildNovels();
+    
+    const sourcesToFetch = selectedSources.value.filter(
+      source => novelsBySource.value[source].length === 0
+    );
+    
+    if (sourcesToFetch.length === 0) {
+      // All sources have cached data
+      hasMore.value = selectedSources.value.some(source => hasMoreBySource.value[source]);
+      return;
+    }
+    
+    // Fetch missing sources without changing selectedSources
+    // Set loading state for sources being fetched
+    sourcesToFetch.forEach(source => {
+      loadingSources.value[source] = true;
+    });
+    loading.value = true;
+    
+    const baseParams = {
+      tags: selectedTags.value,
+      excludeTags: excludeTags.value,
+      page: 1,
+      pageSize,
+      sortBy: sortBy.value,
+    };
+    
+    await Promise.allSettled(
+      sourcesToFetch.map(async (source) => {
+        try {
+          const response = await novelApi.search({
+            ...baseParams,
+            sources: [source],
+          });
+          const filtered = response.novels.filter(n => n.source === source);
+          novelsBySource.value[source] = filtered;
+          hasMoreBySource.value[source] = response.has_more;
+          // Immediately rebuild to show this source's results
+          rebuildNovels();
+        } catch (err) {
+          error.value = err instanceof Error ? err.message : '获取小说列表失败';
+        } finally {
+          loadingSources.value[source] = false;
+          // Update loading state after each source completes
+          loading.value = selectedSources.value.some(s => loadingSources.value[s]);
+          hasMore.value = selectedSources.value.some(s => hasMoreBySource.value[s]);
+        }
+      })
+    );
+  }
+
+  // Retry last failed request
+  function retry() {
+    error.value = null;
+    fetchNovels(false);
+  }
+
   function rebuildNovels() {
     const combined: Novel[] = [];
     const seen = new Set<string>();
@@ -191,6 +254,8 @@ export const useNovelsStore = defineStore('novels', () => {
     isEmpty,
     // Actions
     fetchNovels,
+    fetchSourcesWithCache,
     loadMore,
+    retry,
   };
 });
