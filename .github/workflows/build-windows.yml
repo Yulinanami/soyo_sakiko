@@ -70,7 +70,7 @@ jobs:
 
       - name: 构建后端
         run: |
-          pyinstaller --noconfirm --clean --onedir --console --name SoyoSakiBackend --collect-all playwright backend/run_backend.py --paths backend
+          pyinstaller --noconfirm --clean --onedir --console --name SoyoSakiBackend --collect-all playwright --collect-submodules app --hidden-import app.main backend/run_backend.py --paths backend
 
       - name: 组装产物
         run: |
