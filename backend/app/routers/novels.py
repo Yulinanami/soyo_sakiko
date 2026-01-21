@@ -1,6 +1,5 @@
 """小说路由"""
 
-import asyncio
 import logging
 from fastapi import APIRouter, Query, HTTPException
 from typing import List
@@ -34,6 +33,8 @@ async def search_novels(
                 has_more=False,
             )
         )
+    if len(sources) != 1:
+        raise HTTPException(status_code=400, detail="只支持单个来源")
 
     if not tags:
         return ApiResponse(
@@ -54,70 +55,34 @@ async def search_novels(
         page,
     )
 
-    per_source_count = page_size if len(sources) > 1 else page_size
+    source = sources[0]
+    try:
+        adapter = get_adapter(source)
+        novels = await adapter.search(
+            tags=tags,
+            exclude_tags=exclude_tags,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+        )
+        logger.info("%s fetched %s novels (page %s)", source.value, len(novels), page)
+    except Exception:
+        logger.exception("Error fetching from %s", source.value)
+        novels = []
 
-    async def fetch_from_source(source: NovelSource):
-        """从单一来源获取列表"""
-        try:
-            adapter = get_adapter(source)
-            novels = await adapter.search(
-                tags=tags,
-                exclude_tags=exclude_tags,
-                page=page,
-                page_size=per_source_count,
-                sort_by=sort_by,
-            )
-            logger.info(
-                "%s fetched %s novels (page %s)",
-                source.value,
-                len(novels),
-                page,
-            )
-            return source, novels
-        except Exception:
-            logger.exception("Error fetching from %s", source.value)
-            return source, []
-
-    results = await asyncio.gather(*[fetch_from_source(s) for s in sources])
-
-    source_novels = {}
     any_has_more = False
+    if len(novels) >= page_size:
+        any_has_more = True
+    if source == NovelSource.LOFTER and settings.LOFTER_DYNAMIC_ENABLED and novels:
+        any_has_more = True
+    if source == NovelSource.BILIBILI and novels:
+        any_has_more = True
 
-    for source, novels in results:
-        source_novels[source] = novels
-        if len(novels) >= per_source_count:
-            any_has_more = True
-        if source == NovelSource.LOFTER and settings.LOFTER_DYNAMIC_ENABLED and novels:
-            any_has_more = True
-        if source == NovelSource.BILIBILI and novels:
-            any_has_more = True
-
-    if len(sources) > 1:
-        all_novels = []
-        max_len = (
-            max(len(novels) for novels in source_novels.values())
-            if source_novels
-            else 0
-        )
-
-        for i in range(max_len):
-            for source in sources:
-                novels = source_novels.get(source, [])
-                if i < len(novels):
-                    all_novels.append(novels[i])
-
-        logger.info(
-            "Interleaved %s novels from %s sources",
-            len(all_novels),
-            len(sources),
-        )
-    else:
-        all_novels = list(source_novels.values())[0] if source_novels else []
-        logger.info("Total novels from source: %s", len(all_novels))
+    logger.info("Total novels from source: %s", len(novels))
 
     response = NovelListResponse(
-        novels=all_novels,
-        total=len(all_novels),
+        novels=novels,
+        total=len(novels),
         page=page,
         page_size=page_size,
         has_more=any_has_more,

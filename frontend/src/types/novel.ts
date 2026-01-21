@@ -27,7 +27,6 @@ export interface NovelSearchParams {
   page?: number;
   pageSize?: number;
   sortBy?: "date" | "kudos" | "hits" | "wordCount";
-  sortOrder?: "asc" | "desc";
 }
 
 export interface NovelListResponse {

@@ -3,6 +3,7 @@ import type { Novel, NovelListResponse, NovelSearchParams } from '@app-types/nov
 import type { AuthResponse, LoginRequest, RegisterRequest, User } from '@app-types/user';
 import type { FavoriteItem, HistoryItem } from '@app-types/user_data';
 import type { CredentialState } from '@app-types/source';
+import { useUserStore } from '@stores/user';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 
@@ -16,24 +17,17 @@ const api = axios.create({
   },
 });
 
-// 为请求补上登录信息
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token && token !== 'undefined' && token !== 'null') {
-    config.headers.Authorization = `Bearer ${token}`;
-  } else if (token) {
-    localStorage.removeItem('token');
-  }
-  return config;
-});
-
 // 统一处理错误
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      const url = String(error.config?.url ?? '');
+      if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
+        const userStore = useUserStore();
+        userStore.logout();
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -55,8 +49,6 @@ export const novelApi = {
     searchParams.append('page', String(params.page ?? 1));
     searchParams.append('page_size', String(params.pageSize ?? 20));
     searchParams.append('sort_by', params.sortBy ?? 'date');
-    searchParams.append('sort_order', params.sortOrder ?? 'desc');
-    
     const { data } = await api.get(`/novels?${searchParams.toString()}`);
     return unwrapData<NovelListResponse>(data);
   },
@@ -147,8 +139,6 @@ export const credentialsApi = {
     return unwrapData(data);
   },
 };
-
-
 
 export function setAuthToken(token: string | null) {
   // 设置默认登录信息

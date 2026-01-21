@@ -103,7 +103,6 @@ export const useUserStore = defineStore('user', () => {
       user.value = storedUser;
     }
     setAuthToken(token.value);
-    setAuthToken(token.value);
     fetchProfile();
   }
 

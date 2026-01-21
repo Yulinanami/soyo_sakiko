@@ -6,7 +6,6 @@ export interface SourceConfig {
   icon: string;
   enabled: boolean;
   requiresAuth: boolean;
-  searchTags: string[];
 }
 
 export const DEFAULT_SOURCES: SourceConfig[] = [
@@ -16,7 +15,6 @@ export const DEFAULT_SOURCES: SourceConfig[] = [
     icon: '📚',
     enabled: true,
     requiresAuth: false,
-    searchTags: ['Nagasaki Soyo/Toyokawa Sakiko', 'Toyokawa Sakiko/Nagasaki Soyo', '素祥', '祥素'],
   },
   {
     name: 'bilibili',
@@ -24,7 +22,6 @@ export const DEFAULT_SOURCES: SourceConfig[] = [
     icon: '📺',
     enabled: false,
     requiresAuth: false,
-    searchTags: ['素祥', '祥素'],
   },
   {
     name: 'pixiv',
@@ -32,7 +29,6 @@ export const DEFAULT_SOURCES: SourceConfig[] = [
     icon: '🎨',
     enabled: false,
     requiresAuth: true,
-    searchTags: ['素祥', '祥素', '長崎そよ×豊川祥子'],
   },
   {
     name: 'lofter',
@@ -40,7 +36,6 @@ export const DEFAULT_SOURCES: SourceConfig[] = [
     icon: '📝',
     enabled: false,
     requiresAuth: true,
-    searchTags: ['素祥', '祥素'],
   },
 ];
 

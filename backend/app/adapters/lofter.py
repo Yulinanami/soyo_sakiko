@@ -51,8 +51,6 @@ class LofterAdapter(BaseAdapter):
         user_tags = list(dict.fromkeys(tags))
         if not user_tags:
             user_tags = list(self.SOYOSAKI_TAGS)
-        if not user_tags:
-            user_tags = ["素祥"]
 
         primary_tag = next(
             (tag for tag in user_tags if tag not in self.SOYOSAKI_TAGS),
@@ -99,10 +97,6 @@ class LofterAdapter(BaseAdapter):
         if offset >= len(merged):
             return []
         novels = merged[offset : offset + page_size]
-
-        if len(novels) > page_size:
-            novels = novels[:page_size]
-
         return novels
 
     def _dynamic_cache_key(
