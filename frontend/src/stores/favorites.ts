@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { favoritesApi } from '../services/api';
-import type { Novel } from '../types/novel';
-import type { FavoriteItem } from '../types/user_data';
-import { useAsyncState } from '../composables/useAsyncState';
+import { favoritesApi } from '@services/api';
+import type { Novel } from '@types/novel';
+import type { FavoriteItem } from '@types/user_data';
+import { useAsyncState } from '@composables/useAsyncState';
 
 // 生成唯一标识
 const buildKey = (source: string, novelId: string) => `${source}:${novelId}`;

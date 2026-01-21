@@ -76,6 +76,12 @@
   margin-bottom: 0;
 }
 
+.reader-content .ao3-gap {
+  margin: 0;
+  height: 2em;
+  text-indent: 0;
+}
+
 /* 处理换行符 - 每个段落之间有间距 */
 .reader-content br {
   display: block;

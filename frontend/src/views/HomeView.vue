@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, nextTick, ref } from 'vue';
-import { useNovelsStore } from '../stores/novels';
-import { useSourcesStore } from '../stores/sources';
-import NovelList from '../components/novel/NovelList.vue';
-import SourceSelector from '../components/filter/SourceSelector.vue';
-import TagFilter from '../components/filter/TagFilter.vue';
-import ExcludeFilter from '../components/filter/ExcludeFilter.vue';
+import { useNovelsStore } from '@stores/novels';
+import { useSourcesStore } from '@stores/sources';
+import NovelList from '@components/novel/NovelList.vue';
+import SourceSelector from '@components/filter/SourceSelector.vue';
+import TagFilter from '@components/filter/TagFilter.vue';
+import ExcludeFilter from '@components/filter/ExcludeFilter.vue';
 
 const novelsStore = useNovelsStore();
 const sourcesStore = useSourcesStore();

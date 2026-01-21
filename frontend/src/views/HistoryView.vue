@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
-import NovelCard from '../components/novel/NovelCard.vue';
-import type { Novel } from '../types/novel';
+import NovelCard from '@components/novel/NovelCard.vue';
+import type { Novel } from '@types/novel';
 import { BookOpen } from 'lucide-vue-next';
-import type { HistoryItem } from '../types/user_data';
-import { useHistoryStore } from '../stores/history';
+import type { HistoryItem } from '@types/user_data';
+import { useHistoryStore } from '@stores/history';
 
 const historyStore = useHistoryStore();
 const { items, loading, error } = storeToRefs(historyStore);

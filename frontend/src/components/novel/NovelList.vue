@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import NovelCard from './NovelCard.vue';
-import type { Novel } from '../../types/novel';
+import NovelCard from '@components/novel/NovelCard.vue';
+import type { Novel } from '@types/novel';
 
 defineProps<{
   novels: Novel[];

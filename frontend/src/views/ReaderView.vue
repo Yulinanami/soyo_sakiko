@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from 'vue';
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
-import { novelApi } from '../services/api';
-import type { Novel } from '../types/novel';
-import { useUserStore } from '../stores/user';
-import { useFavoritesStore } from '../stores/favorites';
-import { useHistoryStore } from '../stores/history';
+import { novelApi } from '@services/api';
+import type { Novel } from '@types/novel';
+import { useUserStore } from '@stores/user';
+import { useFavoritesStore } from '@stores/favorites';
+import { useHistoryStore } from '@stores/history';
 
 const route = useRoute();
 const router = useRouter();
@@ -91,7 +91,8 @@ async function loadChapter(chapter: number) {
   let shouldApplyLoaders = false;
   try {
     const rawContent = await novelApi.getChapterContent(source, id, chapter);
-    chapterContent.value = normalizeContent(rawContent);
+    const content = source === 'ao3' ? formatAo3Content(rawContent) : rawContent;
+    chapterContent.value = normalizeContent(content);
     currentChapter.value = chapter;
     shouldApplyLoaders = true;
     await recordHistory(chapter);
@@ -153,6 +154,25 @@ function normalizeContent(content: string) {
   return content
     .replace(/src=(['"])\/api\/([^'"]+)/g, `src=$1${API_BASE}/$2`)
     .replace(/href=(['"])\/api\/([^'"]+)/g, `href=$1${API_BASE}/$2`);
+}
+
+function formatAo3Content(content: string) {
+  // 处理 AO3 段落换行
+  if (!content) return content;
+  const hasBlocks =
+    /<\/?(p|br|div|section|article|h\d|ul|ol|li|blockquote|pre|hr)\b/i.test(content);
+  if (hasBlocks) return content;
+  const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const splitPattern = normalized.includes('\n\n') ? /\n{2,}/ : /\n+/;
+  const blocks = normalized
+    .split(splitPattern)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => `<p>${block.replace(/\n/g, '<br>')}</p>`);
+  if (!blocks.length) {
+    return normalized.replace(/\n/g, '<br>');
+  }
+  return blocks.join('<p class="ao3-gap"></p>');
 }
 
 function applyImageLoaders() {

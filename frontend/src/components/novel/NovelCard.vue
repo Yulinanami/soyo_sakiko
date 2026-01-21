@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, toRef, watch } from 'vue';
-import type { Novel } from '../../types/novel';
-import { useFavoritesStore } from '../../stores/favorites';
-import { useUserStore } from '../../stores/user';
+import type { Novel } from '@types/novel';
+import { useFavoritesStore } from '@stores/favorites';
+import { useUserStore } from '@stores/user';
 import { useRouter } from 'vue-router';
-import ao3Logo from '../../assets/ao3.png';
-import pixivLogo from '../../assets/pixiv.png';
-import lofterLogo from '../../assets/lofter.png';
-import bilibiliLogo from '../../assets/bilibili.png';
-import { useNovelMeta } from '../../composables/useNovelMeta';
+import ao3Logo from '@assets/ao3.png';
+import pixivLogo from '@assets/pixiv.png';
+import lofterLogo from '@assets/lofter.png';
+import bilibiliLogo from '@assets/bilibili.png';
+import { useNovelMeta } from '@composables/useNovelMeta';
 import { FileText, BookOpen, Heart, AlignLeft } from 'lucide-vue-next';
 
 const props = withDefaults(defineProps<{

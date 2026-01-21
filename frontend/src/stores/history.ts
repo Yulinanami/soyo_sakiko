@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { historyApi } from '../services/api';
-import type { HistoryItem } from '../types/user_data';
-import { useAsyncState } from '../composables/useAsyncState';
+import { historyApi } from '@services/api';
+import type { HistoryItem } from '@types/user_data';
+import { useAsyncState } from '@composables/useAsyncState';
 
 type RecordOptions = {
   silent?: boolean;

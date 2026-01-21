@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Novel, NovelSearchParams, NovelSource } from '../types/novel';
-import { novelApi } from '../services/api';
+import type { Novel, NovelSearchParams, NovelSource } from '@types/novel';
+import { novelApi } from '@services/api';
 
 export const useNovelsStore = defineStore('novels', () => {
   const novels = ref<Novel[]>([]);

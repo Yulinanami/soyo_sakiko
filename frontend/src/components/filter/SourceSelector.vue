@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useSourcesStore } from '../../stores/sources';
-import { credentialsApi } from '../../services/api';
-import ao3Logo from '../../assets/ao3.png';
-import pixivLogo from '../../assets/pixiv.png';
-import lofterLogo from '../../assets/lofter.png';
-import bilibiliLogo from '../../assets/bilibili.png';
+import { useSourcesStore } from '@stores/sources';
+import { credentialsApi } from '@services/api';
+import ao3Logo from '@assets/ao3.png';
+import pixivLogo from '@assets/pixiv.png';
+import lofterLogo from '@assets/lofter.png';
+import bilibiliLogo from '@assets/bilibili.png';
 import { Lock, RefreshCw } from 'lucide-vue-next';
 
 const sourcesStore = useSourcesStore();

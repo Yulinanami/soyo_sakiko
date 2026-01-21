@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { SourceConfig } from '../types/source';
-import { DEFAULT_SOURCES } from '../types/source';
+import type { SourceConfig } from '@types/source';
+import { DEFAULT_SOURCES } from '@types/source';
 
 export const useSourcesStore = defineStore('sources', () => {
   const sources = ref<SourceConfig[]>(DEFAULT_SOURCES);

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import { useFavoritesStore } from '../stores/favorites';
-import NovelCard from '../components/novel/NovelCard.vue';
+import { useFavoritesStore } from '@stores/favorites';
+import NovelCard from '@components/novel/NovelCard.vue';
 import { Heart } from 'lucide-vue-next';
-import type { Novel } from '../types/novel';
+import type { Novel } from '@types/novel';
 
 interface FavoriteItem {
   id: number;

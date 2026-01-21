@@ -1,8 +1,8 @@
 import axios from 'axios';
-import type { Novel, NovelListResponse, NovelSearchParams } from '../types/novel';
-import type { AuthResponse, LoginRequest, RegisterRequest, User } from '../types/user';
-import type { FavoriteItem, HistoryItem } from '../types/user_data';
-import type { CredentialState } from '../types/source';
+import type { Novel, NovelListResponse, NovelSearchParams } from '@types/novel';
+import type { AuthResponse, LoginRequest, RegisterRequest, User } from '@types/user';
+import type { FavoriteItem, HistoryItem } from '@types/user_data';
+import type { CredentialState } from '@types/source';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 

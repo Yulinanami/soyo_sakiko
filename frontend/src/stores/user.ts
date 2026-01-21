@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
-import type { User } from '../types/user';
-import { authApi, setAuthToken } from '../services/api';
+import type { User } from '@types/user';
+import { authApi, setAuthToken } from '@services/api';
 import type { AxiosError } from 'axios';
-import { useAsyncState } from '../composables/useAsyncState';
+import { useAsyncState } from '@composables/useAsyncState';
 
 export const useUserStore = defineStore('user', () => {
   // 用户状态
