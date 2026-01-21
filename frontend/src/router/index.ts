@@ -44,6 +44,7 @@ const router = createRouter({
     },
   ],
   scrollBehavior(_to, _from, savedPosition) {
+    // 处理滚动位置
     if (savedPosition) {
       return savedPosition;
     }
@@ -52,6 +53,7 @@ const router = createRouter({
 });
 
 function authGuard(to: any) {
+  // 判断是否允许进入
   const userStore = useUserStore();
   if (!userStore.token) {
     userStore.syncFromStorage();
@@ -64,7 +66,7 @@ function authGuard(to: any) {
   return true;
 }
 
-// Navigation guard for protected routes
+// 注册进入检查
 router.beforeEach((to) => authGuard(to));
 
 export default router;

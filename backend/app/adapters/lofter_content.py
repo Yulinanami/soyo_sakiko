@@ -1,6 +1,4 @@
-"""
-Lofter post content fetching.
-"""
+"""Lofter 内容获取"""
 
 import logging
 import re
@@ -13,14 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_post_content(novel_id: str, cookie: str) -> str:
-    """Fetch post content from Lofter."""
+    """获取 Lofter 文章内容"""
     try:
-        # Construct post URL - novel_id format is blogName:postId
         if ":" in novel_id:
             parts = novel_id.split(":", 1)
             if len(parts) == 2:
                 blog_name, post_id = parts
-                # Standard post URL format
                 post_url = f"https://{blog_name}.lofter.com/post/{post_id}"
             else:
                 return "<p>无效的文章 ID 格式</p>"
@@ -41,12 +37,10 @@ def fetch_post_content(novel_id: str, cookie: str) -> str:
                 f"<p><a href='{post_url}' target='_blank'>点击在新窗口查看原文</a></p>"
             )
 
-        # Get text and handle encoding issues (remove surrogates)
         html = response.text.encode("utf-8", errors="surrogatepass").decode(
             "utf-8", errors="replace"
         )
 
-        # Prefer DOM-based extraction for stability
         try:
             from bs4 import BeautifulSoup
 
@@ -63,16 +57,13 @@ def fetch_post_content(novel_id: str, cookie: str) -> str:
         except ImportError:
             pass
 
-        # Try to find the post content with Lofter-specific patterns
         content_parts = []
 
-        # Pattern 1: Extract images from bigimgsrc attribute (Lofter's image viewer)
         big_imgs = re.findall(r'bigimgsrc=["\']([^"\']+)["\']', html, re.IGNORECASE)
         for img_url in big_imgs:
             img_url = normalize_lofter_image_url(img_url)
             content_parts.append(f'<img src="{img_url}" style="max-width:100%;"/>')
 
-        # Pattern 2: Extract text from div.text
         text_matches = re.findall(
             r'<div[^>]*class="text"[^>]*>(.*?)</div>',
             html,
@@ -86,7 +77,6 @@ def fetch_post_content(novel_id: str, cookie: str) -> str:
                 else:
                     content_parts.append(f"<p>{text_content}</p>")
 
-        # Pattern 3: Fallback - div.content
         if not content_parts:
             content_match = re.search(
                 r'<div[^>]*class="[^"]*content[^"]*"[^>]*>(.*?)</div>',
@@ -96,7 +86,6 @@ def fetch_post_content(novel_id: str, cookie: str) -> str:
             if content_match:
                 content_parts.append(content_match.group(1))
 
-        # Pattern 4: Fallback - any img with imglf in src
         if not content_parts:
             imgs = re.findall(
                 r'<img[^>]+src=["\']([^"\']*(?:imglf|lf127)[^"\']*)["\'][^>]*>',
@@ -108,11 +97,9 @@ def fetch_post_content(novel_id: str, cookie: str) -> str:
 
         if content_parts:
             content = "\n".join(content_parts)
-            # Replace Lofter image URLs with proxy URLs
             content = proxy_lofter_images(content)
             return sanitize_html(content)
 
-        # Fallback: provide link to view on Lofter
         return sanitize_html(
             f"<p>无法解析文章内容</p><p><a href='{post_url}' target='_blank'>点击在新窗口查看原文</a></p>"
         )

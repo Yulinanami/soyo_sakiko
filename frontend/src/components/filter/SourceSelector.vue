@@ -20,12 +20,12 @@ const emit = defineEmits<{
   (e: 'refresh'): void;
 }>();
 
-// Dialog state
+// 弹窗状态
 const showCredentialDialog = ref(false);
 const pendingSource = ref<string | null>(null);
 const pendingSourceName = ref('');
 
-// Source logos
+// 来源图标
 const sourceLogos: Record<string, string> = {
   ao3: ao3Logo,
   pixiv: pixivLogo,
@@ -33,19 +33,17 @@ const sourceLogos: Record<string, string> = {
   bilibili: bilibiliLogo,
 };
 
-// Sources that require credentials
+// 需要登录的来源
 const credentialSources = ['pixiv', 'lofter'];
 
 function toggle(name: string) {
+  // 切换来源
   const source = sourcesStore.sources.find(s => s.name === name);
   
-  // If enabling a credential-required source, check credentials in background
   if (source && !source.enabled && credentialSources.includes(name)) {
-    // First, toggle immediately for responsive UI
     sourcesStore.toggleSource(name);
     emit('change');
     
-    // Then check credentials in background
     checkCredentialsAsync(name, source.displayName);
     return;
   }
@@ -55,6 +53,7 @@ function toggle(name: string) {
 }
 
 async function checkCredentialsAsync(name: string, displayName: string) {
+  // 检查登录信息
   try {
     const status = await credentialsApi.status(name) as { configured: boolean };
     if (!status.configured) {
@@ -68,11 +67,13 @@ async function checkCredentialsAsync(name: string, displayName: string) {
 }
 
 function goToSettings() {
+  // 跳转设置
   showCredentialDialog.value = false;
   router.push('/settings');
 }
 
 function continueWithoutCredentials() {
+  // 继续启用
   showCredentialDialog.value = false;
   if (pendingSource.value) {
     sourcesStore.toggleSource(pendingSource.value);
@@ -115,7 +116,7 @@ function continueWithoutCredentials() {
         <Lock v-if="source.requiresAuth && !source.enabled" class="w-3 h-3" />
       </button>
       
-      <!-- Refresh Button -->
+      <!-- 刷新 -->
       <button
         @click="emit('refresh')"
         class="flex items-center gap-1.5 px-3 py-2 border-2 border-gray-200 bg-white rounded-lg cursor-pointer transition-all text-sm hover:border-sakiko hover:text-sakiko-dark dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-sakiko dark:hover:text-sakiko-light"
@@ -126,7 +127,7 @@ function continueWithoutCredentials() {
     </div>
   </div>
 
-  <!-- Credential Dialog -->
+  <!-- 登录提示 -->
   <Teleport to="body">
     <div 
       v-if="showCredentialDialog" 

@@ -1,6 +1,4 @@
-"""
-Lofter shared helpers.
-"""
+"""Lofter 共享工具"""
 
 import re
 from typing import List
@@ -21,6 +19,7 @@ LOFTER_IMAGE_DOMAINS = [
 
 
 def parse_cookie_header(cookie: str) -> List[dict]:
+    """解析登录信息"""
     cookies = []
     for part in cookie.split(";"):
         part = part.strip()
@@ -38,6 +37,7 @@ def parse_cookie_header(cookie: str) -> List[dict]:
 
 
 def extract_blog_name(url: str) -> str:
+    """提取博客名"""
     if not url:
         return ""
     if url.startswith("//"):
@@ -47,6 +47,7 @@ def extract_blog_name(url: str) -> str:
 
 
 def extract_post_id(url: str) -> str:
+    """提取文章编号"""
     if not url:
         return ""
     match = re.search(r"/post/([^/?#]+)", url)
@@ -59,6 +60,7 @@ def extract_post_id(url: str) -> str:
 
 
 def normalize_lofter_image_url(url: str) -> str:
+    """规范化图片地址"""
     url = sanitize(url.strip()).replace("&amp;", "&")
     if url.startswith("//"):
         return f"https:{url}"
@@ -66,13 +68,15 @@ def normalize_lofter_image_url(url: str) -> str:
 
 
 def proxy_lofter_images(html_content: str) -> str:
-    """Replace Lofter image URLs with proxy URLs."""
+    """替换图片为转发地址"""
     from urllib.parse import quote
+
     try:
         from bs4 import BeautifulSoup
     except ImportError:
-        # Fallback: only replace src attributes
+
         def replace_img_src(match):
+            """替换图片链接"""
             img_url = normalize_lofter_image_url(match.group(1))
             if any(domain in img_url for domain in LOFTER_IMAGE_DOMAINS):
                 proxy_url = f"/api/proxy/lofter?url={quote(img_url, safe='')}"
@@ -112,6 +116,7 @@ def proxy_lofter_images(html_content: str) -> str:
 
 
 def merge_novel_fields(existing: Novel, incoming: Novel) -> bool:
+    """用新数据补全旧数据"""
     updated = False
     if not existing.cover_image and incoming.cover_image:
         existing.cover_image = incoming.cover_image
@@ -139,6 +144,7 @@ def merge_novel_list(
     incoming: List[Novel],
     index_map: dict | None = None,
 ) -> dict:
+    """合并小说列表"""
     if index_map is None:
         index_map = {novel_key(n.source, n.id): idx for idx, n in enumerate(novels)}
     for novel in incoming:

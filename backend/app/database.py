@@ -1,6 +1,5 @@
-"""
-Database Configuration
-"""
+"""数据库配置"""
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -17,7 +16,7 @@ Base = declarative_base()
 
 
 def get_db():
-    """Dependency for getting database session"""
+    """提供数据连接"""
     db = SessionLocal()
     try:
         yield db

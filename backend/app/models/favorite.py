@@ -1,6 +1,4 @@
-"""
-Favorite Model
-"""
+"""收藏与记录模型"""
 
 from sqlalchemy import (
     Column,
@@ -49,9 +47,11 @@ class ReadingHistory(Base):
     cover_url = Column(Text)
     source_url = Column(Text)
     last_chapter = Column(Integer, default=1)
-    progress = Column(Integer, default=0)  # percentage
+    progress = Column(Integer, default=0)  # 百分比
     last_read_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     __table_args__ = (
-        UniqueConstraint("user_id", "novel_id", "source", name="uq_history_user_novel_source"),
+        UniqueConstraint(
+            "user_id", "novel_id", "source", name="uq_history_user_novel_source"
+        ),
     )

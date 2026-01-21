@@ -15,6 +15,7 @@ const credentialStatus = ref<{
 const pollingTimer = ref<number | null>(null);
 
 async function refreshCredentialStatus() {
+  // 刷新登录状态
   const [pixiv, lofter] = await Promise.all([
     credentialsApi.status('pixiv'),
     credentialsApi.status('lofter'),
@@ -24,6 +25,7 @@ async function refreshCredentialStatus() {
 }
 
 function startPolling() {
+  // 开始定时查看
   if (pollingTimer.value) return;
   pollingTimer.value = window.setInterval(async () => {
     await refreshCredentialStatus();
@@ -38,21 +40,25 @@ function startPolling() {
 }
 
 async function startCredential(source: 'pixiv' | 'lofter') {
+  // 开始登录
   await credentialsApi.start(source);
   await refreshCredentialStatus();
   startPolling();
 }
 
 async function clearCredential(source: 'pixiv' | 'lofter') {
+  // 清除登录信息
   await credentialsApi.clear(source);
   await refreshCredentialStatus();
 }
 
 onMounted(async () => {
+  // 进入页面时刷新状态
   await refreshCredentialStatus();
 });
 
 onBeforeUnmount(() => {
+  // 离开页面时停止定时查看
   if (pollingTimer.value) {
     clearInterval(pollingTimer.value);
     pollingTimer.value = null;

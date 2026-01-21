@@ -1,6 +1,4 @@
-"""
-Credential capture routes for Pixiv/Lofter.
-"""
+"""凭证相关路由"""
 
 from fastapi import APIRouter, HTTPException
 
@@ -12,6 +10,7 @@ router = APIRouter()
 
 
 def _serialize_state(source: str):
+    """整理状态信息"""
     state = credential_manager.status(source)
     configured = False
     if source == "lofter":
@@ -29,6 +28,7 @@ def _serialize_state(source: str):
 
 @router.post("/{source}/start", response_model=ApiResponse[dict])
 async def start_credential_flow(source: str):
+    """启动登录流程"""
     if source not in ("lofter", "pixiv"):
         raise HTTPException(status_code=404, detail="Unsupported source")
     if source == "lofter":
@@ -40,6 +40,7 @@ async def start_credential_flow(source: str):
 
 @router.get("/{source}/status", response_model=ApiResponse[dict])
 async def credential_status(source: str):
+    """获取登录状态"""
     if source not in ("lofter", "pixiv"):
         raise HTTPException(status_code=404, detail="Unsupported source")
     return ApiResponse(data=_serialize_state(source))
@@ -47,6 +48,7 @@ async def credential_status(source: str):
 
 @router.delete("/{source}", response_model=ApiResponse[dict])
 async def clear_credentials(source: str):
+    """清除登录信息"""
     if source not in ("lofter", "pixiv"):
         raise HTTPException(status_code=404, detail="Unsupported source")
     credential_manager.clear(source)

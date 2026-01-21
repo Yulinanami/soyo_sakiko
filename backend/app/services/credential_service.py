@@ -1,6 +1,4 @@
-"""
-Credential capture service for Pixiv/Lofter using Playwright.
-"""
+"""登录凭证服务"""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -29,7 +27,7 @@ PIXIV_USER_AGENT = "PixivAndroidApp/5.0.234 (Android 11; Pixel 5)"
 
 @dataclass
 class CredentialState:
-    state: str = "idle"  # idle|running|success|error
+    state: str = "idle"
     message: str = ""
     updated_at: str = ""
     running: bool = False
@@ -37,6 +35,7 @@ class CredentialState:
 
 class CredentialManager:
     def __init__(self) -> None:
+        """初始化状态与控制"""
         self._states: Dict[str, CredentialState] = {
             "lofter": CredentialState(),
             "pixiv": CredentialState(),
@@ -47,15 +46,19 @@ class CredentialManager:
         }
 
     def status(self, source: str) -> CredentialState:
+        """获取当前状态"""
         return self._states[source]
 
     def start_lofter(self) -> CredentialState:
+        """启动 Lofter 登录"""
         return self._start("lofter", self._lofter_worker)
 
     def start_pixiv(self) -> CredentialState:
+        """启动 Pixiv 登录"""
         return self._start("pixiv", self._pixiv_worker)
 
     def _start(self, source: str, target) -> CredentialState:
+        """启动登录任务"""
         state = self._states[source]
         lock = self._locks[source]
         with lock:
@@ -70,6 +73,7 @@ class CredentialManager:
             return state
 
     def clear(self, source: str) -> None:
+        """清除登录信息"""
         if source == "lofter":
             settings.LOFTER_COOKIE = ""
             settings.LOFTER_CAPTTOKEN = ""
@@ -91,6 +95,7 @@ class CredentialManager:
         self._set_state(source, "idle", "凭证已清除")
 
     def _set_state(self, source: str, state: str, message: str) -> None:
+        """更新状态信息"""
         record = self._states[source]
         record.state = state
         record.message = message
@@ -98,6 +103,7 @@ class CredentialManager:
         record.running = state == "running"
 
     def _lofter_worker(self) -> None:
+        """处理 Lofter 登录流程"""
         try:
             cookie, capttoken = self._capture_lofter_credentials()
             if cookie and self._is_lofter_cookie_valid(cookie):
@@ -114,6 +120,7 @@ class CredentialManager:
             self._set_state("lofter", "error", f"Lofter 登录失败: {exc}")
 
     def _pixiv_worker(self) -> None:
+        """处理 Pixiv 登录流程"""
         try:
             refresh_token = self._capture_pixiv_refresh_token()
             if refresh_token:
@@ -136,6 +143,7 @@ class CredentialManager:
             self._set_state("pixiv", "error", f"Pixiv 登录失败: {exc}")
 
     def _capture_lofter_credentials(self):
+        """获取 Lofter 登录信息"""
         try:
             from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
         except ImportError as exc:
@@ -150,6 +158,7 @@ class CredentialManager:
             page = context.new_page()
 
             def on_request(request):
+                """记录请求里的参数"""
                 if "TagBean.search.dwr" in request.url:
                     token = request.headers.get("capttoken")
                     if token:
@@ -158,7 +167,6 @@ class CredentialManager:
             page.on("request", on_request)
             page.goto("https://www.lofter.com/login", wait_until="domcontentloaded")
 
-            # Wait for login cookies to appear
             deadline = time.time() + 300
             while time.time() < deadline:
                 cookies = context.cookies()
@@ -168,7 +176,9 @@ class CredentialManager:
                 time.sleep(1)
 
             if cookie_string and self._is_lofter_cookie_valid(cookie_string):
-                page.goto("https://www.lofter.com/tag/素祥", wait_until="domcontentloaded")
+                page.goto(
+                    "https://www.lofter.com/tag/素祥", wait_until="domcontentloaded"
+                )
                 try:
                     page.wait_for_timeout(3000)
                 except PWTimeout:
@@ -180,6 +190,7 @@ class CredentialManager:
         return cookie_string, capttoken_holder["value"]
 
     def _extract_lofter_cookie(self, cookies) -> str:
+        """整理 Lofter 登录信息"""
         cookie_parts = []
         for c in cookies:
             if "lofter" in c.get("domain", "").lower():
@@ -187,6 +198,7 @@ class CredentialManager:
         return "; ".join(cookie_parts)
 
     def _is_lofter_cookie_valid(self, cookie: str) -> bool:
+        """判断 Lofter 登录信息是否可用"""
         if not cookie:
             return False
         has_token = "token=" in cookie
@@ -200,6 +212,7 @@ class CredentialManager:
         return has_token and any(marker in cookie for marker in login_markers)
 
     def _capture_pixiv_refresh_token(self) -> Optional[str]:
+        """获取 Pixiv 登录码"""
         try:
             from playwright.sync_api import sync_playwright, TimeoutError
         except ImportError as exc:
@@ -222,6 +235,7 @@ class CredentialManager:
         captured_code = {"value": None}
 
         def try_capture(url: str) -> None:
+            """从地址中取出登录码"""
             if not url or captured_code["value"]:
                 return
             match = re.search(r"[?&]code=([^&]+)", url)
@@ -236,9 +250,13 @@ class CredentialManager:
             cdp_session.send("Network.enable")
 
             def on_request(event):
+                """检查请求里有没有登录码"""
                 url = event.get("request", {}).get("url", "")
                 check_url = url or event.get("documentURL", "")
-                if check_url.startswith("pixiv://account/login") or "pixiv/callback" in check_url:
+                if (
+                    check_url.startswith("pixiv://account/login")
+                    or "pixiv/callback" in check_url
+                ):
                     try_capture(check_url)
                     if captured_code["value"]:
                         page.close()
@@ -279,6 +297,7 @@ class CredentialManager:
         return payload.get("refresh_token")
 
     def _write_env(self, key: str, value: str) -> None:
+        """写入配置文件"""
         env_path = Path(__file__).resolve().parents[2] / ".env"
         if not env_path.exists():
             env_path.write_text(f"{key}={value}\n", encoding="utf-8")

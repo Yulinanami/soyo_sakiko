@@ -11,14 +11,17 @@ const historyStore = useHistoryStore();
 const { items, loading, error } = storeToRefs(historyStore);
 
 onMounted(async () => {
+  // 进入页面时获取记录
   await historyStore.fetchHistory();
 });
 
 async function removeHistory(id: number) {
+  // 删除记录
   await historyStore.removeHistory(id);
 }
 
 function toNovel(item: HistoryItem): Novel {
+  // 转成小说结构
   return {
     id: item.novel_id,
     source: item.source as Novel['source'],
@@ -40,6 +43,7 @@ function toNovel(item: HistoryItem): Novel {
 }
 
 function formatLastRead(date: string) {
+  // 格式化时间
   if (!date) return '未知';
   const parsed = new Date(date);
   if (Number.isNaN(parsed.getTime())) return '未知';

@@ -1,6 +1,4 @@
-"""
-Auth Router
-"""
+"""登录相关路由"""
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -22,14 +20,17 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """核对密码是否一致"""
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
+    """把密码转换成保存用的值"""
     return pwd_context.hash(password)
 
 
 def create_access_token(data: dict) -> str:
+    """生成登录用的码"""
     to_encode = data.copy()
     if "sub" in to_encode and to_encode["sub"] is not None:
         to_encode["sub"] = str(to_encode["sub"])
@@ -41,6 +42,7 @@ def create_access_token(data: dict) -> str:
 async def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> User:
+    """检查并获取当前用户"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -68,12 +70,10 @@ async def get_current_user(
 
 @router.post("/register", response_model=ApiResponse[AuthResponse])
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user"""
-    # Check if username exists
+    """注册账号"""
     if db.query(User).filter(User.username == user_data.username).first():
         raise HTTPException(status_code=400, detail="Username already registered")
 
-    # Create user
     user = User(
         username=user_data.username,
         password_hash=get_password_hash(user_data.password),
@@ -82,17 +82,18 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    # Generate token
     access_token = create_access_token(data={"sub": user.id})
 
     return ApiResponse(
-        data=AuthResponse(access_token=access_token, user=UserSchema.model_validate(user))
+        data=AuthResponse(
+            access_token=access_token, user=UserSchema.model_validate(user)
+        )
     )
 
 
 @router.post("/login", response_model=ApiResponse[AuthResponse])
 async def login(payload: UserLogin, db: Session = Depends(get_db)):
-    """Login user"""
+    """登录账号"""
     user = db.query(User).filter(User.username == payload.username).first()
     if not user:
         raise HTTPException(
@@ -111,11 +112,13 @@ async def login(payload: UserLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": user.id})
 
     return ApiResponse(
-        data=AuthResponse(access_token=access_token, user=UserSchema.model_validate(user))
+        data=AuthResponse(
+            access_token=access_token, user=UserSchema.model_validate(user)
+        )
     )
 
 
 @router.get("/me", response_model=ApiResponse[UserSchema])
 async def get_me(current_user: User = Depends(get_current_user)):
-    """Get current user profile"""
+    """获取当前用户信息"""
     return ApiResponse(data=UserSchema.model_validate(current_user))

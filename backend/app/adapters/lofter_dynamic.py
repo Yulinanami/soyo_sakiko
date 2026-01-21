@@ -1,6 +1,4 @@
-"""
-Lofter dynamic crawling via Playwright.
-"""
+"""Lofter 动态抓取"""
 
 import logging
 from typing import List, Optional
@@ -23,7 +21,7 @@ def search_dynamic_sync(
     target_total: Optional[int] = None,
     return_all: bool = False,
 ) -> List[Novel]:
-    """Use Playwright to scroll tag page and collect more posts."""
+    """滚动页面获取更多结果"""
     if not settings.LOFTER_DYNAMIC_ENABLED:
         return []
     try:
@@ -55,6 +53,7 @@ def search_dynamic_sync(
         dwr_payloads: List[str] = []
 
         def on_response(response):
+            """收集响应数据"""
             try:
                 if "TagBean.search.dwr" in response.url:
                     dwr_payloads.append(response.text())
@@ -69,7 +68,7 @@ def search_dynamic_sync(
                 headless=headless,
                 args=[
                     "--disable-blink-features=AutomationControlled",
-                    "--no-proxy-server",  # Bypass system proxy for direct connection
+                    "--no-proxy-server",
                 ],
             )
             context = browser.new_context(

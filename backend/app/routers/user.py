@@ -1,6 +1,4 @@
-"""
-User data router: favorites and reading history.
-"""
+"""用户数据路由"""
 
 from datetime import datetime, timedelta
 
@@ -12,7 +10,12 @@ from app.database import get_db
 from app.models.favorite import Favorite, ReadingHistory
 from app.routers.auth import get_current_user
 from app.schemas.response import ApiResponse
-from app.schemas.user_data import FavoriteCreate, FavoriteOut, ReadingHistoryCreate, ReadingHistoryOut
+from app.schemas.user_data import (
+    FavoriteCreate,
+    FavoriteOut,
+    ReadingHistoryCreate,
+    ReadingHistoryOut,
+)
 
 router = APIRouter()
 
@@ -21,6 +24,7 @@ router = APIRouter()
 def list_favorites(
     db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):
+    """获取收藏列表"""
     favorites = (
         db.query(Favorite)
         .filter(Favorite.user_id == current_user.id)
@@ -36,6 +40,7 @@ def add_favorite(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    """添加或更新收藏"""
     favorite = (
         db.query(Favorite)
         .filter(
@@ -72,6 +77,7 @@ def delete_favorite(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    """删除收藏"""
     favorite = (
         db.query(Favorite)
         .filter(Favorite.id == favorite_id, Favorite.user_id == current_user.id)
@@ -85,9 +91,8 @@ def delete_favorite(
 
 
 @router.get("/history", response_model=ApiResponse[list[ReadingHistoryOut]])
-def list_history(
-    db: Session = Depends(get_db), current_user=Depends(get_current_user)
-):
+def list_history(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """获取阅读记录"""
     ttl_days = settings.READING_HISTORY_TTL_DAYS
     cutoff = None
     if ttl_days and ttl_days > 0:
@@ -102,7 +107,9 @@ def list_history(
     if cutoff:
         query = query.filter(ReadingHistory.last_read_at >= cutoff)
     records = query.order_by(ReadingHistory.last_read_at.desc()).all()
-    return ApiResponse(data=[ReadingHistoryOut.model_validate(item) for item in records])
+    return ApiResponse(
+        data=[ReadingHistoryOut.model_validate(item) for item in records]
+    )
 
 
 @router.post("/history", response_model=ApiResponse[ReadingHistoryOut])
@@ -111,6 +118,7 @@ def record_history(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    """添加或更新阅读记录"""
     record = (
         db.query(ReadingHistory)
         .filter(
@@ -153,6 +161,7 @@ def delete_history(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    """删除阅读记录"""
     record = (
         db.query(ReadingHistory)
         .filter(

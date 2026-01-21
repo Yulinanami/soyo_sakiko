@@ -1,7 +1,4 @@
-"""
-AO3 Adapter
-Uses ao3-api library for fetching fanfiction from Archive of Our Own
-"""
+"""AO3 来源处理"""
 
 import logging
 from typing import List, Optional
@@ -11,7 +8,6 @@ from app.schemas.novel import Novel, NovelSource
 
 logger = logging.getLogger(__name__)
 
-# AO3 API is synchronous, we'll use run_in_executor
 try:
     import AO3
 
@@ -22,11 +18,10 @@ except ImportError:
 
 
 class AO3Adapter(BaseAdapter):
-    """AO3 data source adapter"""
+    """AO3 来源处理"""
 
     source_name = "ao3"
 
-    # SoyoSaki related tags on AO3
     SOYOSAKI_TAGS = [
         "Nagasaki Soyo/Toyokawa Sakiko",
         "Toyokawa Sakiko/Nagasaki Soyo",
@@ -40,17 +35,15 @@ class AO3Adapter(BaseAdapter):
         page_size: int = 20,
         sort_by: str = "date",
     ) -> List[Novel]:
-        """Search for SoyoSaki works on AO3"""
+        """获取 AO3 搜索结果"""
         if not AO3_AVAILABLE:
             logger.warning("AO3 library not available")
             return []
 
         exclude_tags = exclude_tags or []
 
-        # Combine user tags with default SoyoSaki tags
         search_tags = list(set(tags + self.SOYOSAKI_TAGS))
 
-        # Run synchronous AO3 search in executor
         return await self.run_in_executor(
             self._search_sync,
             search_tags,
@@ -68,9 +61,8 @@ class AO3Adapter(BaseAdapter):
         page_size: int,
         sort_by: str,
     ) -> List[Novel]:
-        """Synchronous search implementation"""
+        """获取 AO3 搜索结果"""
         try:
-            # Build search query
             tag_query = " OR ".join(f'"{tag}"' for tag in tags)
 
             search = AO3.Search(
@@ -80,6 +72,7 @@ class AO3Adapter(BaseAdapter):
             )
 
             def _update() -> None:
+                """刷新搜索结果"""
                 search.update()
 
             try:
@@ -98,7 +91,6 @@ class AO3Adapter(BaseAdapter):
 
             novels = []
             start = (page - 1) * page_size
-            # Fetch more to account for filtered items
             end = start + page_size * 2
 
             for work in search.results[start:end]:
@@ -110,7 +102,6 @@ class AO3Adapter(BaseAdapter):
                         continue
 
                     novel = self._convert_work(work)
-                    # Also filter by actual work tags
                     if exclude_any_tag(novel.tags, exclude_tags):
                         continue
                     novels.append(novel)
@@ -124,7 +115,7 @@ class AO3Adapter(BaseAdapter):
             return []
 
     def _map_sort(self, sort_by: str) -> str:
-        """Map sort parameter to AO3 sort column"""
+        """映射排序字段"""
         mapping = {
             "date": "revised_at",
             "kudos": "kudos_count",
@@ -134,23 +125,20 @@ class AO3Adapter(BaseAdapter):
         return mapping.get(sort_by, "revised_at")
 
     def _convert_work(self, work) -> Novel:
-        """Convert AO3 Work to our Novel schema"""
-        # Get author safely
+        """转换 AO3 条目为小说结构"""
         author = "Anonymous"
         author_url = None
         if work.authors:
             author = work.authors[0].username
             author_url = f"https://archiveofourown.org/users/{author}"
 
-        # Get tags safely
         tags = []
         try:
             if hasattr(work, "tags"):
-                tags = [str(tag) for tag in work.tags[:20]]  # Limit tags
+                tags = [str(tag) for tag in work.tags[:20]]
         except:
             pass
 
-        # Parse dates to ISO format for consistent sorting
         published_at = to_iso_date(getattr(work, "date_published", None))
         updated_at = to_iso_date(getattr(work, "date_updated", None))
         if not published_at:
@@ -182,14 +170,14 @@ class AO3Adapter(BaseAdapter):
         )
 
     async def get_detail(self, novel_id: str) -> Optional[Novel]:
-        """Get work details"""
+        """获取 AO3 详情"""
         if not AO3_AVAILABLE:
             return None
 
         return await self.run_in_executor(self._get_detail_sync, novel_id)
 
     def _get_detail_sync(self, novel_id: str) -> Optional[Novel]:
-        """Synchronous get detail"""
+        """获取 AO3 详情"""
         try:
             work = with_retries(
                 lambda: AO3.Work(int(novel_id)),
@@ -209,14 +197,14 @@ class AO3Adapter(BaseAdapter):
             return None
 
     async def get_chapters(self, novel_id: str) -> List[dict]:
-        """Get chapter list"""
+        """获取 AO3 章节列表"""
         if not AO3_AVAILABLE:
             return []
 
         return await self.run_in_executor(self._get_chapters_sync, novel_id)
 
     def _get_chapters_sync(self, novel_id: str) -> List[dict]:
-        """Synchronous get chapters"""
+        """获取 AO3 章节列表"""
         try:
             work = with_retries(
                 lambda: AO3.Work(int(novel_id)),
@@ -241,7 +229,7 @@ class AO3Adapter(BaseAdapter):
     async def get_chapter_content(
         self, novel_id: str, chapter_num: int
     ) -> Optional[str]:
-        """Get chapter content"""
+        """获取 AO3 章节内容"""
         if not AO3_AVAILABLE:
             return None
 
@@ -252,7 +240,7 @@ class AO3Adapter(BaseAdapter):
     def _get_chapter_content_sync(
         self, novel_id: str, chapter_num: int
     ) -> Optional[str]:
-        """Synchronous get chapter content"""
+        """获取 AO3 章节内容"""
         try:
             work = with_retries(
                 lambda: AO3.Work(int(novel_id)),

@@ -27,10 +27,10 @@ const router = useRouter();
 const novelRef = toRef(props, 'novel');
 const { formattedDate, truncatedSummary, isHighlightTag } = useNovelMeta(novelRef);
 
-// API base URL
+// 获取服务地址
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/+$/, '');
 
-// Source logos
+// 设置来源图标
 const sourceLogos: Record<string, string> = {
   ao3: ao3Logo,
   pixiv: pixivLogo,
@@ -38,8 +38,10 @@ const sourceLogos: Record<string, string> = {
   bilibili: bilibiliLogo,
 };
 
+// 选择来源图标
 const sourceLogo = computed(() => sourceLogos[props.novel.source]);
 
+// 生成来源样式
 const sourceClass = computed(() => {
   const classes: Record<string, string> = {
     ao3: 'bg-red-700 text-white',
@@ -50,7 +52,7 @@ const sourceClass = computed(() => {
   return classes[props.novel.source] || 'bg-gray-500 text-white';
 });
 
-// Get cover image URL - proxy Pixiv images through backend
+// 准备封面地址
 const lofterDomains = [
   'lf127.net',
   '126.net',
@@ -63,10 +65,12 @@ const lofterDomains = [
 
 const coverLoaded = ref(false);
 const favoriteLoading = ref(false);
+// 判断是否已收藏
 const isFavorite = computed(() => favoritesStore.isFavorite(props.novel));
 const isLastRead = ref(false);
 
 onMounted(() => {
+  // 读取上次阅读信息
   try {
     const raw = sessionStorage.getItem('soyosaki:lastRead');
     if (raw) {
@@ -79,10 +83,10 @@ onMounted(() => {
 });
 
 const coverImageUrl = computed(() => {
+  // 处理封面地址
   if (!props.novel.cover_image) return null;
   const imageUrl = props.novel.cover_image;
 
-  // Pixiv images need to be proxied due to hotlink protection
   if (props.novel.source === 'pixiv' && imageUrl.includes('pximg.net')) {
     return `${API_BASE}/proxy/pixiv?url=${encodeURIComponent(imageUrl)}`;
   }
@@ -96,7 +100,6 @@ const coverImageUrl = computed(() => {
     }
   }
   
-  // Bilibili images need proxy due to Referer check
   if (props.novel.source === 'bilibili' && (imageUrl.includes('hdslb.com') || imageUrl.includes('bilibili.com'))) {
     return `${API_BASE}/proxy/bilibili?url=${encodeURIComponent(imageUrl)}`;
   }
@@ -105,16 +108,19 @@ const coverImageUrl = computed(() => {
 });
 
 watch(coverImageUrl, () => {
+  // 重置封面加载状态
   coverLoaded.value = false;
 });
 
 onMounted(() => {
+  // 登录后加载收藏
   if (userStore.isLoggedIn && !favoritesStore.loaded) {
     favoritesStore.fetchFavorites();
   }
 });
 
 function rememberListScroll() {
+  // 记录列表位置
   sessionStorage.setItem('soyosaki:listScrollY', String(window.scrollY));
   sessionStorage.setItem('soyosaki:preserveList', '1');
   try {
@@ -134,11 +140,11 @@ function rememberListScroll() {
     };
     sessionStorage.setItem(cacheKey, JSON.stringify(payload));
   } catch {
-    // Ignore storage errors.
   }
 }
 
 async function toggleFavorite(event: Event) {
+  // 切换收藏
   event.preventDefault();
   event.stopPropagation();
   if (!userStore.isLoggedIn) {
@@ -163,7 +169,7 @@ async function toggleFavorite(event: Event) {
       @click="rememberListScroll"
     >
       <div class="relative">
-        <!-- Cover Image -->
+        <!-- 封面 -->
         <div 
           v-if="coverImageUrl" 
           class="h-40 overflow-hidden bg-sakiko-pale relative"
@@ -191,7 +197,7 @@ async function toggleFavorite(event: Event) {
           <FileText v-else class="w-16 h-16 text-gray-400 opacity-60" />
         </div>
 
-        <!-- Just Read Marker -->
+        <!-- 最近阅读 -->
         <div 
           v-if="isLastRead"
           class="absolute top-0 right-0 bg-soyo text-white text-xs px-2 py-1 rounded-bl-lg shadow-sm font-medium z-10"
@@ -200,7 +206,7 @@ async function toggleFavorite(event: Event) {
         </div>
       </div>
       
-      <!-- Content -->
+      <!-- 内容 -->
       <div class="p-4">
         <div class="flex gap-2 mb-3">
           <span :class="['flex items-center gap-1 text-xs px-2 py-0.5 rounded', sourceClass]">

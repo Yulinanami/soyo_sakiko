@@ -1,6 +1,4 @@
-"""
-Novel Schemas
-"""
+"""小说数据结构"""
 
 from enum import Enum
 from typing import List, Optional

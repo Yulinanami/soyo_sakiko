@@ -1,6 +1,4 @@
-"""
-Favorite and reading history schemas.
-"""
+"""收藏与阅读记录结构"""
 
 from datetime import datetime
 from typing import Optional

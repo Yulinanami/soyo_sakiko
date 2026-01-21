@@ -1,6 +1,4 @@
-"""
-Lofter parsing helpers.
-"""
+"""Lofter 解析工具"""
 
 import logging
 import re
@@ -24,7 +22,7 @@ def parse_tag_page_html(
     ranking_type: str,
     limit: Optional[int] = None,
 ) -> List[Novel]:
-    """Parse tag page HTML into novel list."""
+    """解析标签页列表"""
     from bs4 import BeautifulSoup
 
     soup = BeautifulSoup(html, "html.parser")
@@ -101,7 +99,6 @@ def parse_tag_page_html(
 
         if title and exclude(title, exclude_tags):
             continue
-        # Also filter by actual tags
         if exclude_any_tag(tags, exclude_tags):
             continue
 
@@ -198,14 +195,12 @@ def parse_tag_page_html(
 
 
 def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Novel]:
-    """Parse DWR response format."""
+    """解析返回内容"""
     novels = []
 
     try:
-        # DWR returns JavaScript code, extract assignments first
         assignments = {}
 
-        # Match variable assignments like s0.xxx=yyy
         var_pattern = re.compile(r"s(\d+)\.(\w+)\s*=\s*([^;]+);")
         for match in var_pattern.finditer(response_text):
             var_id, prop, value = match.groups()
@@ -214,7 +209,6 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
                 assignments[key] = {}
             assignments[key][prop] = strip_quotes(value)
 
-        # Match string values
         str_pattern = re.compile(r's(\d+)\.(\w+)\s*=\s*"([^"]*)"')
         for match in str_pattern.finditer(response_text):
             var_id, prop, value = match.groups()
@@ -223,7 +217,6 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
                 assignments[key] = {}
             assignments[key][prop] = value
 
-        # Find posts by post references if present; else fall back to post-like objects
         post_candidates = []
         post_refs = re.findall(r"s(\d+)\.post=s(\d+);", response_text)
         if post_refs:
@@ -244,19 +237,15 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
         seen_ids = set()
 
         for _, post in post_candidates:
-            # Get title and decode Unicode escapes
             title = post.get("title", "")
             title = sanitize(title) if title else ""
             if not title:
-                # Try to get from digest
                 digest = post.get("digest", "")
                 title = sanitize(clean_html(digest))[:50] if digest else "无标题"
 
-            # Check exclude tags
             if exclude(title, exclude_tags):
                 continue
 
-            # Get blog info
             blog_info_ref = post.get("blogInfo", "")
             blog_info = {}
             if blog_info_ref.startswith("s"):
@@ -265,15 +254,12 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
             author = sanitize(blog_info.get("blogNickName", "Unknown"))
             blog_name = sanitize(blog_info.get("blogName", ""))
 
-            # Get other properties
             publish_time = post.get("publishTime", "")
             blog_page_url = post.get("blogPageUrl", "")
             post_id = post.get("postId", "") or post.get("id", "")
 
-            # If no blogPageUrl, try to construct from other data
             if not blog_page_url:
                 skipped_no_url += 1
-                # Try to use blog_name and postId/publishTime as fallback
                 fallback_id = post_id or publish_time
                 if blog_name and fallback_id:
                     blog_page_url = f"https://{blog_name}.lofter.com/post/{fallback_id}"
@@ -284,7 +270,6 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
                 skipped_no_blog += 1
                 continue
 
-            # Parse date
             try:
                 if publish_time and publish_time.isdigit():
                     published_at = datetime.fromtimestamp(
@@ -295,35 +280,28 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
             except Exception:
                 published_at = datetime.now().isoformat()
 
-            # Get tags
             tag_list_str = post.get("tagList", "")
             tags = []
             if tag_list_str:
-                # Parse tag list from JavaScript array format
                 tag_matches = re.findall(r'"([^"]+)"', tag_list_str)
                 tags = tag_matches if tag_matches else []
             tags = [sanitize(tag) for tag in tags if tag]
-            # Filter by actual tags (in addition to title filter above)
             if exclude_any_tag(tags, exclude_tags):
                 continue
 
-            # Get hot/bookmark count
             hot = post.get("hot", "0")
             try:
                 kudos = int(hot) if hot.isdigit() else 0
             except Exception:
                 kudos = 0
 
-            # Get digest as summary
             digest = post.get("digest", "")
             summary = sanitize(clean_html(digest)) if digest else "暂无简介"
 
-            # Extract post ID from URL and combine with blog_name
             post_id_match = re.search(r"/post/([^/?#]+)", blog_page_url or "")
             post_id = (
                 post_id_match.group(1) if post_id_match else (post_id or publish_time)
             )
-            # Store as blogName:postId so we can reconstruct the URL later
             novel_id = f"{blog_name}:{post_id}" if blog_name else post_id
             if not novel_id or novel_id in seen_ids:
                 continue
@@ -345,7 +323,7 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
                 published_at=published_at,
                 updated_at=published_at,
                 source_url=blog_page_url,
-                cover_image=None,  # Lofter posts may have images in content
+                cover_image=None,
                 is_complete=True,
             )
 
@@ -367,18 +345,18 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
 
 
 def clean_html(html: str) -> str:
-    """Remove HTML tags from string."""
+    """移除网页标签"""
     clean = re.sub(r"<[^>]+>", "", html)
     clean = clean.replace("&nbsp;", " ")
     clean = clean.replace("&lt;", "<")
     clean = clean.replace("&gt;", ">")
     clean = clean.replace("&amp;", "&")
-    # Decode Unicode escapes
     clean = decode_unicode(clean)
     return clean.strip()
 
 
 def strip_quotes(value: str) -> str:
+    """去掉首尾引号"""
     value = value.strip()
     if (value.startswith('"') and value.endswith('"')) or (
         value.startswith("'") and value.endswith("'")
@@ -388,6 +366,7 @@ def strip_quotes(value: str) -> str:
 
 
 def looks_like_post(data: dict) -> bool:
+    """判断是否像文章数据"""
     if ("blogInfo" in data or "blogName" in data) and (
         "publishTime" in data or "blogPageUrl" in data or "title" in data
     ):

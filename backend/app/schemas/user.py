@@ -1,6 +1,4 @@
-"""
-User Schemas
-"""
+"""用户数据结构"""
 
 from pydantic import BaseModel
 from datetime import datetime

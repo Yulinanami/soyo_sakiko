@@ -5,25 +5,25 @@ export interface Novel {
   source: NovelSource;
   title: string;
   author: string;
-  author_url?: string;       // snake_case from backend
+  author_url?: string;
   summary: string;
   tags: string[];
   rating?: string;
-  word_count?: number;       // snake_case from backend
-  chapter_count?: number;    // snake_case from backend
+  word_count?: number;
+  chapter_count?: number;
   kudos?: number;
   hits?: number;
-  published_at: string;      // snake_case from backend
-  updated_at?: string;       // snake_case from backend
-  source_url: string;        // snake_case from backend
-  cover_image?: string;      // snake_case from backend
-  is_complete?: boolean;     // snake_case from backend
+  published_at: string;
+  updated_at?: string;
+  source_url: string;
+  cover_image?: string;
+  is_complete?: boolean;
 }
 
 export interface NovelSearchParams {
   sources: NovelSource[];
   tags: string[];
-  excludeTags?: string[];  // Tags to exclude from results
+  excludeTags?: string[];
   page?: number;
   pageSize?: number;
   sortBy?: "date" | "kudos" | "hits" | "wordCount";
@@ -34,6 +34,6 @@ export interface NovelListResponse {
   novels: Novel[];
   total: number;
   page: number;
-  page_size: number;  // Backend uses snake_case
-  has_more: boolean;  // Backend uses snake_case
+  page_size: number;
+  has_more: boolean;
 }

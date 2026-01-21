@@ -28,15 +28,16 @@ const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:8000/api').
 const cacheKey = `soyosaki:novel:${source}:${id}`;
 
 onMounted(async () => {
+  // 进入页面时加载数据
   if (userStore.isLoggedIn) {
     favoritesStore.fetchFavorites();
   }
   await loadNovel();
-  // Always try to load chapter content, even if novel detail failed
   await loadChapter(1);
 });
 
 async function loadNovel() {
+  // 加载小说信息
   try {
     novel.value = await novelApi.getDetail(source, id);
     const cached = readCachedNovel();
@@ -51,20 +52,16 @@ async function loadNovel() {
       novel.value.source_url = novel.value.source_url || cached.source_url || novel.value.source_url;
     }
   } catch (err) {
-    // For Lofter and other sources where detail might not be available,
-    // we just log but don't block - we'll still try to load the chapter
     console.warn('Could not load novel detail:', err);
     
     const cached = readCachedNovel();
 
-    // Generate source URL for Lofter
     let sourceUrl = '';
     if (source === 'lofter' && id.includes(':')) {
       const [blogName, postId] = id.split(':', 2);
       sourceUrl = `https://${blogName}.lofter.com/post/${postId}`;
     }
 
-    // Create a minimal novel object for display
     novel.value = {
       id: id,
       source: source as any,
@@ -88,6 +85,7 @@ async function loadNovel() {
 }
 
 async function loadChapter(chapter: number) {
+  // 加载章节内容
   loading.value = true;
   error.value = null;
   let shouldApplyLoaders = false;
@@ -109,6 +107,7 @@ async function loadChapter(chapter: number) {
 }
 
 async function recordHistory(chapter: number) {
+  // 记录阅读进度
   if (!userStore.isLoggedIn || !novel.value) {
     return;
   }
@@ -131,23 +130,25 @@ async function recordHistory(chapter: number) {
       { silent: true }
     );
   } catch {
-    // Ignore history errors to avoid blocking reading.
   }
 }
 
 function prevChapter() {
+  // 切换到上一章
   if (currentChapter.value > 1) {
     loadChapter(currentChapter.value - 1);
   }
 }
 
 function nextChapter() {
+  // 切换到下一章
   if (novel.value && currentChapter.value < (novel.value.chapter_count || 1)) {
     loadChapter(currentChapter.value + 1);
   }
 }
 
 function normalizeContent(content: string) {
+  // 处理链接地址
   if (!content) return content;
   return content
     .replace(/src=(['"])\/api\/([^'"]+)/g, `src=$1${API_BASE}/$2`)
@@ -155,6 +156,7 @@ function normalizeContent(content: string) {
 }
 
 function applyImageLoaders() {
+  // 给图片加加载状态
   if (!contentRef.value) return;
   const images = Array.from(contentRef.value.querySelectorAll('img'));
   images.forEach((img) => {
@@ -180,6 +182,7 @@ function applyImageLoaders() {
 }
 
 function readCachedNovel() {
+  // 读取本地保存内容
   try {
     const raw = sessionStorage.getItem(cacheKey);
     if (!raw) return null;
@@ -190,6 +193,7 @@ function readCachedNovel() {
 }
 
 function goBack() {
+  // 返回上一页
   if (window.history.length > 1) {
     router.back();
   } else {
@@ -198,6 +202,7 @@ function goBack() {
 }
 
 async function toggleFavorite() {
+  // 切换收藏状态
   if (!userStore.isLoggedIn) {
     router.push({ name: 'login', query: { redirect: route.fullPath, reason: 'favorites' } });
     return;
@@ -212,6 +217,7 @@ async function toggleFavorite() {
 }
 
 onBeforeRouteLeave(() => {
+  // 离开时记录阅读信息
   if (novel.value) {
     sessionStorage.setItem('soyosaki:lastRead', JSON.stringify({
       source: novel.value.source,
@@ -223,7 +229,7 @@ onBeforeRouteLeave(() => {
 
 <template>
   <div class="min-h-screen bg-soyo-cream dark:bg-gray-900 transition-colors duration-300">
-    <!-- Header -->
+    <!-- 顶部信息 -->
     <header v-if="novel" class="relative z-10 bg-soyo text-white py-8 dark:bg-gray-800 transition-colors duration-300 shadow-sm">
       <div class="max-w-3xl mx-auto px-4">
         <button
@@ -260,7 +266,7 @@ onBeforeRouteLeave(() => {
       </div>
     </header>
 
-    <!-- Chapter Navigation -->
+    <!-- 章节导航 -->
     <nav v-if="novel" class="bg-soyo-cream border-b border-soyo-light/30 py-4 dark:bg-gray-800 dark:border-gray-700">
       <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
         <button 
@@ -283,7 +289,7 @@ onBeforeRouteLeave(() => {
       </div>
     </nav>
 
-    <!-- Content -->
+    <!-- 正文内容 -->
     <main class="py-12 bg-soyo-cream dark:bg-gray-900 transition-colors duration-300">
       <div class="max-w-2xl mx-auto px-6">
         <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">加载中...</div>
@@ -297,7 +303,7 @@ onBeforeRouteLeave(() => {
       </div>
     </main>
 
-    <!-- Bottom Navigation -->
+    <!-- 底部导航 -->
     <nav v-if="novel && !loading" class="bg-soyo-cream border-t border-soyo-light/30 py-4 mt-8 dark:bg-gray-800 dark:border-gray-700">
       <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
         <button 

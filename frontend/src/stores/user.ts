@@ -6,17 +6,17 @@ import type { AxiosError } from 'axios';
 import { useAsyncState } from '../composables/useAsyncState';
 
 export const useUserStore = defineStore('user', () => {
-  // State
+  // 用户状态
   const user = ref<User | null>(null);
   const token = ref<string | null>(readToken());
   const darkMode = ref<boolean>(readDarkMode());
   const { loading, error, start, stop, setError } = useAsyncState();
 
-  // Computed
+  // 登录状态
   const isLoggedIn = computed(() => !!token.value);
 
-  // Actions
   async function login(username: string, password: string) {
+    // 执行登录
     start();
 
     try {
@@ -41,6 +41,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function register(username: string, password: string) {
+    // 执行注册
     start();
 
     try {
@@ -65,6 +66,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function fetchProfile() {
+    // 获取用户信息
     if (!token.value) return;
 
     try {
@@ -75,6 +77,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function logout() {
+    // 退出登录
     token.value = null;
     user.value = null;
     localStorage.removeItem('token');
@@ -83,6 +86,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function syncFromStorage() {
+    // 读取本地保存的数据
     token.value = readToken();
     const storedUser = readUser();
     if (storedUser) {
@@ -91,8 +95,9 @@ export const useUserStore = defineStore('user', () => {
     setAuthToken(token.value);
   }
 
-  // Initialize: fetch profile if token exists
+  // 有登录信息时补齐数据
   if (token.value) {
+    // 根据本地信息补全状态
     const storedUser = readUser();
     if (storedUser) {
       user.value = storedUser;
@@ -102,10 +107,11 @@ export const useUserStore = defineStore('user', () => {
     fetchProfile();
   }
 
-  // Watch for Dark Mode changes
+  // 监听外观变化
   watch(
     darkMode,
     (isDark) => {
+      // 应用外观变化
       if (isDark) {
         document.documentElement.classList.add('dark');
         localStorage.setItem('darkMode', '1');
@@ -118,19 +124,17 @@ export const useUserStore = defineStore('user', () => {
   );
 
   function toggleDarkMode() {
+    // 切换外观
     darkMode.value = !darkMode.value;
   }
 
   return {
-    // State
     user,
     token,
     darkMode,
     loading,
     error,
-    // Computed
     isLoggedIn,
-    // Actions
     login,
     register,
     logout,
@@ -141,6 +145,7 @@ export const useUserStore = defineStore('user', () => {
 });
 
 function readToken(): string | null {
+  // 读取本地登录信息
   const stored = localStorage.getItem('token');
   if (!stored || stored === 'undefined' || stored === 'null') {
     localStorage.removeItem('token');
@@ -150,6 +155,7 @@ function readToken(): string | null {
 }
 
 function readUser(): User | null {
+  // 读取本地用户信息
   const stored = localStorage.getItem('user');
   if (!stored) return null;
   try {
@@ -161,5 +167,6 @@ function readUser(): User | null {
 }
 
 function readDarkMode(): boolean {
+  // 读取外观设置
   return localStorage.getItem('darkMode') === '1';
 }

@@ -1,6 +1,4 @@
-"""
-Shared API response schema.
-"""
+"""通用返回结构"""
 
 from typing import Generic, Optional, TypeVar
 

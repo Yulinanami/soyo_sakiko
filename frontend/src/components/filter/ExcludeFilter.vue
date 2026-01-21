@@ -22,11 +22,13 @@ const defaultExcludeTags = [
 ];
 
 const allTags = computed(() => {
+  // 合并所有标签
   const set = new Set([...defaultExcludeTags, ...props.excludeTags]);
   return Array.from(set);
 });
 
 function toggleTag(tag: string) {
+  // 切换排除标签
   const tags = [...props.excludeTags];
   const index = tags.indexOf(tag);
   if (index > -1) {
@@ -38,6 +40,7 @@ function toggleTag(tag: string) {
 }
 
 function addCustomTag() {
+  // 添加自定义标签
   const tag = newTag.value.trim();
   if (tag && !props.excludeTags.includes(tag)) {
     emit('update:exclude-tags', [...props.excludeTags, tag]);
@@ -46,6 +49,7 @@ function addCustomTag() {
 }
 
 function isSelected(tag: string) {
+  // 判断是否已选择
   return props.excludeTags.includes(tag);
 }
 </script>

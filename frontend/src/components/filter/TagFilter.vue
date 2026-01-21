@@ -17,11 +17,13 @@ const customTag = ref('');
 const defaultTags = ['素祥', '祥素', 'そよさき', 'Nagasaki Soyo/Togawa Sakiko'];
 
 const allTags = computed(() => {
+  // 合并所有标签
   const set = new Set([...defaultTags, ...props.selectedTags]);
   return Array.from(set);
 });
 
 function toggleTag(tag: string) {
+  // 切换标签
   const tags = [...props.selectedTags];
   const index = tags.indexOf(tag);
   if (index > -1) {
@@ -33,6 +35,7 @@ function toggleTag(tag: string) {
 }
 
 function addCustomTag() {
+  // 添加自定义标签
   const tag = customTag.value.trim();
   if (tag && !props.selectedTags.includes(tag)) {
     emit('update:selected-tags', [...props.selectedTags, tag]);
@@ -41,6 +44,7 @@ function addCustomTag() {
 }
 
 function isSelected(tag: string) {
+  // 判断是否已选择
   return props.selectedTags.includes(tag);
 }
 </script>

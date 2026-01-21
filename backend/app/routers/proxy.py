@@ -1,6 +1,4 @@
-"""
-Image Proxy Router - for fetching images that require special headers
-"""
+"""图片转发入口"""
 
 import logging
 
@@ -14,18 +12,16 @@ from app.services.http_client import get_async_client
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Cache for proxied images (simple in-memory cache)
 image_cache: dict = {}
 
 
 @router.get("/pixiv")
 async def proxy_pixiv_image(url: str):
-    """Proxy Pixiv images with correct Referer header"""
+    """获取 Pixiv 图片"""
 
     if not url or "pximg.net" not in url:
         raise HTTPException(status_code=400, detail="Invalid Pixiv image URL")
 
-    # Check cache
     cache_key = hashlib.md5(url.encode()).hexdigest()
     if cache_key in image_cache:
         cached = image_cache[cache_key]
@@ -35,7 +31,6 @@ async def proxy_pixiv_image(url: str):
             headers={"Cache-Control": "public, max-age=86400"},
         )
 
-    # Fetch with proper headers
     try:
         client = get_async_client()
         response = await client.get(
@@ -54,7 +49,6 @@ async def proxy_pixiv_image(url: str):
         content = response.content
         content_type = response.headers.get("content-type", "image/jpeg")
 
-        # Cache the image (limit cache size)
         if len(image_cache) < 100:
             image_cache[cache_key] = {
                 "content": content,
@@ -76,9 +70,8 @@ async def proxy_pixiv_image(url: str):
 
 @router.get("/lofter")
 async def proxy_lofter_image(url: str):
-    """Proxy Lofter images with correct Referer header"""
+    """获取 Lofter 图片"""
 
-    # Lofter images come from various domains
     lofter_domains = [
         "lf127.net",
         "126.net",
@@ -94,7 +87,6 @@ async def proxy_lofter_image(url: str):
     if not url or not any(domain in url for domain in lofter_domains):
         raise HTTPException(status_code=400, detail="Invalid Lofter image URL")
 
-    # Check cache
     cache_key = hashlib.md5(url.encode()).hexdigest()
     if cache_key in image_cache:
         cached = image_cache[cache_key]
@@ -104,7 +96,6 @@ async def proxy_lofter_image(url: str):
             headers={"Cache-Control": "public, max-age=86400"},
         )
 
-    # Fetch with proper headers
     try:
         client = get_async_client()
         response = await client.get(
@@ -123,7 +114,6 @@ async def proxy_lofter_image(url: str):
         content = response.content
         content_type = response.headers.get("content-type", "image/jpeg")
 
-        # Cache the image (limit cache size)
         if len(image_cache) < 100:
             image_cache[cache_key] = {
                 "content": content,
@@ -145,9 +135,8 @@ async def proxy_lofter_image(url: str):
 
 @router.get("/bilibili")
 async def proxy_bilibili_image(url: str):
-    """Proxy Bilibili images with correct Referer header"""
+    """获取 Bilibili 图片"""
 
-    # Bilibili images come from hdslb.com
     bilibili_domains = [
         "hdslb.com",
         "bilibili.com",
@@ -158,7 +147,6 @@ async def proxy_bilibili_image(url: str):
     if not url or not any(domain in url for domain in bilibili_domains):
         raise HTTPException(status_code=400, detail="Invalid Bilibili image URL")
 
-    # Check cache
     cache_key = hashlib.md5(url.encode()).hexdigest()
     if cache_key in image_cache:
         cached = image_cache[cache_key]
@@ -168,7 +156,6 @@ async def proxy_bilibili_image(url: str):
             headers={"Cache-Control": "public, max-age=86400"},
         )
 
-    # Fetch with proper headers (use no-proxy client for Chinese sites)
     try:
         from app.services.http_client import get_no_proxy_async_client
 
@@ -190,7 +177,6 @@ async def proxy_bilibili_image(url: str):
         content = response.content
         content_type = response.headers.get("content-type", "image/jpeg")
 
-        # Cache the image (limit cache size)
         if len(image_cache) < 100:
             image_cache[cache_key] = {
                 "content": content,

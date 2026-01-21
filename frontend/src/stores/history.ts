@@ -14,11 +14,13 @@ export const useHistoryStore = defineStore('history', () => {
   const loaded = ref(false);
 
   function setItems(list: HistoryItem[]) {
+    // 设置阅读记录
     items.value = list;
     loaded.value = true;
   }
 
   async function fetchHistory(force = false) {
+    // 获取阅读记录
     if (loading.value) return;
     if (loaded.value && !force) return;
     start();
@@ -33,6 +35,7 @@ export const useHistoryStore = defineStore('history', () => {
   }
 
   async function recordHistory(payload: Record<string, any>, options: RecordOptions = {}) {
+    // 记录阅读进度
     try {
       const item = await historyApi.record(payload);
       if (loaded.value && item) {
@@ -51,6 +54,7 @@ export const useHistoryStore = defineStore('history', () => {
   }
 
   async function removeHistory(id: number, options: RecordOptions = {}) {
+    // 删除阅读记录
     try {
       await historyApi.remove(id);
       items.value = items.value.filter((item) => item.id !== id);

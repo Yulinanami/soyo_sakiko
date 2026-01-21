@@ -22,10 +22,12 @@ const loading = computed(() => favoritesStore.loading);
 const error = computed(() => favoritesStore.error);
 
 onMounted(async () => {
+  // 进入页面时获取收藏
   await favoritesStore.fetchFavorites(true);
 });
 
 async function removeFavorite(id: number) {
+  // 取消收藏
   try {
     const target = favoritesStore.items.find((item) => item.id === id);
     if (target) {
@@ -37,6 +39,7 @@ async function removeFavorite(id: number) {
 }
 
 function toNovel(fav: FavoriteItem): Novel {
+  // 转成小说结构
   return {
     id: fav.novel_id,
     source: fav.source as Novel['source'],

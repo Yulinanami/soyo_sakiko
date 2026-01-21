@@ -5,6 +5,7 @@ import type { Novel } from '../types/novel';
 import type { FavoriteItem } from '../types/user_data';
 import { useAsyncState } from '../composables/useAsyncState';
 
+// 生成唯一标识
 const buildKey = (source: string, novelId: string) => `${source}:${novelId}`;
 
 export const useFavoritesStore = defineStore('favorites', () => {
@@ -14,6 +15,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
   const itemMap = ref<Record<string, FavoriteItem>>({});
 
   function setItems(list: FavoriteItem[]) {
+    // 设置收藏列表
     items.value = list;
     itemMap.value = {};
     list.forEach((item) => {
@@ -23,6 +25,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
   }
 
   async function fetchFavorites(force = false) {
+    // 获取收藏列表
     if (loading.value) return;
     if (loaded.value && !force) return;
     start();
@@ -37,10 +40,12 @@ export const useFavoritesStore = defineStore('favorites', () => {
   }
 
   function isFavorite(novel: Pick<Novel, 'source' | 'id'>) {
+    // 判断是否已收藏
     return Boolean(itemMap.value[buildKey(novel.source, novel.id)]);
   }
 
   async function addFavorite(novel: Novel) {
+    // 添加收藏
     const payload = {
       novel_id: novel.id,
       source: novel.source,
@@ -56,6 +61,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
   }
 
   async function removeFavoriteByKey(source: string, novelId: string) {
+    // 移除收藏
     const key = buildKey(source, novelId);
     const item = itemMap.value[key];
     if (!item) return;
@@ -65,6 +71,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
   }
 
   async function toggleFavorite(novel: Novel) {
+    // 切换收藏状态
     if (!loaded.value) {
       await fetchFavorites();
     }
@@ -78,6 +85,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
   }
 
   function reset() {
+    // 清空收藏数据
     items.value = [];
     itemMap.value = {};
     loaded.value = false;

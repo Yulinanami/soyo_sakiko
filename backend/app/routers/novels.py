@@ -1,6 +1,4 @@
-"""
-Novels Router
-"""
+"""小说路由"""
 
 import asyncio
 import logging
@@ -19,12 +17,12 @@ logger = logging.getLogger(__name__)
 async def search_novels(
     sources: List[NovelSource] = Query(default_factory=list),
     tags: List[str] = Query(default_factory=list),
-    exclude_tags: List[str] = Query(default=[]),  # Tags to exclude from results
+    exclude_tags: List[str] = Query(default=[]),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=30, ge=1, le=100),
     sort_by: str = Query(default="date"),
 ):
-    """Search novels across multiple sources"""
+    """按来源和标签搜索小说"""
 
     if not sources:
         return ApiResponse(
@@ -56,17 +54,15 @@ async def search_novels(
         page,
     )
 
-    # For multiple sources, we fetch page_size from EACH source, then interleave
-    # This ensures balanced display from each source
     per_source_count = page_size if len(sources) > 1 else page_size
 
-    # Fetch from all sources in parallel
     async def fetch_from_source(source: NovelSource):
+        """从单一来源获取列表"""
         try:
             adapter = get_adapter(source)
             novels = await adapter.search(
                 tags=tags,
-                exclude_tags=exclude_tags,  # Pass exclude tags
+                exclude_tags=exclude_tags,
                 page=page,
                 page_size=per_source_count,
                 sort_by=sort_by,
@@ -82,28 +78,21 @@ async def search_novels(
             logger.exception("Error fetching from %s", source.value)
             return source, []
 
-    # Run all searches in parallel
     results = await asyncio.gather(*[fetch_from_source(s) for s in sources])
 
-    # Collect novels and track if any source has more
     source_novels = {}
     any_has_more = False
 
     for source, novels in results:
         source_novels[source] = novels
-        # If we got the full count, there might be more
         if len(novels) >= per_source_count:
             any_has_more = True
         if source == NovelSource.LOFTER and settings.LOFTER_DYNAMIC_ENABLED and novels:
-            # Dynamic crawling doesn't expose total; allow manual "load more"
             any_has_more = True
-        # Bilibili search returns recent articles only; always allow load more if results exist
         if source == NovelSource.BILIBILI and novels:
             any_has_more = True
 
-    # If multiple sources, interleave results for balanced display
     if len(sources) > 1:
-        # Interleave results from different sources
         all_novels = []
         max_len = (
             max(len(novels) for novels in source_novels.values())
@@ -123,11 +112,9 @@ async def search_novels(
             len(sources),
         )
     else:
-        # Single source - just use the novels directly
         all_novels = list(source_novels.values())[0] if source_novels else []
         logger.info("Total novels from source: %s", len(all_novels))
 
-    # For the response, we return all fetched novels (already paginated from sources)
     response = NovelListResponse(
         novels=all_novels,
         total=len(all_novels),
@@ -141,7 +128,7 @@ async def search_novels(
 
 @router.get("/{source}/{novel_id}", response_model=ApiResponse[Novel])
 async def get_novel_detail(source: NovelSource, novel_id: str):
-    """Get novel details"""
+    """获取小说详情"""
     adapter = get_adapter(source)
     novel = await adapter.get_detail(novel_id)
 
@@ -153,7 +140,7 @@ async def get_novel_detail(source: NovelSource, novel_id: str):
 
 @router.get("/{source}/{novel_id}/chapters", response_model=ApiResponse[List[dict]])
 async def get_chapters(source: NovelSource, novel_id: str):
-    """Get chapter list for a novel"""
+    """获取章节列表"""
     adapter = get_adapter(source)
     chapters = await adapter.get_chapters(novel_id)
 
@@ -165,7 +152,7 @@ async def get_chapters(source: NovelSource, novel_id: str):
     response_model=ApiResponse[str],
 )
 async def get_chapter_content(source: NovelSource, novel_id: str, chapter_num: int):
-    """Get chapter content"""
+    """获取章节内容"""
     adapter = get_adapter(source)
     content = await adapter.get_chapter_content(novel_id, chapter_num)
 

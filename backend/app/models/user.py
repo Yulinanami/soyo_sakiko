@@ -1,6 +1,4 @@
-"""
-User Model
-"""
+"""用户模型"""
 
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func

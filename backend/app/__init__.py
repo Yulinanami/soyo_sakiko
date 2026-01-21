@@ -1,3 +1,1 @@
-"""
-SoyoSaki Backend Application Package
-"""
+"""SoyoSaki 后端包"""

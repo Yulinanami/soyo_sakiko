@@ -4,7 +4,6 @@ import type { Novel, NovelSearchParams, NovelSource } from '../types/novel';
 import { novelApi } from '../services/api';
 
 export const useNovelsStore = defineStore('novels', () => {
-  // State
   const novels = ref<Novel[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -31,7 +30,6 @@ export const useNovelsStore = defineStore('novels', () => {
   });
   let requestId = 0;
 
-  // Filters
   const selectedSources = ref<NovelSource[]>(['ao3']);
   const selectedTags = ref<string[]>(['素祥', '祥素']);
   const excludeTags = ref<string[]>([
@@ -41,18 +39,17 @@ export const useNovelsStore = defineStore('novels', () => {
   ]);
   const sortBy = ref<'date' | 'kudos' | 'hits' | 'wordCount'>('date');
 
-  // Computed
+  // 判断是否为空
   const isEmpty = computed(() => novels.value.length === 0 && !loading.value);
 
-  // Actions
   async function fetchNovels(reset = false) {
+    // 获取小说列表
     requestId += 1;
     const activeRequestId = requestId;
 
     if (reset) {
       currentPage.value = 1;
       novels.value = [];
-      // Only clear cache for sources we're about to fetch
       selectedSources.value.forEach(source => {
         novelsBySource.value[source] = [];
         hasMoreBySource.value[source] = false;
@@ -85,6 +82,7 @@ export const useNovelsStore = defineStore('novels', () => {
     error.value = null;
 
     const updateAggregates = () => {
+      // 更新合并结果
       rebuildNovels();
       hasMore.value = selectedSources.value.some(source => hasMoreBySource.value[source]);
       loading.value = selectedSources.value.some(source => loadingSources.value[source]);
@@ -148,14 +146,14 @@ export const useNovelsStore = defineStore('novels', () => {
   }
 
   async function loadMore() {
+    // 加载更多
     if (loading.value || !hasMore.value || selectedSources.value.length === 0) return;
     currentPage.value++;
     await fetchNovels(false);
   }
 
-  // Smart fetch - only fetch sources that don't have cached results
   async function fetchSourcesWithCache() {
-    // First rebuild with existing cached data immediately (for instant UI response)
+    // 补齐来源结果
     rebuildNovels();
     
     const sourcesToFetch = selectedSources.value.filter(
@@ -163,13 +161,10 @@ export const useNovelsStore = defineStore('novels', () => {
     );
     
     if (sourcesToFetch.length === 0) {
-      // All sources have cached data
       hasMore.value = selectedSources.value.some(source => hasMoreBySource.value[source]);
       return;
     }
     
-    // Fetch missing sources without changing selectedSources
-    // Set loading state for sources being fetched
     sourcesToFetch.forEach(source => {
       loadingSources.value[source] = true;
     });
@@ -193,13 +188,11 @@ export const useNovelsStore = defineStore('novels', () => {
           const filtered = response.novels.filter(n => n.source === source);
           novelsBySource.value[source] = filtered;
           hasMoreBySource.value[source] = response.has_more;
-          // Immediately rebuild to show this source's results
           rebuildNovels();
         } catch (err) {
           error.value = err instanceof Error ? err.message : '获取小说列表失败';
         } finally {
           loadingSources.value[source] = false;
-          // Update loading state after each source completes
           loading.value = selectedSources.value.some(s => loadingSources.value[s]);
           hasMore.value = selectedSources.value.some(s => hasMoreBySource.value[s]);
         }
@@ -207,13 +200,14 @@ export const useNovelsStore = defineStore('novels', () => {
     );
   }
 
-  // Retry last failed request
   function retry() {
+    // 重试加载
     error.value = null;
     fetchNovels(false);
   }
 
   function rebuildNovels() {
+    // 重新组合列表
     const combined: Novel[] = [];
     const seen = new Set<string>();
     const sourceOrder = selectedSources.value.length
@@ -239,7 +233,6 @@ export const useNovelsStore = defineStore('novels', () => {
   }
 
   return {
-    // State
     novels,
     loading,
     error,
@@ -247,12 +240,10 @@ export const useNovelsStore = defineStore('novels', () => {
     hasMore,
     selectedSources,
     selectedTags,
-    excludeTags,  // Export for UI
+    excludeTags,
     sortBy,
     loadingSources,
-    // Computed
     isEmpty,
-    // Actions
     fetchNovels,
     fetchSourcesWithCache,
     loadMore,

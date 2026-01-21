@@ -11,17 +11,17 @@ const novelsStore = useNovelsStore();
 const sourcesStore = useSourcesStore();
 const isExcludeOpen = ref(false);
 
-// Save scroll position when leaving the page
 function saveScrollPosition() {
+  // 保存滚动位置
   sessionStorage.setItem('soyosaki:listScrollY', String(window.scrollY));
 }
 
 function restoreListScroll() {
+  // 恢复滚动位置
   const raw = sessionStorage.getItem('soyosaki:listScrollY');
   if (!raw) return;
   const y = Number(raw);
   if (Number.isFinite(y) && y > 0) {
-    // Use setTimeout to ensure DOM is fully rendered before scrolling
     setTimeout(() => {
       window.scrollTo({ top: y, left: 0, behavior: 'auto' });
     }, 50);
@@ -29,15 +29,14 @@ function restoreListScroll() {
 }
 
 onBeforeUnmount(() => {
-  // Save scroll position when leaving home page
+  // 离开页面时保存位置
   saveScrollPosition();
 });
 
 onMounted(async () => {
-  // Check if we should preserve the list (coming from reader)
+  // 根据返回来源决定是否保留列表
   const preserve = sessionStorage.getItem('soyosaki:preserveList') === '1';
   
-  // Skip re-fetch if novels already exist in store (returning from other page)
   if (novelsStore.novels.length > 0) {
     if (preserve) {
       sessionStorage.removeItem('soyosaki:preserveList');
@@ -47,7 +46,6 @@ onMounted(async () => {
     return;
   }
   
-  // Only fetch if no novels in store
   sessionStorage.removeItem('soyosaki:preserveList');
   await novelsStore.fetchNovels(true);
   await nextTick();
@@ -55,27 +53,30 @@ onMounted(async () => {
 });
 
 function handleSourceChange() {
+  // 切换来源后刷新
   novelsStore.selectedSources = sourcesStore.getEnabledSourceNames();
-  // Use smart caching - only fetch sources without cached data
   novelsStore.fetchSourcesWithCache();
 }
 
 function handleTagChange(tags: string[]) {
+  // 切换标签后刷新
   novelsStore.selectedTags = tags;
   novelsStore.fetchNovels(true);
 }
 
 function handleExcludeChange(tags: string[]) {
+  // 切换排除后刷新
   novelsStore.excludeTags = tags;
   novelsStore.fetchNovels(true);
 }
 
 function toggleExclude() {
+  // 展开或收起排除项
   isExcludeOpen.value = !isExcludeOpen.value;
 }
 
 function handleRefresh() {
-  // Force re-fetch all data by clearing cache
+  // 重新拉取全部数据
   novelsStore.fetchNovels(true);
 }
 </script>

@@ -10,6 +10,7 @@ const userStore = useUserStore();
 const username = ref('');
 const password = ref('');
 const loginReason = computed(() => {
+  // 生成提示信息
   if (route.query.reason === 'favorites') {
     return '请登录以查看收藏';
   }
@@ -21,6 +22,7 @@ const loginReason = computed(() => {
 
 
 async function handleLogin() {
+  // 提交登录
   const success = await userStore.login(username.value, password.value);
   if (success) {
     const redirect = route.query.redirect as string || '/';

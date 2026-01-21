@@ -1,6 +1,4 @@
-"""
-Adapter utilities.
-"""
+"""适配器工具"""
 
 import re
 import time
@@ -11,11 +9,12 @@ _SURROGATE_RE = re.compile(r"[\ud800-\udfff]")
 
 
 def decode_unicode(text: str) -> str:
-    """Decode Unicode escape sequences like \\u53EA."""
+    """把转义字符转成文字"""
     if not text:
         return text
 
     def replace_unicode(match):
+        """替换一个转义片段"""
         try:
             return chr(int(match.group(1), 16))
         except Exception:
@@ -25,7 +24,7 @@ def decode_unicode(text: str) -> str:
 
 
 def sanitize(text: str) -> str:
-    """Normalize text by decoding \\u escapes and removing surrogates."""
+    """清理文本内容"""
     if not text:
         return text
     text = decode_unicode(text)
@@ -33,14 +32,14 @@ def sanitize(text: str) -> str:
 
 
 def sanitize_html(html: str) -> str:
-    """Strip surrogate pairs from HTML without decoding escapes."""
+    """清理网页内容里的异常字符"""
     if not html:
         return html
     return _SURROGATE_RE.sub("", html)
 
 
 def exclude(text: str, patterns: Iterable[str]) -> bool:
-    """Return True when text contains any pattern (case-insensitive)."""
+    """判断文本是否包含排除词"""
     if not text:
         return False
     text_lower = text.lower()
@@ -51,7 +50,7 @@ def exclude(text: str, patterns: Iterable[str]) -> bool:
 
 
 def exclude_any_tag(tags: List[str], exclude_patterns: Iterable[str]) -> bool:
-    """Return True when any tag matches any exclude pattern (case-insensitive)."""
+    """判断标签是否命中排除词"""
     if not tags:
         return False
     for tag in tags:
@@ -65,6 +64,7 @@ def exclude_any_tag(tags: List[str], exclude_patterns: Iterable[str]) -> bool:
 
 
 def to_iso_date(date_val: Any) -> str:
+    """转换时间为字符串"""
     if date_val is None:
         return ""
     try:
@@ -76,6 +76,7 @@ def to_iso_date(date_val: Any) -> str:
 
 
 def novel_key(source: Any, novel_id: Any) -> str:
+    """生成小说标识"""
     return f"{source}:{novel_id}"
 
 
@@ -88,6 +89,7 @@ def with_retries(
     exceptions: Tuple[Type[BaseException], ...] = (Exception,),
     on_retry: Optional[Callable[[BaseException, int], None]] = None,
 ) -> Any:
+    """失败后再次执行"""
     last_error: Optional[BaseException] = None
     for attempt in range(retries + 1):
         try:

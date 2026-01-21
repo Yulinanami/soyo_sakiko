@@ -12,6 +12,7 @@ const confirmPassword = ref('');
 const localError = ref('');
 
 async function handleRegister() {
+  // 提交注册
   localError.value = '';
   
   if (password.value !== confirmPassword.value) {

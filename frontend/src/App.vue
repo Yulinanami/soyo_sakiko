@@ -15,10 +15,12 @@ const router = useRouter();
 const sidebarOpen = ref(true);
 
 function toggleSidebar() {
+  // 切换侧边栏
   sidebarOpen.value = !sidebarOpen.value;
 }
 
 function handleLogout() {
+  // 退出登录
   userStore.logout();
   router.push('/');
 }
@@ -26,6 +28,7 @@ function handleLogout() {
 watch(
   () => userStore.isLoggedIn,
   (loggedIn) => {
+    // 根据登录状态加载收藏
     if (loggedIn) {
       favoritesStore.fetchFavorites();
     } else {
