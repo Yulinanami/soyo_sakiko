@@ -1,57 +1,31 @@
-"""Bilibili 来源处理"""
+"""Bilibili 处理入口"""
 
 import logging
-import re
-import uuid
 from typing import List, Optional
-from datetime import datetime
 
 from app.adapters.base import BaseAdapter
 from app.adapters.utils import exclude, exclude_any_tag
-from app.schemas.novel import Novel, NovelSource
-from app.config import settings
-from app.services.http_client import get_sync_client
+from app.schemas.novel import Novel
+from app.adapters.bilibili_client import BilibiliClient
+from app.adapters.bilibili_parse import (
+    parse_article_summary,
+    parse_article_detail,
+    parse_opus_content,
+    parse_bilibili_content,
+    rewrite_image_urls,
+)
 
 logger = logging.getLogger(__name__)
 
-SEARCH_API = "https://api.bilibili.com/x/web-interface/search/type"
-ARTICLE_API = "https://api.bilibili.com/x/article/view"
-
-
-def _generate_buvid3() -> str:
-    """生成 buvid3"""
-    uid = str(uuid.uuid4()).upper()
-    return f"{uid}infoc"
-
-
 class BilibiliAdapter(BaseAdapter):
-    """Bilibili 来源处理"""
+    """处理 Bilibili 数据"""
 
     source_name = "bilibili"
     SOYOSAKI_TAGS = ["素祥", "祥素", "长崎素世", "丰川祥子"]
-    _buvid3: Optional[str] = None
-
-    def _get_buvid3(self) -> str:
-        """获取或生成 buvid3"""
-        if not self._buvid3:
-            self._buvid3 = _generate_buvid3()
-        return self._buvid3
-
-    def _get_headers(self) -> dict:
-        """生成请求信息"""
-        buvid3 = self._get_buvid3()
-        cookies = [f"buvid3={buvid3}"]
-
-        if settings.BILIBILI_SESSDATA:
-            cookies.append(f"SESSDATA={settings.BILIBILI_SESSDATA}")
-
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": "https://search.bilibili.com/",
-            "Origin": "https://search.bilibili.com",
-            "Cookie": "; ".join(cookies),
-        }
-        return headers
+    def __init__(self) -> None:
+        """初始化所需状态"""
+        super().__init__()
+        self._client = BilibiliClient()
 
     async def search(
         self,
@@ -133,27 +107,7 @@ class BilibiliAdapter(BaseAdapter):
         self, keyword: str, page: int, page_size: int, order: str
     ) -> List[Novel]:
         """获取 Bilibili 搜索结果"""
-        client = get_sync_client()
-        params = {
-            "search_type": "article",
-            "keyword": keyword,
-            "page": page,
-            "page_size": page_size,
-            "order": order,
-        }
-
-        response = client.get(
-            SEARCH_API, params=params, headers=self._get_headers(), timeout=15
-        )
-        response.raise_for_status()
-        data = response.json()
-
-        if data.get("code") != 0:
-            logger.warning("Bilibili API error: %s", data.get("message"))
-            return []
-
-        result_data = data.get("data", {})
-        articles = result_data.get("result", [])
+        articles = self._client.fetch_search(keyword, page, page_size, order)
 
         if not articles:
             return []
@@ -161,7 +115,7 @@ class BilibiliAdapter(BaseAdapter):
         novels = []
         for article in articles:
             try:
-                novel = self._parse_article(article)
+                novel = parse_article_summary(article)
                 if novel:
                     novels.append(novel)
             except Exception:
@@ -175,69 +129,6 @@ class BilibiliAdapter(BaseAdapter):
         )
         return novels
 
-    def _parse_article(self, article: dict) -> Optional[Novel]:
-        """转换文章为小说结构"""
-        article_id = str(article.get("id", ""))
-        if not article_id:
-            return None
-
-        title = article.get("title", "")
-        title = re.sub(r"<[^>]+>", "", title)
-
-        mid = article.get("mid", "")
-        author = article.get("uname", "") or article.get("author", "")
-        if not author and mid:
-            author = f"uid:{mid}"
-        author_url = f"https://space.bilibili.com/{mid}" if mid else None
-
-        summary = article.get("desc", "") or article.get("description", "")
-        summary = re.sub(r"<[^>]+>", "", summary)
-
-        tags = []
-        category_name = article.get("category_name", "")
-        if category_name:
-            tags.append(category_name)
-
-        view = article.get("view", 0)
-        like = article.get("like", 0)
-
-        pub_time = article.get("pub_time", 0)
-        if pub_time:
-            published_at = datetime.fromtimestamp(pub_time).isoformat()
-        else:
-            published_at = datetime.now().isoformat()
-
-        cover = article.get("image_urls", [])
-        cover_image = cover[0] if cover else None
-        if not cover_image:
-            origin_urls = article.get("origin_image_urls", [])
-            cover_image = origin_urls[0] if origin_urls else None
-
-        if cover_image and cover_image.startswith("//"):
-            cover_image = "https:" + cover_image
-
-        word_count = article.get("words", 0)
-
-        return Novel(
-            id=article_id,
-            source=NovelSource.BILIBILI,
-            title=title,
-            author=author,
-            author_url=author_url,
-            summary=summary,
-            tags=tags,
-            rating=None,
-            word_count=word_count if word_count else None,
-            chapter_count=1,
-            kudos=like,
-            hits=view,
-            published_at=published_at,
-            updated_at=None,
-            source_url=f"https://www.bilibili.com/read/cv{article_id}",
-            cover_image=cover_image,
-            is_complete=True,
-        )
-
     async def get_detail(self, novel_id: str) -> Optional[Novel]:
         """获取 Bilibili 详情"""
         try:
@@ -248,97 +139,10 @@ class BilibiliAdapter(BaseAdapter):
 
     def _get_detail_sync(self, novel_id: str) -> Optional[Novel]:
         """获取 Bilibili 详情"""
-        client = get_sync_client()
-        params = {"id": novel_id}
-
-        response = client.get(
-            ARTICLE_API, params=params, headers=self._get_headers(), timeout=15
-        )
-        response.raise_for_status()
-        data = response.json()
-
-        if data.get("code") != 0:
-            logger.warning("Bilibili article API error: %s", data.get("message"))
-            return None
-
-        article_data = data.get("data", {})
+        article_data, _message = self._client.fetch_article(novel_id)
         if not article_data:
             return None
-
-        article_id = str(article_data.get("id", novel_id))
-        title = article_data.get("title", "")
-        author_info = article_data.get("author", {})
-        author = author_info.get("name", "")
-        mid = author_info.get("mid", "")
-        author_url = f"https://space.bilibili.com/{mid}" if mid else None
-
-        summary = article_data.get("summary", "")
-
-        tags = []
-        categories = article_data.get("categories", [])
-        for cat in categories:
-            if cat.get("name"):
-                tags.append(cat["name"])
-
-        actual_tags = article_data.get("tags", [])
-        for tag_item in actual_tags:
-            tag_name = (
-                tag_item.get("name", "")
-                if isinstance(tag_item, dict)
-                else str(tag_item)
-            )
-            if tag_name and tag_name not in tags:
-                tags.append(tag_name)
-
-        stats = article_data.get("stats", {})
-        view = stats.get("view", 0)
-        like = stats.get("like", 0)
-
-        pub_time = article_data.get("publish_time", 0)
-        published_at = (
-            datetime.fromtimestamp(pub_time).isoformat()
-            if pub_time
-            else datetime.now().isoformat()
-        )
-
-        cover_image = (
-            article_data.get("banner_url", "")
-            or article_data.get("image_urls", [""])[0]
-            if article_data.get("image_urls")
-            else None
-        )
-        if cover_image and cover_image.startswith("//"):
-            cover_image = "https:" + cover_image
-
-        word_count = article_data.get("words", 0)
-
-        opus_data = article_data.get("opus", {})
-        dynamic_id = opus_data.get("dynamic_id_str", "")
-
-        if dynamic_id:
-            source_url = f"https://www.bilibili.com/opus/{dynamic_id}"
-        else:
-            source_url = f"https://www.bilibili.com/read/cv{article_id}"
-
-        return Novel(
-            id=article_id,
-            source=NovelSource.BILIBILI,
-            title=title,
-            author=author,
-            author_url=author_url,
-            summary=summary,
-            tags=tags,
-            rating=None,
-            word_count=word_count if word_count else None,
-            chapter_count=1,
-            kudos=like,
-            hits=view,
-            published_at=published_at,
-            updated_at=None,
-            source_url=source_url,
-            cover_image=cover_image,
-            is_complete=True,
-        )
+        return parse_article_detail(article_data, novel_id)
 
     async def get_chapters(self, novel_id: str) -> List[dict]:
         """获取 Bilibili 章节列表"""
@@ -354,28 +158,20 @@ class BilibiliAdapter(BaseAdapter):
 
     def _get_content_sync(self, novel_id: str) -> Optional[str]:
         """获取 Bilibili 内容"""
-        client = get_sync_client()
-        params = {"id": novel_id}
-
-        response = client.get(
-            ARTICLE_API, params=params, headers=self._get_headers(), timeout=15
-        )
-        response.raise_for_status()
-        data = response.json()
-
-        if data.get("code") != 0:
-            return f"<p>获取失败: {data.get('message')}</p>"
-
-        article_data = data.get("data", {})
+        article_data, message = self._client.fetch_article(novel_id)
+        if not article_data:
+            if message:
+                return f"<p>获取失败: {message}</p>"
+            return "<p>获取内容失败</p>"
 
         opus_data = article_data.get("opus", {})
         if opus_data:
-            content = self._parse_opus_content(opus_data)
+            content = parse_opus_content(opus_data)
             logger.info(
                 f"Opus content parsed, length: {len(content)}, has img: {'<img' in content}"
             )
             if content:
-                content = self._rewrite_image_urls(content)
+                content = rewrite_image_urls(content)
                 logger.info(f"After rewrite, has proxy: {'/api/proxy/' in content}")
                 return f'<div class="bilibili-article">{content}</div>'
 
@@ -388,114 +184,6 @@ class BilibiliAdapter(BaseAdapter):
         if not content:
             return "<p>文章内容为空</p>"
 
-        content = self._parse_bilibili_content(content)
-
-        content = self._rewrite_image_urls(content)
-
-        styled_content = f'<div class="bilibili-article">{content}</div>'
-        return styled_content
-
-    def _parse_opus_content(self, opus_data: dict) -> str:
-        """解析新格式内容"""
-        html_parts = []
-
-        content = opus_data.get("content", {})
-        paragraphs = content.get("paragraphs", [])
-
-        for para in paragraphs:
-            para_type = para.get("para_type")
-
-            if para_type == 1:
-                text_data = para.get("text", {})
-                nodes = text_data.get("nodes", [])
-                for node in nodes:
-                    word_data = node.get("word", {})
-                    words = word_data.get("words", "")
-                    if words:
-                        words = words.replace("\n", "<br>")
-                        html_parts.append(f"<p>{words}</p>")
-
-            elif para_type == 2:
-                pic_data = para.get("pic", {})
-                pics = pic_data.get("pics", [])
-                for pic in pics:
-                    pic_url = pic.get("url", "")
-                    if pic_url:
-                        if pic_url.startswith("//"):
-                            pic_url = "https:" + pic_url
-                        html_parts.append(
-                            f'<figure><img src="{pic_url}" alt="image" style="max-width:100%;"></figure>'
-                        )
-
-        return "".join(html_parts) if html_parts else ""
-
-    def _rewrite_image_urls(self, content: str) -> str:
-        """重写图片地址"""
-        import urllib.parse
-
-        def replace_url(match):
-            """替换图片地址"""
-            url = match.group(1)
-            if url.startswith("//"):
-                url = "https:" + url
-            if "hdslb.com" in url or "bilibili.com" in url:
-                proxy_url = (
-                    f"/api/proxy/bilibili?url={urllib.parse.quote(url, safe='')}"
-                )
-                return f'src="{proxy_url}"'
-            return match.group(0)
-
-        content = re.sub(r'src="([^"]+)"', replace_url, content)
-        content = re.sub(r"src='([^']+)'", replace_url, content)
-
-        return content
-
-    def _parse_bilibili_content(self, content: str) -> str:
-        """解析旧格式内容"""
-        import json
-
-        if content.startswith('{"ops"') or content.startswith("["):
-            try:
-                data = json.loads(content)
-                if isinstance(data, dict) and "ops" in data:
-                    ops = data["ops"]
-                elif isinstance(data, list):
-                    ops = data
-                else:
-                    return content
-
-                html_parts = []
-                for op in ops:
-                    if isinstance(op, dict):
-                        insert = op.get("insert", "")
-                        if isinstance(insert, str):
-                            text = insert.replace("\n\n", "</p><p>").replace(
-                                "\n", "<br>"
-                            )
-                            html_parts.append(text)
-                        elif isinstance(insert, dict):
-                            if "image" in insert:
-                                img_url = insert["image"]
-                                html_parts.append(
-                                    f'<img src="{img_url}" alt="image" style="max-width:100%;">'
-                                )
-
-                content = "<p>" + "".join(html_parts) + "</p>"
-                content = re.sub(r"<p>\s*</p>", "", content)
-                content = re.sub(r"<br>\s*<br>", "</p><p>", content)
-                return content
-            except json.JSONDecodeError:
-                pass
-
-        if "<" in content and ">" in content:
-            return content
-
-        paragraphs = content.split("\n\n")
-        html_parts = []
-        for p in paragraphs:
-            p = p.strip()
-            if p:
-                p = p.replace("\n", "<br>")
-                html_parts.append(f"<p>{p}</p>")
-
-        return "".join(html_parts) if html_parts else f"<p>{content}</p>"
+        content = parse_bilibili_content(content)
+        content = rewrite_image_urls(content)
+        return f'<div class="bilibili-article">{content}</div>'

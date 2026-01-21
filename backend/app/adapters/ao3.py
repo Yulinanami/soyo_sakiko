@@ -1,24 +1,18 @@
-"""AO3 来源处理"""
+"""AO3 处理入口"""
 
 import logging
 from typing import List, Optional
 from app.adapters.base import BaseAdapter
-from app.adapters.utils import exclude, exclude_any_tag, to_iso_date, with_retries
-from app.schemas.novel import Novel, NovelSource
+from app.adapters.utils import exclude, exclude_any_tag
+from app.adapters.ao3_client import build_search, get_work, is_available, update_search
+from app.adapters.ao3_parse import map_sort, work_to_novel
+from app.schemas.novel import Novel
 
 logger = logging.getLogger(__name__)
 
-try:
-    import AO3
-
-    AO3_AVAILABLE = True
-except ImportError:
-    AO3_AVAILABLE = False
-    logger.warning("AO3 library not installed. Run: pip install ao3-api")
-
 
 class AO3Adapter(BaseAdapter):
-    """AO3 来源处理"""
+    """处理 AO3 数据"""
 
     source_name = "ao3"
 
@@ -36,7 +30,7 @@ class AO3Adapter(BaseAdapter):
         sort_by: str = "date",
     ) -> List[Novel]:
         """获取 AO3 搜索结果"""
-        if not AO3_AVAILABLE:
+        if not is_available():
             logger.warning("AO3 library not available")
             return []
 
@@ -63,30 +57,8 @@ class AO3Adapter(BaseAdapter):
     ) -> List[Novel]:
         """获取 AO3 搜索结果"""
         try:
-            tag_query = " OR ".join(f'"{tag}"' for tag in tags)
-
-            search = AO3.Search(
-                any_field=tag_query,
-                sort_column=self._map_sort(sort_by),
-                sort_direction="desc",
-            )
-
-            def _update() -> None:
-                """刷新搜索结果"""
-                search.update()
-
-            try:
-                with_retries(
-                    _update,
-                    retries=2,
-                    base_delay=0.8,
-                    max_delay=2.0,
-                    on_retry=lambda exc, attempt: logger.warning(
-                        "AO3 search retry %s after error: %s", attempt, exc
-                    ),
-                )
-            except Exception as e:
-                logger.warning("AO3 search update failed: %s", e)
+            search = build_search(tags, map_sort(sort_by))
+            if not update_search(search):
                 return []
 
             novels = []
@@ -101,7 +73,7 @@ class AO3Adapter(BaseAdapter):
                     if exclude(title, exclude_tags):
                         continue
 
-                    novel = self._convert_work(work)
+                    novel = work_to_novel(work)
                     if exclude_any_tag(novel.tags, exclude_tags):
                         continue
                     novels.append(novel)
@@ -114,64 +86,9 @@ class AO3Adapter(BaseAdapter):
             logger.warning("AO3 search error: %s", e)
             return []
 
-    def _map_sort(self, sort_by: str) -> str:
-        """映射排序字段"""
-        mapping = {
-            "date": "revised_at",
-            "kudos": "kudos_count",
-            "hits": "hits",
-            "wordCount": "word_count",
-        }
-        return mapping.get(sort_by, "revised_at")
-
-    def _convert_work(self, work) -> Novel:
-        """转换 AO3 条目为小说结构"""
-        author = "Anonymous"
-        author_url = None
-        if work.authors:
-            author = work.authors[0].username
-            author_url = f"https://archiveofourown.org/users/{author}"
-
-        tags = []
-        try:
-            if hasattr(work, "tags"):
-                tags = [str(tag) for tag in work.tags[:20]]
-        except:
-            pass
-
-        published_at = to_iso_date(getattr(work, "date_published", None))
-        updated_at = to_iso_date(getattr(work, "date_updated", None))
-        if not published_at:
-            published_at = updated_at
-
-        summary = ""
-        try:
-            summary = work.summary or ""
-        except Exception:
-            summary = ""
-
-        return Novel(
-            id=str(work.id),
-            source=NovelSource.AO3,
-            title=work.title or "Untitled",
-            author=author,
-            author_url=author_url,
-            summary=summary,
-            tags=tags,
-            rating=getattr(work, "rating", None),
-            word_count=getattr(work, "words", None),
-            chapter_count=getattr(work, "nchapters", 1),
-            kudos=getattr(work, "kudos", 0),
-            hits=getattr(work, "hits", 0),
-            published_at=published_at,
-            updated_at=updated_at,
-            source_url=work.url,
-            is_complete=getattr(work, "complete", None),
-        )
-
     async def get_detail(self, novel_id: str) -> Optional[Novel]:
         """获取 AO3 详情"""
-        if not AO3_AVAILABLE:
+        if not is_available():
             return None
 
         return await self.run_in_executor(self._get_detail_sync, novel_id)
@@ -179,26 +96,15 @@ class AO3Adapter(BaseAdapter):
     def _get_detail_sync(self, novel_id: str) -> Optional[Novel]:
         """获取 AO3 详情"""
         try:
-            work = with_retries(
-                lambda: AO3.Work(int(novel_id)),
-                retries=2,
-                base_delay=0.6,
-                max_delay=2.0,
-                on_retry=lambda exc, attempt: logger.warning(
-                    "AO3 detail retry %s for %s after error: %s",
-                    attempt,
-                    novel_id,
-                    exc,
-                ),
-            )
-            return self._convert_work(work)
+            work = get_work(novel_id)
+            return work_to_novel(work)
         except Exception:
             logger.exception("AO3 detail fetch failed for %s", novel_id)
             return None
 
     async def get_chapters(self, novel_id: str) -> List[dict]:
         """获取 AO3 章节列表"""
-        if not AO3_AVAILABLE:
+        if not is_available():
             return []
 
         return await self.run_in_executor(self._get_chapters_sync, novel_id)
@@ -206,18 +112,7 @@ class AO3Adapter(BaseAdapter):
     def _get_chapters_sync(self, novel_id: str) -> List[dict]:
         """获取 AO3 章节列表"""
         try:
-            work = with_retries(
-                lambda: AO3.Work(int(novel_id)),
-                retries=2,
-                base_delay=0.6,
-                max_delay=2.0,
-                on_retry=lambda exc, attempt: logger.warning(
-                    "AO3 chapters retry %s for %s after error: %s",
-                    attempt,
-                    novel_id,
-                    exc,
-                ),
-            )
+            work = get_work(novel_id)
             chapters = []
             for i, chapter in enumerate(work.chapters, 1):
                 chapters.append({"number": i, "title": chapter.title or f"Chapter {i}"})
@@ -230,7 +125,7 @@ class AO3Adapter(BaseAdapter):
         self, novel_id: str, chapter_num: int
     ) -> Optional[str]:
         """获取 AO3 章节内容"""
-        if not AO3_AVAILABLE:
+        if not is_available():
             return None
 
         return await self.run_in_executor(
@@ -242,18 +137,7 @@ class AO3Adapter(BaseAdapter):
     ) -> Optional[str]:
         """获取 AO3 章节内容"""
         try:
-            work = with_retries(
-                lambda: AO3.Work(int(novel_id)),
-                retries=2,
-                base_delay=0.6,
-                max_delay=2.0,
-                on_retry=lambda exc, attempt: logger.warning(
-                    "AO3 content retry %s for %s after error: %s",
-                    attempt,
-                    novel_id,
-                    exc,
-                ),
-            )
+            work = get_work(novel_id)
             if chapter_num <= len(work.chapters):
                 chapter = work.chapters[chapter_num - 1]
                 return chapter.text
