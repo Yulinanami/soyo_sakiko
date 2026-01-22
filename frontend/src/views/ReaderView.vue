@@ -22,6 +22,11 @@ const contentRef = ref<HTMLElement | null>(null);
 const favoriteLoading = ref(false);
 const isFavorite = computed(() => (novel.value ? favoritesStore.isFavorite(novel.value) : false));
 
+// 自动重试相关状态
+const retryCount = ref(0);
+const maxRetries = 5;
+const isRetrying = ref(false);
+
 const source = route.params.source as string;
 const id = route.params.id as string;
 const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:8000/api').replace(/\/+$/, '');
@@ -88,22 +93,57 @@ async function loadChapter(chapter: number) {
   // 加载章节内容
   loading.value = true;
   error.value = null;
+  retryCount.value = 0;
+  isRetrying.value = false;
   let shouldApplyLoaders = false;
-  try {
-    const rawContent = await novelApi.getChapterContent(source, id, chapter);
-    const content = source === 'ao3' ? formatAo3Content(rawContent) : rawContent;
-    chapterContent.value = normalizeContent(content);
-    currentChapter.value = chapter;
-    shouldApplyLoaders = true;
-    await recordHistory(chapter);
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : '加载章节内容失败';
-  } finally {
-    loading.value = false;
-    if (shouldApplyLoaders) {
-      await nextTick();
-      applyImageLoaders();
+
+  async function attemptLoad(): Promise<boolean> {
+    try {
+      const rawContent = await novelApi.getChapterContent(source, id, chapter);
+
+      // 检查是否为 Bilibili 可重试错误 (-352, -401, -412)
+      if (source === 'bilibili' && rawContent && typeof rawContent === 'string') {
+        const retryablePattern = /获取失败:\s*(-352|-401|-412)/;
+        if (retryablePattern.test(rawContent) && retryCount.value < maxRetries) {
+          retryCount.value++;
+          isRetrying.value = true;
+          console.log(`Bilibili content retry ${retryCount.value}/${maxRetries}...`);
+          await new Promise(resolve => setTimeout(resolve, 1500)); // 等待 1.5 秒
+          return false; // 需要重试
+        }
+      }
+
+      const content = source === 'ao3' ? formatAo3Content(rawContent) : rawContent;
+      chapterContent.value = normalizeContent(content);
+      currentChapter.value = chapter;
+      shouldApplyLoaders = true;
+      await recordHistory(chapter);
+      return true; // 成功
+    } catch (err) {
+      // 网络错误也尝试重试（仅限 Bilibili）
+      if (source === 'bilibili' && retryCount.value < maxRetries) {
+        retryCount.value++;
+        isRetrying.value = true;
+        console.log(`Bilibili network retry ${retryCount.value}/${maxRetries}...`);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return false; // 需要重试
+      }
+      error.value = err instanceof Error ? err.message : '加载章节内容失败';
+      return true; // 不再重试
     }
+  }
+
+  // 执行加载（带重试）
+  let done = false;
+  while (!done) {
+    done = await attemptLoad();
+  }
+
+  isRetrying.value = false;
+  loading.value = false;
+  if (shouldApplyLoaders) {
+    await nextTick();
+    applyImageLoaders();
   }
 }
 
@@ -298,7 +338,17 @@ onBeforeRouteLeave(() => {
     <!-- 正文内容 -->
     <main class="py-12 bg-soyo-cream dark:bg-gray-900 transition-colors duration-300">
       <div class="max-w-2xl mx-auto px-6">
-        <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">加载中...</div>
+        <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">
+          <template v-if="isRetrying">
+            <div class="flex flex-col items-center gap-2">
+              <span
+                class="inline-block w-6 h-6 border-2 border-sakiko border-t-transparent rounded-full animate-spin"></span>
+              <span>正在自动重试 ({{ retryCount }}/{{ maxRetries }})...</span>
+              <span class="text-xs text-gray-400">Bilibili 风控触发，请稍候</span>
+            </div>
+          </template>
+          <template v-else>加载中...</template>
+        </div>
         <div v-else-if="error" class="text-center py-16 text-red-500 dark:text-red-400">{{ error }}</div>
         <article v-else ref="contentRef"
           class="reader-content bg-soyo-cream/50 px-10 py-12 rounded-xl shadow-xl dark:bg-gray-800 dark:shadow-none transition-colors duration-300"
