@@ -21,6 +21,11 @@ echo ==========================================
 echo 程序已启动
 echo 后端地址: http://localhost:8000
 echo 前端地址: http://localhost:5173
+echo.
+echo 正在为您打开浏览器...
 echo ==========================================
 echo.
+:: 等待 3 秒确保 Vite 已经开始监听
+timeout /t 2 /nobreak >nul
+start http://localhost:5173
 pause

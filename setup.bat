@@ -26,6 +26,10 @@ echo 正在安装后端依赖...
 
 echo 正在安装 Playwright 浏览器内核...
 .venv\Scripts\python -m playwright install chromium || (echo [失败] Playwright 安装失败 && pause && exit)
+
+echo 正在验证 Playwright 内核状态...
+.venv\Scripts\python -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); p.chromium.launch(headless=True).close(); p.stop()" >nul 2>&1 && (echo [成功] Playwright 已就绪) || (echo [失败] 内核校验未通过，请尝试手动运行: .venv\Scripts\python -m playwright install chromium && pause && exit)
+
 echo [成功] 后端配置完成
 cd ..
 
