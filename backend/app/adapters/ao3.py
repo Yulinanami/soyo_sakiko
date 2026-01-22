@@ -9,7 +9,6 @@ from app.adapters.ao3_parse import (
     map_sort,
     parse_search_results_html,
     parse_work_detail_html,
-    work_to_novel,
 )
 from app.schemas.novel import Novel
 

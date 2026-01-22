@@ -17,9 +17,6 @@ passlib[bcrypt]>=1.7.0
 bcrypt<4.0.0
 python-multipart>=0.0.6
 
-# AO3
-ao3-api>=2.3.0
-
 # Pixiv
 pixivpy3>=3.7.0
 
