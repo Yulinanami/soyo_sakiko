@@ -62,12 +62,22 @@ class AO3Adapter(BaseAdapter):
                 if len(novels) >= page_size:
                     break
                 try:
-                    title = getattr(work, "title", "") or ""
-                    if exclude(title, exclude_tags):
+                    novel = work_to_novel(work)
+
+                    # 包含检查 (Inclusion Check): 必须在标题、简介或标签中明确包含用户选中的标签之一
+                    has_tag = any(any(t in tag for tag in novel.tags) for t in tags)
+                    has_title_summary = any(t in novel.title for t in tags) or any(
+                        t in novel.summary for t in tags
+                    )
+
+                    if not has_tag and not has_title_summary:
                         continue
 
-                    novel = work_to_novel(work)
-                    if exclude_any_tag(novel.tags, exclude_tags):
+                    if (
+                        exclude_any_tag(novel.tags, exclude_tags)
+                        or exclude(novel.title, exclude_tags)
+                        or exclude(novel.summary, exclude_tags)
+                    ):
                         continue
                     novels.append(novel)
                 except Exception:
