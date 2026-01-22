@@ -4,8 +4,13 @@ import logging
 from typing import List, Optional
 from app.adapters.base import BaseAdapter
 from app.adapters.utils import exclude, exclude_any_tag
-from app.adapters.ao3_client import build_search, get_work, is_available, update_search
-from app.adapters.ao3_parse import map_sort, work_to_novel
+from app.adapters.ao3_dynamic import get_work_details_dynamic_sync, search_dynamic_sync
+from app.adapters.ao3_parse import (
+    map_sort,
+    parse_search_results_html,
+    parse_work_detail_html,
+    work_to_novel,
+)
 from app.schemas.novel import Novel
 
 logger = logging.getLogger(__name__)
@@ -25,10 +30,6 @@ class AO3Adapter(BaseAdapter):
         sort_by: str = "date",
     ) -> List[Novel]:
         """获取 AO3 搜索结果"""
-        if not is_available():
-            logger.warning("AO3 library not available")
-            return []
-
         exclude_tags = exclude_tags or []
 
         return await self.run_in_executor(
@@ -48,89 +49,103 @@ class AO3Adapter(BaseAdapter):
         page_size: int,
         sort_by: str,
     ) -> List[Novel]:
-        """获取 AO3 搜索结果"""
+        """获取 AO3 搜索结果 (动态爬虫深度版本)"""
         try:
-            search = build_search(tags, map_sort(sort_by))
-            if not update_search(search):
-                return []
-
             novels = []
-            start = (page - 1) * page_size
-            end = start + page_size * 2
+            # AO3 每页 20 条。我们要找 page_size (通常 30) 条。
+            # 根据请求的 page 计算 AO3 的起始页
+            current_ao3_page = ((page - 1) * page_size // 20) + 1
+            max_ao3_pages = 3  # 每次请求最多查 3 页 AO3 深度
+            pages_searched = 0
 
-            for work in search.results[start:end]:
-                if len(novels) >= page_size:
+            while len(novels) < page_size and pages_searched < max_ao3_pages:
+                # 1. 抓取 HTML
+                html = search_dynamic_sync(tags, map_sort(sort_by), current_ao3_page)
+                if not html or html == "EMPTY":
                     break
-                try:
-                    novel = work_to_novel(work)
 
-                    # 包含检查 (Inclusion Check): 必须在标题、简介或标签中明确包含用户选中的标签之一
-                    has_tag = any(any(t in tag for tag in novel.tags) for t in tags)
-                    has_title_summary = any(t in novel.title for t in tags) or any(
-                        t in novel.summary for t in tags
+                # 2. 解析 HTML
+                results = parse_search_results_html(html)
+                if not results:
+                    break
+
+                # 3. 过滤并追加
+                for novel in results:
+                    # 严格包含检测 (忽略大小写)
+                    tags_lower = [t.lower() for t in tags]
+                    has_tag = any(
+                        any(tl in tag.lower() for tag in novel.tags)
+                        for tl in tags_lower
                     )
+                    has_title_summary = any(
+                        tl in (novel.title or "").lower() for tl in tags_lower
+                    ) or any(tl in (novel.summary or "").lower() for tl in tags_lower)
 
                     if not has_tag and not has_title_summary:
                         continue
 
+                    # 排除检测
                     if (
                         exclude_any_tag(novel.tags, exclude_tags)
                         or exclude(novel.title, exclude_tags)
                         or exclude(novel.summary, exclude_tags)
                     ):
                         continue
-                    novels.append(novel)
-                except Exception:
-                    logger.warning("AO3 work conversion failed")
-                    continue
+
+                    # 查重
+                    if not any(n.id == novel.id for n in novels):
+                        novels.append(novel)
+                        if len(novels) >= page_size:
+                            break
+
+                current_ao3_page += 1
+                pages_searched += 1
 
             return novels
         except Exception as e:
-            logger.warning("AO3 search error: %s", e)
+            logger.warning(f"AO3: Search error: {e}")
             return []
 
     async def get_detail(self, novel_id: str) -> Optional[Novel]:
-        """获取 AO3 详情"""
-        if not is_available():
-            return None
-
+        """获取 AO3 详情 (动态版)"""
         return await self.run_in_executor(self._get_detail_sync, novel_id)
 
     def _get_detail_sync(self, novel_id: str) -> Optional[Novel]:
-        """获取 AO3 详情"""
+        """获取 AO3 详情 (动态版)"""
         try:
-            work = get_work(novel_id)
-            return work_to_novel(work)
+            data = get_work_details_dynamic_sync(novel_id)
+            if not data or not data.get("html"):
+                return None
+
+            return parse_work_detail_html(data["html"], novel_id)
         except Exception:
-            logger.exception("AO3 detail fetch failed for %s", novel_id)
-            return None
+            return Novel(
+                id=novel_id,
+                source="ao3",
+                title="Loading...",
+                author="Unknown",
+                summary="",
+                tags=[],
+                published_at="",
+                source_url=f"https://archiveofourown.org/works/{novel_id}",
+            )
 
     async def get_chapters(self, novel_id: str) -> List[dict]:
         """获取 AO3 章节列表"""
-        if not is_available():
-            return []
-
         return await self.run_in_executor(self._get_chapters_sync, novel_id)
 
     def _get_chapters_sync(self, novel_id: str) -> List[dict]:
         """获取 AO3 章节列表"""
         try:
-            work = get_work(novel_id)
-            chapters = []
-            for i, chapter in enumerate(work.chapters, 1):
-                chapters.append({"number": i, "title": chapter.title or f"Chapter {i}"})
-            return chapters
+            data = get_work_details_dynamic_sync(novel_id)
+            return data.get("chapters", [])
         except Exception:
-            logger.exception("AO3 chapters fetch failed for %s", novel_id)
             return []
 
     async def get_chapter_content(
         self, novel_id: str, chapter_num: int
     ) -> Optional[str]:
         """获取 AO3 章节内容"""
-        if not is_available():
-            return None
-
         return await self.run_in_executor(
             self._get_chapter_content_sync, novel_id, chapter_num
         )
@@ -140,15 +155,7 @@ class AO3Adapter(BaseAdapter):
     ) -> Optional[str]:
         """获取 AO3 章节内容"""
         try:
-            work = get_work(novel_id)
-            if chapter_num <= len(work.chapters):
-                chapter = work.chapters[chapter_num - 1]
-                return chapter.text
-            return None
+            data = get_work_details_dynamic_sync(novel_id, chapter_num)
+            return data.get("chapter_content")
         except Exception:
-            logger.exception(
-                "AO3 chapter content fetch failed for %s (chapter %s)",
-                novel_id,
-                chapter_num,
-            )
             return None

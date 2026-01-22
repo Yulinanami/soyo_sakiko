@@ -77,6 +77,8 @@ async def search_novels(
         any_has_more = True
     if source == NovelSource.BILIBILI and novels:
         any_has_more = True
+    if source == NovelSource.AO3 and novels:
+        any_has_more = True
 
     logger.info("Total novels from source: %s", len(novels))
 

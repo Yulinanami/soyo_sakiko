@@ -134,3 +134,44 @@
     transform: rotate(360deg);
   }
 }
+
+/* AO3 特殊结构样式 (总结、页前语、后记等) */
+.reader-content .preface,
+.reader-content .postface {
+  @apply mb-10 p-0 border-none bg-transparent;
+  text-indent: 0 !important;
+}
+
+.reader-content .preface .title,
+.reader-content .preface .byline {
+  display: none !important;
+}
+
+.reader-content .preface .title {
+  @apply block text-xl font-bold mb-4 text-soyo-dark dark:text-soyo-light;
+}
+
+.reader-content .module .heading {
+  @apply text-base font-normal text-black dark:text-gray-200 mb-2;
+  border-bottom: 1px solid #000;
+  width: 100%;
+  display: block;
+}
+
+.reader-content blockquote.userstuff {
+  @apply text-black dark:text-gray-200 border-none p-0 my-4;
+  font-style: normal;
+  text-indent: 0 !important;
+}
+
+.reader-content .preface p,
+.reader-content .notes p,
+.reader-content .summary p {
+  text-indent: 0 !important;
+  margin-bottom: 0.5em;
+}
+
+.reader-content .chapter .title {
+  @apply block text-center text-lg font-bold my-8 text-soyo;
+  text-indent: 0 !important;
+}
