@@ -29,6 +29,14 @@ def parse_article_summary(article: Dict[str, Any]) -> Optional[Novel]:
     if category_name:
         tags.append(category_name)
 
+    # 提取搜索结果中的标签 (通常为逗号分隔的字符串)
+    tag_str = article.get("tag", "")
+    if isinstance(tag_str, str) and tag_str:
+        for t in tag_str.split(","):
+            t = t.strip()
+            if t and t not in tags:
+                tags.append(t)
+
     view = article.get("view", 0)
     like = article.get("like", 0)
 
@@ -99,6 +107,27 @@ def parse_article_detail(
         )
         if tag_name and tag_name not in tags:
             tags.append(tag_name)
+
+    # 支持新版 Opus 格式的话题 (topics) 解析
+    opus_data = article_data.get("opus", {})
+    topics = opus_data.get("topics", [])
+    for topic in topics:
+        topic_name = topic.get("name", "") if isinstance(topic, dict) else str(topic)
+        if topic_name and topic_name not in tags:
+            tags.append(topic_name)
+
+    # 检查可能存在的单字符串或列表形式的 tag
+    detail_tag = article_data.get("tag")
+    if isinstance(detail_tag, list):
+        for t in detail_tag:
+            t_name = t.get("name", "") if isinstance(t, dict) else str(t)
+            if t_name and t_name not in tags:
+                tags.append(t_name)
+    elif isinstance(detail_tag, str) and detail_tag:
+        for t in detail_tag.split(","):
+            t = t.strip()
+            if t and t not in tags:
+                tags.append(t)
 
     stats = article_data.get("stats", {})
     view = stats.get("view", 0)

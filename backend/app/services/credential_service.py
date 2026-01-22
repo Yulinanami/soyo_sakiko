@@ -151,7 +151,13 @@ class CredentialManager:
         cookie_string = ""
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)
+            browser = p.chromium.launch(
+                headless=False,
+                args=[
+                    "--no-proxy-server",
+                    "--disable-blink-features=AutomationControlled",
+                ],
+            )
             context = browser.new_context()
             page = context.new_page()
 

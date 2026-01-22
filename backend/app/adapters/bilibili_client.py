@@ -4,7 +4,7 @@ import logging
 import uuid
 from typing import Optional, List, Dict, Any, Tuple
 from app.config import settings
-from app.services.http_client import get_sync_client
+from app.services.http_client import get_no_proxy_sync_client
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class BilibiliClient:
         self, keyword: str, page: int, page_size: int, order: str
     ) -> List[Dict[str, Any]]:
         """获取搜索结果"""
-        client = get_sync_client()
+        client = get_no_proxy_sync_client()
         params = {
             "search_type": "article",
             "keyword": keyword,
@@ -78,7 +78,7 @@ class BilibiliClient:
 
     def fetch_article(self, article_id: str) -> Tuple[Optional[Dict[str, Any]], str]:
         """获取文章内容"""
-        client = get_sync_client()
+        client = get_no_proxy_sync_client()
         params = {"id": article_id}
 
         response = client.get(

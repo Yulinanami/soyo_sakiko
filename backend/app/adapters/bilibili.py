@@ -38,9 +38,8 @@ class BilibiliAdapter(BaseAdapter):
         sort_by: str = "date",
     ) -> List[Novel]:
         """获取 Bilibili 搜索结果"""
-        exclude_tags = exclude_tags or []
-
-        user_tags = list(dict.fromkeys(tags))
+        exclude_tags = [t.strip() for t in (exclude_tags or []) if t.strip()]
+        user_tags = [t.strip() for t in (tags or []) if t.strip()]
         if not user_tags:
             user_tags = list(self.SOYOSAKI_TAGS)
         keyword = user_tags[0] if user_tags else "素祥"
@@ -58,15 +57,24 @@ class BilibiliAdapter(BaseAdapter):
                 self._search_sync, keyword, page, page_size, order
             )
 
-            if exclude_tags and novels:
+            # 1. 基础过滤：包含检查 (Inclusion) + 排除检查 (Exclusion)
+            if novels:
                 novels = [
                     n
                     for n in novels
-                    if not exclude(n.title, exclude_tags)
+                    if (
+                        # 包含检查：标签中包含（模糊匹配），或者标题/简介中包含
+                        any(any(t in tag for tag in n.tags) for t in user_tags)
+                        or any(t in n.title for t in user_tags)
+                        or any(t in n.summary for t in user_tags)
+                    )
+                    and not exclude(n.title, exclude_tags)
                     and not exclude(n.summary, exclude_tags)
+                    and not exclude_any_tag(n.tags, exclude_tags)
                 ]
 
-            if exclude_tags and novels:
+            # 2. 增强过滤：获取详情进行更严格的包含与排除检查
+            if novels:
                 import asyncio
 
                 semaphore = asyncio.Semaphore(3)
@@ -79,13 +87,41 @@ class BilibiliAdapter(BaseAdapter):
                                 await asyncio.sleep(0.3)
 
                             detail = await self.get_detail(novel.id)
-                            if detail and detail.tags:
-                                if exclude_any_tag(detail.tags, exclude_tags):
+                            if detail:
+                                # 详情页包含检查 (Inclusion)：必须包含选中的标签（模糊匹配，兼容话题格式）
+                                # 或者标题/简介中明确包含（防止标签漏扫）
+                                has_tag = any(
+                                    any(t in tag for tag in detail.tags)
+                                    for t in user_tags
+                                )
+                                has_title_summary = any(
+                                    t in detail.title for t in user_tags
+                                ) or any(t in detail.summary for t in user_tags)
+
+                                if not has_tag and not has_title_summary:
                                     logger.info(
-                                        f"Filtered out article {novel.id} due to tag match"
+                                        f"Filtered out Bilibili article {novel.id} due to inclusion mismatch"
                                     )
                                     return None
+
+                                # 详情页排除检查 (Exclusion)
+                                if exclude_any_tag(detail.tags, exclude_tags):
+                                    logger.info(
+                                        f"Filtered out Bilibili article {novel.id} due to tag match in detail: {detail.tags}"
+                                    )
+                                    return None
+
+                                if exclude(detail.title, exclude_tags) or exclude(
+                                    detail.summary, exclude_tags
+                                ):
+                                    logger.info(
+                                        f"Filtered out Bilibili article {novel.id} due to title/summary match in detail"
+                                    )
+                                    return None
+
                                 novel.tags = detail.tags
+                                novel.title = detail.title
+                                novel.summary = detail.summary
                             return novel
                         except Exception as e:
                             logger.warning(f"Error fetching detail for {novel.id}: {e}")

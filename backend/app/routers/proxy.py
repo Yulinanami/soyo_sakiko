@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 
-from app.services.http_client import get_async_client
+from app.services.http_client import get_async_client, get_no_proxy_async_client
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -97,7 +97,7 @@ async def proxy_lofter_image(url: str):
         )
 
     try:
-        client = get_async_client()
+        client = get_no_proxy_async_client()
         response = await client.get(
             url,
             headers={

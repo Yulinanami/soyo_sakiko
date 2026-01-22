@@ -4,7 +4,7 @@ import logging
 import re
 from app.adapters.lofter_common import normalize_lofter_image_url, proxy_lofter_images
 from app.adapters.utils import sanitize_html
-from app.services.http_client import get_sync_client
+from app.services.http_client import get_no_proxy_sync_client
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def fetch_post_content(novel_id: str, cookie: str) -> str:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         }
 
-        client = get_sync_client()
+        client = get_no_proxy_sync_client()
         response = client.get(post_url, headers=headers)
 
         if response.status_code != 200:

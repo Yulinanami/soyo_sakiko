@@ -35,6 +35,11 @@ def get_no_proxy_async_client() -> httpx.AsyncClient:
     return _no_proxy_async_client
 
 
+def get_no_proxy_sync_client() -> httpx.Client:
+    """获取不走中转的同步访问工具"""
+    return httpx.Client(timeout=30.0, follow_redirects=True, trust_env=False)
+
+
 def close_sync_client() -> None:
     """关闭常用访问工具"""
     global _sync_client
