@@ -18,7 +18,7 @@ start "SoyoSaki-Frontend" cmd /c "cd /d frontend && npm run dev"
 
 echo.
 echo ==========================================
-echo 启动指令已发送！
+echo 程序已启动
 echo 后端地址: http://localhost:8000
 echo 前端地址: http://localhost:5173
 echo ==========================================

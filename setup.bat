@@ -1,97 +1,43 @@
 @echo off
 chcp 65001 >nul
-setlocal enabledelayedexpansion
-
-set "PROJECT_ROOT=%~dp0"
-cd /d "%PROJECT_ROOT%"
 
 echo ==========================================
 echo    环境检查与初始化工具
 echo ==========================================
-echo.
 
-:: 1. 检查 Node.js
-echo [1/4] 正在检查 Node.js 环境...
-node -v >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [错误] 未检测到 Node.js，请先安装: https://nodejs.org/
-    goto :ERROR_EXIT
-)
-echo [成功] Node.js 已安装。
+echo [1/4] Node 环境检查...
+node -v >nul 2>&1 && (echo [成功] Node 已安装) || (echo [失败] 请前往 https://nodejs.org/ 安装 Node.js && pause && exit)
 
-:: 2. 检查 Python
-echo [2/4] 正在检查 Python 环境...
-set "PYTHON_CMD=python"
-python --version >nul 2>&1
-if %errorlevel% neq 0 (
-    set "PYTHON_CMD=python3"
-    python3 --version >nul 2>&1
-    if !errorlevel! neq 0 (
-        echo [错误] 未检测到 Python，请先安装并勾选 "Add Python to PATH"
-        goto :ERROR_EXIT
-    )
-)
-echo [成功] Python 已安装。
+echo [2/4] Python 环境检查...
+set "PY=python"
+python --version >nul 2>&1 || set "PY=python3"
+%PY% --version >nul 2>&1 && (echo [成功] Python 已安装) || (echo [失败] 请前往 https://www.python.org/ 安装 Python 并在安装时勾选 "Add Python to PATH" && pause && exit)
 
-:: 3. 初始化后端环境
-echo.
-echo [3/4] 正在初始化后端环境 (Python Venv)...
-cd /d "%PROJECT_ROOT%backend"
-
-:: 创建虚拟环境
-if not exist ".venv" (
+echo [3/4] 部署后端...
+cd backend || (echo [失败] 找不到 backend 目录 && pause && exit)
+if not exist .venv (
     echo 正在创建虚拟环境...
-    %PYTHON_CMD% -m venv .venv
+    %PY% -m venv .venv || (echo [失败] 虚拟环境创建失败 && pause && exit)
 )
+if not exist .env copy .env.example .env >nul
 
-:: 配置文件
-if not exist ".env" (
-    echo 正在从 .env.example 创建 .env 配置文件...
-    copy .env.example .env >nul
-)
+echo 正在安装后端依赖...
+.venv\Scripts\python -m pip install -r requirements.txt || (echo [失败] 后端依赖安装失败 && pause && exit)
 
-:: 安装依赖
-echo 正在安装后端依赖 (可能需要几分钟)...
-.venv\Scripts\pip install -r requirements.txt
-if %errorlevel% neq 0 (
-    echo [错误] 后端依赖安装失败。
-    goto :ERROR_EXIT
-)
-
-:: 安装 Playwright 浏览器
 echo 正在安装 Playwright 浏览器内核...
-.venv\Scripts\playwright install chromium
-if %errorlevel% neq 0 (
-    echo [错误] Playwright 浏览器安装失败。
-    goto :ERROR_EXIT
-)
-echo [成功] 后端环境配置完毕。
+.venv\Scripts\python -m playwright install chromium || (echo [失败] Playwright 安装失败 && pause && exit)
+echo [成功] 后端配置完成
+cd ..
 
-:: 4. 初始化前端环境
-echo.
-echo [4/4] 正在初始化前端环境 (NPM Install)...
-cd /d "%PROJECT_ROOT%frontend"
-echo 正在安装前端依赖 (可能需要几分钟)...
-call npm install
-if %errorlevel% neq 0 (
-    echo [错误] 前端依赖安装失败。
-    goto :ERROR_EXIT
-)
-echo [成功] 前端环境配置完毕。
+echo [4/4] 部署前端...
+cd frontend || (echo [失败] 找不到 frontend 目录 && pause && exit)
+echo 正在安装前端依赖...
+call npm install || (echo [失败] 前端依赖安装失败 && pause && exit)
+echo [成功] 前端配置完成
+cd ..
 
 echo.
 echo ==========================================
-echo   全部环境配置完成！
-echo   现在可以双击 run.bat 启动项目了。
+echo 全部环境配置完成！
 echo ==========================================
-echo.
 pause
-exit /b 0
-
-:ERROR_EXIT
-echo.
-echo ------------------------------------------
-echo [终止] 配置未完成，请解决上述问题后重试。
-echo ------------------------------------------
-pause
-exit /b 1
