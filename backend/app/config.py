@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     LOFTER_COOKIE: str = ""
     LOFTER_CAPTTOKEN: str = ""
-    LOFTER_DYNAMIC_ENABLED: bool = False
+    LOFTER_DYNAMIC_ENABLED: bool = True
     LOFTER_DYNAMIC_HEADLESS: bool = True
     LOFTER_DYNAMIC_MAX_ITEMS: int = 30
     LOFTER_DYNAMIC_MAX_SCROLLS: int = 8
