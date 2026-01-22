@@ -16,11 +16,6 @@ class AO3Adapter(BaseAdapter):
 
     source_name = "ao3"
 
-    SOYOSAKI_TAGS = [
-        "Nagasaki Soyo/Toyokawa Sakiko",
-        "Toyokawa Sakiko/Nagasaki Soyo",
-    ]
-
     async def search(
         self,
         tags: List[str],
@@ -36,11 +31,9 @@ class AO3Adapter(BaseAdapter):
 
         exclude_tags = exclude_tags or []
 
-        search_tags = list(set(tags + self.SOYOSAKI_TAGS))
-
         return await self.run_in_executor(
             self._search_sync,
-            search_tags,
+            tags,
             exclude_tags,
             page,
             page_size,

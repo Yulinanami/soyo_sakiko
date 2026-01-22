@@ -57,9 +57,9 @@ export const useNovelsStore = defineStore("novels", () => {
   ];
 
   const tagsBySource = ref<Record<NovelSource, string[]>>({
-    ao3: ["Nagasaki Soyo/Toyokawa Sakiko", "Toyokawa Sakiko/Nagasaki Soyo"],
-    pixiv: ["素祥", "祥素"],
-    lofter: ["そよさき", "素祥", "祥素"],
+    ao3: ["素祥", "Nagasaki Soyo/Togawa Sakiko"],
+    pixiv: ["素祥", "そよさき"],
+    lofter: ["素祥"],
     bilibili: ["素祥"],
   });
 

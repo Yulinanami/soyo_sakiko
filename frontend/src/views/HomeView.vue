@@ -6,10 +6,12 @@ import NovelList from '@components/novel/NovelList.vue';
 import SourceSelector from '@components/filter/SourceSelector.vue';
 import TagFilter from '@components/filter/TagFilter.vue';
 import ExcludeFilter from '@components/filter/ExcludeFilter.vue';
+import { Menu } from 'lucide-vue-next';
 
 const novelsStore = useNovelsStore();
 const sourcesStore = useSourcesStore();
 const isExcludeOpen = ref(false);
+const isConfigCollapsed = ref(false);
 
 function saveScrollPosition() {
   // 保存滚动位置
@@ -56,7 +58,7 @@ function handleSourceChange() {
   // 切换来源后刷新
   const enabled = sourcesStore.getEnabledSourceNames();
   novelsStore.selectedSources = enabled;
-  
+
   // 如果当前配置源被关闭了，切换到第一个开启的源
   if (enabled.length > 0 && !enabled.includes(novelsStore.activeConfigSource)) {
     const firstEnabled = enabled[0];
@@ -64,7 +66,7 @@ function handleSourceChange() {
       novelsStore.activeConfigSource = firstEnabled;
     }
   }
-  
+
   novelsStore.fetchSourcesWithCache();
 }
 
@@ -84,56 +86,65 @@ function handleRefresh() {
     <!-- 顶部标签栏 -->
     <header
       class="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-30 shadow-sm transition-colors duration-300">
-      <div class="px-6 py-4 space-y-4">
-        <!-- 标签配置源切换 -->
-        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400 mr-2 shrink-0">配置源:</span>
-          <button v-for="source in sourcesStore.getEnabledSourceNames()" :key="source"
-            @click="novelsStore.activeConfigSource = source"
-            :class="[
-              'px-3 py-1 rounded-full text-xs transition-all whitespace-nowrap border',
-              novelsStore.activeConfigSource === source
-                ? 'bg-sakiko/10 border-sakiko text-sakiko font-medium'
-                : 'bg-gray-100 border-transparent text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
-            ]"
-          >
-            {{ sourcesStore.getSourceDisplayName(source) }}
-          </button>
-        </div>
+      <div class="px-6 py-4">
+        <div class="space-y-4">
+          <transition-group enter-active-class="transition duration-200 ease-out"
+            enter-from-class="transform -translate-y-2 opacity-0" enter-to-class="transform translate-y-0 opacity-100"
+            leave-active-class="transition duration-150 ease-in" leave-from-class="transform translate-y-0 opacity-100"
+            leave-to-class="transform -translate-y-2 opacity-0">
+            <!-- 标签配置源切换 -->
+            <div v-if="!isConfigCollapsed" key="source-config"
+              class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              <span class="text-xs font-medium text-gray-500 dark:text-gray-400 mr-2 shrink-0">配置源:</span>
+              <button v-for="source in sourcesStore.getEnabledSourceNames()" :key="source"
+                @click="novelsStore.activeConfigSource = source" :class="[
+                  'px-3 py-1 rounded-full text-xs transition-all whitespace-nowrap border',
+                  novelsStore.activeConfigSource === source
+                    ? 'bg-sakiko/10 border-sakiko text-sakiko font-medium'
+                    : 'bg-gray-100 border-transparent text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
+                ]">
+                {{ sourcesStore.getSourceDisplayName(source) }}
+              </button>
+            </div>
 
-        <!-- 标签过滤 -->
-        <TagFilter 
-          :selected-tags="novelsStore.tagsBySource[novelsStore.activeConfigSource]" 
-          :exclude-open="isExcludeOpen"
-          @toggle-exclude="toggleExclude" 
-          @update:selected-tags="(tags) => { 
-            novelsStore.tagsBySource[novelsStore.activeConfigSource] = tags;
-            novelsStore.fetchNovels(true, [novelsStore.activeConfigSource]);
-          }" 
-        />
+            <!-- 标签过滤 -->
+            <TagFilter v-if="!isConfigCollapsed" key="tag-filter"
+              :selected-tags="novelsStore.tagsBySource[novelsStore.activeConfigSource]" :exclude-open="isExcludeOpen"
+              @toggle-exclude="toggleExclude" @update:selected-tags="(tags) => {
+                novelsStore.tagsBySource[novelsStore.activeConfigSource] = tags;
+                novelsStore.fetchNovels(true, [novelsStore.activeConfigSource]);
+              }" />
 
-        <!-- 排除过滤 -->
-        <ExcludeFilter 
-          :exclude-tags="novelsStore.excludeTagsBySource[novelsStore.activeConfigSource]" 
-          :open="isExcludeOpen"
-          @update:exclude-tags="(tags) => { 
-            novelsStore.excludeTagsBySource[novelsStore.activeConfigSource] = tags;
-            novelsStore.fetchNovels(true, [novelsStore.activeConfigSource]);
-          }" 
-        />
+            <!-- 排除过滤 -->
+            <ExcludeFilter v-if="!isConfigCollapsed" key="exclude-filter"
+              :exclude-tags="novelsStore.excludeTagsBySource[novelsStore.activeConfigSource]" :open="isExcludeOpen"
+              @update:exclude-tags="(tags) => {
+                novelsStore.excludeTagsBySource[novelsStore.activeConfigSource] = tags;
+                novelsStore.fetchNovels(true, [novelsStore.activeConfigSource]);
+              }" />
+          </transition-group>
 
-        <!-- 数据源选择和排序 -->
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <SourceSelector :loading-sources="novelsStore.loadingSources" @change="handleSourceChange"
-            @refresh="handleRefresh" />
+          <!-- 数据源选择和排序 - 始终显示 -->
+          <div
+            class="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-2">
+              <button @click="isConfigCollapsed = !isConfigCollapsed"
+                class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+                :title="isConfigCollapsed ? '展开配置' : '折叠配置'">
+                <Menu class="w-5 h-5" />
+              </button>
+              <SourceSelector :loading-sources="novelsStore.loadingSources" @change="handleSourceChange"
+                @refresh="handleRefresh" />
+            </div>
 
-          <select v-model="novelsStore.sortBy" @change="novelsStore.fetchNovels(true)"
-            class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none focus:border-sakiko dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-            <option value="date">最新更新</option>
-            <option value="kudos">最多点赞</option>
-            <option value="hits">最多阅读</option>
-            <option value="wordCount">字数最多</option>
-          </select>
+            <select v-model="novelsStore.sortBy" @change="novelsStore.fetchNovels(true)"
+              class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none focus:border-sakiko dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+              <option value="date">最新更新</option>
+              <option value="kudos">最多点赞</option>
+              <option value="hits">最多阅读</option>
+              <option value="wordCount">字数最多</option>
+            </select>
+          </div>
         </div>
       </div>
     </header>
