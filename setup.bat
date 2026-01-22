@@ -37,14 +37,32 @@ echo [成功] Python 已安装。
 echo.
 echo [3/4] 正在初始化后端环境 (Python Venv)...
 cd /d "%PROJECT_ROOT%backend"
+
+:: 创建虚拟环境
 if not exist ".venv" (
     echo 正在创建虚拟环境...
     %PYTHON_CMD% -m venv .venv
 )
+
+:: 配置文件
+if not exist ".env" (
+    echo 正在从 .env.example 创建 .env 配置文件...
+    copy .env.example .env >nul
+)
+
+:: 安装依赖
 echo 正在安装后端依赖 (可能需要几分钟)...
 .venv\Scripts\pip install -r requirements.txt
 if %errorlevel% neq 0 (
     echo [错误] 后端依赖安装失败。
+    goto :ERROR_EXIT
+)
+
+:: 安装 Playwright 浏览器
+echo 正在安装 Playwright 浏览器内核...
+.venv\Scripts\playwright install chromium
+if %errorlevel% neq 0 (
+    echo [错误] Playwright 浏览器安装失败。
     goto :ERROR_EXIT
 )
 echo [成功] 后端环境配置完毕。
