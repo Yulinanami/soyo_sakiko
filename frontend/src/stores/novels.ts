@@ -30,9 +30,11 @@ export const useNovelsStore = defineStore("novels", () => {
   });
   let requestId = 0;
 
+  const activeConfigSource = ref<NovelSource>("ao3");
   const selectedSources = ref<NovelSource[]>(["ao3"]);
-  const selectedTags = ref<string[]>(["素祥", "祥素"]);
-  const excludeTags = ref<string[]>([
+
+  // 每个源独立的标签配置
+  const commonExclusion = [
     "all祥",
     "祥睦",
     "睦祥",
@@ -52,27 +54,46 @@ export const useNovelsStore = defineStore("novels", () => {
     "初祥",
     "ansy",
     "爱素",
-  ]);
+  ];
+
+  const tagsBySource = ref<Record<NovelSource, string[]>>({
+    ao3: ["Nagasaki Soyo/Toyokawa Sakiko", "Toyokawa Sakiko/Nagasaki Soyo"],
+    pixiv: ["素祥", "祥素"],
+    lofter: ["そよさき", "素祥", "祥素"],
+    bilibili: ["素祥"],
+  });
+
+  const excludeTagsBySource = ref<Record<NovelSource, string[]>>({
+    ao3: [...commonExclusion],
+    pixiv: [...commonExclusion],
+    lofter: [...commonExclusion],
+    bilibili: [...commonExclusion],
+  });
+
   const sortBy = ref<"date" | "kudos" | "hits" | "wordCount">("date");
 
   // 判断是否为空
   const isEmpty = computed(() => novels.value.length === 0 && !loading.value);
 
-  async function fetchNovels(reset = false) {
+  async function fetchNovels(reset = false, specificSources?: NovelSource[]) {
     // 获取小说列表
     requestId += 1;
     const activeRequestId = requestId;
 
+    const sourcesToProcess = specificSources || selectedSources.value;
+
     if (reset) {
       currentPage.value = 1;
-      novels.value = [];
-      selectedSources.value.forEach((source) => {
+      if (!specificSources) {
+        novels.value = [];
+      }
+      sourcesToProcess.forEach((source) => {
         novelsBySource.value[source] = [];
         hasMoreBySource.value[source] = false;
       });
     }
 
-    if (selectedSources.value.length === 0) {
+    if (sourcesToProcess.length === 0) {
       error.value = null;
       hasMore.value = false;
       loading.value = false;
@@ -85,18 +106,24 @@ export const useNovelsStore = defineStore("novels", () => {
       return;
     }
 
-    if (selectedTags.value.length === 0) {
+    // 检查处理的源是否有标签
+    const sourcesWithNoTags = sourcesToProcess.filter(
+      (s) => tagsBySource.value[s].length === 0,
+    );
+    if (sourcesWithNoTags.length === sourcesToProcess.length) {
       error.value = "请先选择至少一个标签";
       hasMore.value = false;
       loading.value = false;
-      novels.value = [];
-      selectedSources.value.forEach((source) => {
+      if (!specificSources) {
+        novels.value = [];
+      }
+      sourcesToProcess.forEach((source) => {
         loadingSources.value[source] = false;
       });
       return;
     }
 
-    selectedSources.value.forEach((source) => {
+    sourcesToProcess.forEach((source) => {
       loadingSources.value[source] = true;
     });
     loading.value = true;
@@ -114,19 +141,15 @@ export const useNovelsStore = defineStore("novels", () => {
     };
 
     try {
-      const baseParams: Omit<NovelSearchParams, "sources"> = {
-        tags: selectedTags.value,
-        excludeTags: excludeTags.value,
-        page: currentPage.value,
-        pageSize,
-        sortBy: sortBy.value,
-      };
-
       await Promise.allSettled(
-        selectedSources.value.map(async (source) => {
+        sourcesToProcess.map(async (source) => {
           const params: NovelSearchParams = {
-            ...baseParams,
             sources: [source],
+            tags: tagsBySource.value[source],
+            excludeTags: excludeTagsBySource.value[source],
+            page: currentPage.value,
+            pageSize,
+            sortBy: sortBy.value,
           };
 
           try {
@@ -165,7 +188,7 @@ export const useNovelsStore = defineStore("novels", () => {
       error.value = err instanceof Error ? err.message : "获取小说列表失败";
     } finally {
       if (activeRequestId === requestId) {
-        selectedSources.value.forEach((source) => {
+        sourcesToProcess.forEach((source) => {
           loadingSources.value[source] = false;
         });
         loading.value = false;
@@ -201,20 +224,16 @@ export const useNovelsStore = defineStore("novels", () => {
     });
     loading.value = true;
 
-    const baseParams = {
-      tags: selectedTags.value,
-      excludeTags: excludeTags.value,
-      page: 1,
-      pageSize,
-      sortBy: sortBy.value,
-    };
-
     await Promise.allSettled(
       sourcesToFetch.map(async (source) => {
         try {
           const response = await novelApi.search({
-            ...baseParams,
             sources: [source],
+            tags: tagsBySource.value[source],
+            excludeTags: excludeTagsBySource.value[source],
+            page: 1,
+            pageSize,
+            sortBy: sortBy.value,
           });
           const filtered = response.novels.filter((n) => n.source === source);
           novelsBySource.value[source] = filtered;
@@ -273,9 +292,10 @@ export const useNovelsStore = defineStore("novels", () => {
     error,
     currentPage,
     hasMore,
+    activeConfigSource,
     selectedSources,
-    selectedTags,
-    excludeTags,
+    tagsBySource,
+    excludeTagsBySource,
     sortBy,
     loadingSources,
     isEmpty,

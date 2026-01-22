@@ -67,13 +67,20 @@ SoyoSaki 是一个聚合了 AO3、Pixiv、Lofter 和 Bilibili 平台的同人小
   - `playwright` (Lofter dynamic scraping)
   - `httpx` (Bilibili)
 
----
-
-## 快速开始
-
 ### 运行环境
 - Node.js (v18+)
 - Python (v3.10+)
+
+---
+
+## 快速开始（推荐）
+
+1. 先运行 setup.bat
+2. 然后运行 run.bat
+
+---
+
+## 手动启动项目（无法使用快速开始脚本）
 
 ### 克隆项目
 

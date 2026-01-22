@@ -14,6 +14,11 @@ export const useSourcesStore = defineStore("sources", () => {
     }
   }
 
+  function getSourceDisplayName(name: string) {
+    // 获取来源显示名称
+    return sources.value.find((s) => s.name === name)?.displayName || name;
+  }
+
   function getEnabledSourceNames() {
     // 获取已开启的来源
     return sources.value.filter((s) => s.enabled).map((s) => s.name);
@@ -23,5 +28,6 @@ export const useSourcesStore = defineStore("sources", () => {
     sources,
     toggleSource,
     getEnabledSourceNames,
+    getSourceDisplayName,
   };
 });

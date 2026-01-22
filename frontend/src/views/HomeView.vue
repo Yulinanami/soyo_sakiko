@@ -54,20 +54,18 @@ onMounted(async () => {
 
 function handleSourceChange() {
   // 切换来源后刷新
-  novelsStore.selectedSources = sourcesStore.getEnabledSourceNames();
+  const enabled = sourcesStore.getEnabledSourceNames();
+  novelsStore.selectedSources = enabled;
+  
+  // 如果当前配置源被关闭了，切换到第一个开启的源
+  if (enabled.length > 0 && !enabled.includes(novelsStore.activeConfigSource)) {
+    const firstEnabled = enabled[0];
+    if (firstEnabled) {
+      novelsStore.activeConfigSource = firstEnabled;
+    }
+  }
+  
   novelsStore.fetchSourcesWithCache();
-}
-
-function handleTagChange(tags: string[]) {
-  // 切换标签后刷新
-  novelsStore.selectedTags = tags;
-  novelsStore.fetchNovels(true);
-}
-
-function handleExcludeChange(tags: string[]) {
-  // 切换排除后刷新
-  novelsStore.excludeTags = tags;
-  novelsStore.fetchNovels(true);
 }
 
 function toggleExclude() {
@@ -87,13 +85,42 @@ function handleRefresh() {
     <header
       class="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-30 shadow-sm transition-colors duration-300">
       <div class="px-6 py-4 space-y-4">
+        <!-- 标签配置源切换 -->
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <span class="text-xs font-medium text-gray-500 dark:text-gray-400 mr-2 shrink-0">配置源:</span>
+          <button v-for="source in sourcesStore.getEnabledSourceNames()" :key="source"
+            @click="novelsStore.activeConfigSource = source"
+            :class="[
+              'px-3 py-1 rounded-full text-xs transition-all whitespace-nowrap border',
+              novelsStore.activeConfigSource === source
+                ? 'bg-sakiko/10 border-sakiko text-sakiko font-medium'
+                : 'bg-gray-100 border-transparent text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
+            ]"
+          >
+            {{ sourcesStore.getSourceDisplayName(source) }}
+          </button>
+        </div>
+
         <!-- 标签过滤 -->
-        <TagFilter :selected-tags="novelsStore.selectedTags" :exclude-open="isExcludeOpen"
-          @toggle-exclude="toggleExclude" @update:selected-tags="handleTagChange" />
+        <TagFilter 
+          :selected-tags="novelsStore.tagsBySource[novelsStore.activeConfigSource]" 
+          :exclude-open="isExcludeOpen"
+          @toggle-exclude="toggleExclude" 
+          @update:selected-tags="(tags) => { 
+            novelsStore.tagsBySource[novelsStore.activeConfigSource] = tags;
+            novelsStore.fetchNovels(true, [novelsStore.activeConfigSource]);
+          }" 
+        />
 
         <!-- 排除过滤 -->
-        <ExcludeFilter :exclude-tags="novelsStore.excludeTags" :open="isExcludeOpen"
-          @update:exclude-tags="handleExcludeChange" />
+        <ExcludeFilter 
+          :exclude-tags="novelsStore.excludeTagsBySource[novelsStore.activeConfigSource]" 
+          :open="isExcludeOpen"
+          @update:exclude-tags="(tags) => { 
+            novelsStore.excludeTagsBySource[novelsStore.activeConfigSource] = tags;
+            novelsStore.fetchNovels(true, [novelsStore.activeConfigSource]);
+          }" 
+        />
 
         <!-- 数据源选择和排序 -->
         <div class="flex flex-wrap items-center justify-between gap-4">
