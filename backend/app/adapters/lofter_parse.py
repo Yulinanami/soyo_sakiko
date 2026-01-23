@@ -109,17 +109,36 @@ def parse_tag_page_html(
 
         published_at = datetime.now().isoformat()
         title_attr = post_link_el.get("title", "") if post_link_el else ""
-        date_match = re.search(r"(\d{2})/(\d{2})\s+(\d{2}:\d{2})", title_attr)
+        # 尝试匹配完整日期: YYYY/MM/DD 或 MM/DD
+        date_match = re.search(
+            r"(?:(\d{4})[/-])?(\d{1,2})[/-](\d{1,2})\s+(\d{2}:\d{2})", title_attr
+        )
         if date_match:
-            month, day, hm = date_match.groups()
+            year_str, month, day, hm = date_match.groups()
             try:
-                published_at = datetime(
-                    datetime.now().year,
-                    int(month),
-                    int(day),
-                    int(hm[:2]),
-                    int(hm[3:]),
-                ).isoformat()
+                now = datetime.now()
+                # 如果能在文本中找到年份，就直接用
+                if year_str:
+                    parsed_year = int(year_str)
+                    parsed_date = datetime(
+                        parsed_year,
+                        int(month),
+                        int(day),
+                        int(hm[:2]),
+                        int(hm[3:]),
+                    )
+                else:
+                    # 只有文本中真的没年份（通常是当年），才使用当前年份
+                    parsed_year = now.year
+                    parsed_date = datetime(
+                        parsed_year,
+                        int(month),
+                        int(day),
+                        int(hm[:2]),
+                        int(hm[3:]),
+                    )
+
+                published_at = parsed_date.isoformat()
             except Exception:
                 pass
 
