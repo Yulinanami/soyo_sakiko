@@ -107,13 +107,10 @@ export const useNovelsStore = defineStore("novels", () => {
         novelsBySourceByPage.value[source] = {};
         hasMoreBySource.value[source] = false;
       });
-    } else {
-      // 加载更多时，记录当前位置作为新页的起点
-      const currentCount = novels.value.length;
-      if (currentCount > 0 && !pageBreaks.value.includes(currentCount)) {
-        pageBreaks.value.push(currentCount);
-      }
     }
+
+    // 记录加载前的数量，用于判断是否真的加载到了新内容
+    const previousTotal = novels.value.length;
 
     if (sourcesToProcess.length === 0) {
       error.value = null;
@@ -154,6 +151,14 @@ export const useNovelsStore = defineStore("novels", () => {
     const updateAggregates = () => {
       // 更新合并结果
       rebuildNovels();
+
+      // 如果是非重置加载，且列表长度增加了，才记录分页点
+      if (!reset && novels.value.length > previousTotal) {
+        if (!pageBreaks.value.includes(previousTotal)) {
+          pageBreaks.value.push(previousTotal);
+        }
+      }
+
       hasMore.value = selectedSources.value.some(
         (source) => hasMoreBySource.value[source],
       );
