@@ -1,9 +1,12 @@
 """AO3 数据整理"""
 
+import logging
 from typing import Any, List, Optional
 from bs4 import BeautifulSoup
 from app.adapters.utils import to_iso_date
 from app.schemas.novel import Novel, NovelSource
+
+logger = logging.getLogger(__name__)
 
 
 def map_sort(sort_by: str) -> str:
