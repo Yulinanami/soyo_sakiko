@@ -157,6 +157,38 @@ export const credentialsApi = {
   },
 };
 
+export interface TagConfigItem {
+  source: string;
+  tags: string[];
+  exclude_tags: string[];
+}
+
+export const tagConfigApi = {
+  getAll: async (): Promise<TagConfigItem[]> => {
+    // 获取所有标签配置
+    const { data } = await api.get("/user/tag-configs");
+    return unwrapData<TagConfigItem[]>(data);
+  },
+
+  save: async (
+    source: string,
+    tags: string[],
+    excludeTags: string[],
+  ): Promise<TagConfigItem> => {
+    // 保存某个数据源的标签配置
+    const { data } = await api.put(`/user/tag-configs/${source}`, {
+      tags,
+      exclude_tags: excludeTags,
+    });
+    return unwrapData<TagConfigItem>(data);
+  },
+
+  reset: async () => {
+    // 重置所有标签配置
+    await api.delete("/user/tag-configs");
+  },
+};
+
 export function setAuthToken(token: string | null) {
   // 设置默认登录信息
   if (token && token !== "undefined" && token !== "null") {

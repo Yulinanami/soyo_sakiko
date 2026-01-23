@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type { Novel, NovelSearchParams, NovelSource } from "@app-types/novel";
-import { novelApi } from "@services/api";
+import { novelApi, tagConfigApi } from "@services/api";
+import { useUserStore } from "@stores/user";
 
 export const useNovelsStore = defineStore("novels", () => {
   const novels = ref<Novel[]>([]);
@@ -58,18 +59,27 @@ export const useNovelsStore = defineStore("novels", () => {
     "爱素",
   ];
 
-  const tagsBySource = ref<Record<NovelSource, string[]>>({
+  // 默认标签配置（用于重置）
+  const defaultTagsBySource: Record<NovelSource, string[]> = {
     ao3: ["素祥", "祥素", "Nagasaki Soyo/Togawa Sakiko"],
     pixiv: ["素祥", "祥素", "そよさき"],
     lofter: ["素祥"],
     bilibili: ["素祥"],
-  });
+  };
 
-  const excludeTagsBySource = ref<Record<NovelSource, string[]>>({
+  const defaultExcludeTagsBySource: Record<NovelSource, string[]> = {
     ao3: [...commonExclusion],
     pixiv: [...commonExclusion],
     lofter: [...commonExclusion],
     bilibili: [...commonExclusion],
+  };
+
+  const tagsBySource = ref<Record<NovelSource, string[]>>({
+    ...defaultTagsBySource,
+  });
+
+  const excludeTagsBySource = ref<Record<NovelSource, string[]>>({
+    ...defaultExcludeTagsBySource,
   });
 
   const sortBy = ref<"date" | "kudos" | "hits" | "wordCount">("date");
@@ -295,6 +305,90 @@ export const useNovelsStore = defineStore("novels", () => {
     novels.value = combined;
   }
 
+  const TAG_CONFIG_STORAGE_KEY = "soyosaki:tagConfigs";
+
+  async function loadTagConfigs() {
+    // 加载标签配置（已登录用 API，未登录用 localStorage）
+    const userStore = useUserStore();
+
+    if (userStore.isLoggedIn) {
+      try {
+        const configs = await tagConfigApi.getAll();
+        for (const config of configs) {
+          const source = config.source as NovelSource;
+          if (tagsBySource.value[source] !== undefined) {
+            tagsBySource.value[source] = config.tags || [];
+            excludeTagsBySource.value[source] = config.exclude_tags || [];
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load tag configs from API:", e);
+      }
+    } else {
+      // 从 localStorage 加载
+      const stored = localStorage.getItem(TAG_CONFIG_STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed.tagsBySource) {
+            Object.assign(tagsBySource.value, parsed.tagsBySource);
+          }
+          if (parsed.excludeTagsBySource) {
+            Object.assign(
+              excludeTagsBySource.value,
+              parsed.excludeTagsBySource,
+            );
+          }
+        } catch (e) {
+          console.warn("Failed to parse tag configs from localStorage:", e);
+        }
+      }
+    }
+  }
+
+  async function saveTagConfig(source: NovelSource) {
+    // 保存某个数据源的标签配置
+    const userStore = useUserStore();
+
+    if (userStore.isLoggedIn) {
+      try {
+        await tagConfigApi.save(
+          source,
+          tagsBySource.value[source],
+          excludeTagsBySource.value[source],
+        );
+      } catch (e) {
+        console.warn("Failed to save tag config to API:", e);
+      }
+    } else {
+      // 保存到 localStorage
+      const data = {
+        tagsBySource: tagsBySource.value,
+        excludeTagsBySource: excludeTagsBySource.value,
+      };
+      localStorage.setItem(TAG_CONFIG_STORAGE_KEY, JSON.stringify(data));
+    }
+  }
+
+  async function resetToDefaults() {
+    // 重置所有标签配置为默认值
+    const userStore = useUserStore();
+
+    // 恢复默认值
+    tagsBySource.value = { ...defaultTagsBySource };
+    excludeTagsBySource.value = { ...defaultExcludeTagsBySource };
+
+    if (userStore.isLoggedIn) {
+      try {
+        await tagConfigApi.reset();
+      } catch (e) {
+        console.warn("Failed to reset tag configs via API:", e);
+      }
+    } else {
+      localStorage.removeItem(TAG_CONFIG_STORAGE_KEY);
+    }
+  }
+
   return {
     novels,
     loading,
@@ -313,5 +407,8 @@ export const useNovelsStore = defineStore("novels", () => {
     fetchSourcesWithCache,
     loadMore,
     retry,
+    loadTagConfigs,
+    saveTagConfig,
+    resetToDefaults,
   };
 });

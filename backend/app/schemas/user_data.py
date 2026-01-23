@@ -47,3 +47,22 @@ class ReadingHistoryOut(ReadingHistoryBase):
 
     class Config:
         from_attributes = True
+
+
+class TagConfigUpdate(BaseModel):
+    """更新标签配置"""
+
+    tags: list[str] = []
+    exclude_tags: list[str] = []
+
+
+class TagConfigOut(BaseModel):
+    """标签配置输出"""
+
+    source: str
+    tags: list[str] = []
+    exclude_tags: list[str] = []
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

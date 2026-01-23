@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import { useUserStore } from '@stores/user';
 import { useFavoritesStore } from '@stores/favorites';
+import { useNovelsStore } from '@stores/novels';
 import { useRouter } from 'vue-router';
 import ao3Logo from '@assets/ao3.png';
 import pixivLogo from '@assets/pixiv.png';
@@ -12,6 +13,7 @@ import { Home, Heart, BookOpen, Settings, Menu, Moon, Sun } from 'lucide-vue-nex
 
 const userStore = useUserStore();
 const favoritesStore = useFavoritesStore();
+const novelsStore = useNovelsStore();
 const router = useRouter();
 const sidebarOpen = ref(true);
 
@@ -29,11 +31,14 @@ function handleLogout() {
 watch(
   () => userStore.isLoggedIn,
   (loggedIn) => {
-    // 根据登录状态加载收藏
+    // 根据登录状态加载收藏和标签配置
     if (loggedIn) {
       favoritesStore.fetchFavorites();
+      novelsStore.loadTagConfigs();
     } else {
       favoritesStore.reset();
+      // 未登录时也尝试从 localStorage 加载
+      novelsStore.loadTagConfigs();
     }
   },
   { immediate: true }

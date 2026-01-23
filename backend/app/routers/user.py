@@ -1,11 +1,13 @@
 """用户数据路由"""
 
+import json
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models.favorite import Favorite, ReadingHistory
+from app.models.tag_config import UserTagConfig
 from app.routers.auth import get_current_user
 from app.schemas.response import ApiResponse
 from app.schemas.user_data import (
@@ -13,6 +15,8 @@ from app.schemas.user_data import (
     FavoriteOut,
     ReadingHistoryCreate,
     ReadingHistoryOut,
+    TagConfigUpdate,
+    TagConfigOut,
 )
 
 router = APIRouter()
@@ -170,5 +174,80 @@ def delete_history(
     if not record:
         raise HTTPException(status_code=404, detail="History not found")
     db.delete(record)
+    db.commit()
+    return ApiResponse()
+
+
+# ===================== 标签配置 =====================
+
+
+@router.get("/tag-configs", response_model=ApiResponse[list[TagConfigOut]])
+def list_tag_configs(
+    db: Session = Depends(get_db), current_user=Depends(get_current_user)
+):
+    """获取用户的所有标签配置"""
+    configs = (
+        db.query(UserTagConfig).filter(UserTagConfig.user_id == current_user.id).all()
+    )
+    result = []
+    for config in configs:
+        result.append(
+            TagConfigOut(
+                source=config.source,
+                tags=json.loads(config.tags) if config.tags else [],
+                exclude_tags=(
+                    json.loads(config.exclude_tags) if config.exclude_tags else []
+                ),
+                updated_at=config.updated_at,
+            )
+        )
+    return ApiResponse(data=result)
+
+
+@router.put("/tag-configs/{source}", response_model=ApiResponse[TagConfigOut])
+def update_tag_config(
+    source: str,
+    payload: TagConfigUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """保存某个数据源的标签配置"""
+    config = (
+        db.query(UserTagConfig)
+        .filter(
+            UserTagConfig.user_id == current_user.id,
+            UserTagConfig.source == source,
+        )
+        .first()
+    )
+    if config:
+        config.tags = json.dumps(payload.tags, ensure_ascii=False)
+        config.exclude_tags = json.dumps(payload.exclude_tags, ensure_ascii=False)
+    else:
+        config = UserTagConfig(
+            user_id=current_user.id,
+            source=source,
+            tags=json.dumps(payload.tags, ensure_ascii=False),
+            exclude_tags=json.dumps(payload.exclude_tags, ensure_ascii=False),
+        )
+        db.add(config)
+    db.commit()
+    db.refresh(config)
+    return ApiResponse(
+        data=TagConfigOut(
+            source=config.source,
+            tags=json.loads(config.tags) if config.tags else [],
+            exclude_tags=json.loads(config.exclude_tags) if config.exclude_tags else [],
+            updated_at=config.updated_at,
+        )
+    )
+
+
+@router.delete("/tag-configs", response_model=ApiResponse[None])
+def reset_tag_configs(
+    db: Session = Depends(get_db), current_user=Depends(get_current_user)
+):
+    """重置所有标签配置（恢复默认）"""
+    db.query(UserTagConfig).filter(UserTagConfig.user_id == current_user.id).delete()
     db.commit()
     return ApiResponse()

@@ -29,13 +29,13 @@ function getPageNumber(index: number): number | null {
       <template v-for="(novel, index) in novels" :key="`${novel.source}-${novel.id}`">
         <!-- 分页分隔线 -->
         <div v-if="getPageNumber(index)" class="col-span-full flex items-center gap-4 py-4 my-2">
-          <div class="flex-1 h-px bg-gradient-to-r from-transparent via-sakiko/30 to-transparent dark:via-sakiko/20">
+          <div class="flex-1 h-px bg-linear-to-r from-transparent via-sakiko/30 to-transparent dark:via-sakiko/20">
           </div>
           <span
             class="text-sm font-medium text-sakiko dark:text-sakiko-pale px-3 py-1 rounded-full bg-sakiko/10 dark:bg-sakiko/5">
             第 {{ getPageNumber(index) }} 页
           </span>
-          <div class="flex-1 h-px bg-gradient-to-r from-transparent via-sakiko/30 to-transparent dark:via-sakiko/20">
+          <div class="flex-1 h-px bg-linear-to-r from-transparent via-sakiko/30 to-transparent dark:via-sakiko/20">
           </div>
         </div>
 

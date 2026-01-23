@@ -112,6 +112,7 @@ function handleRefresh() {
               :selected-tags="novelsStore.tagsBySource[novelsStore.activeConfigSource]" :exclude-open="isExcludeOpen"
               @toggle-exclude="toggleExclude" @update:selected-tags="(tags) => {
                 novelsStore.tagsBySource[novelsStore.activeConfigSource] = tags;
+                novelsStore.saveTagConfig(novelsStore.activeConfigSource);
                 novelsStore.fetchNovels(true, [novelsStore.activeConfigSource]);
               }" />
 
@@ -120,6 +121,7 @@ function handleRefresh() {
               :exclude-tags="novelsStore.excludeTagsBySource[novelsStore.activeConfigSource]" :open="isExcludeOpen"
               @update:exclude-tags="(tags) => {
                 novelsStore.excludeTagsBySource[novelsStore.activeConfigSource] = tags;
+                novelsStore.saveTagConfig(novelsStore.activeConfigSource);
                 novelsStore.fetchNovels(true, [novelsStore.activeConfigSource]);
               }" />
           </transition-group>
