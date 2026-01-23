@@ -59,7 +59,7 @@ SoyoSaki 是一个聚合了 AO3、Pixiv、Lofter 和 Bilibili 平台的同人小
 
 ### 后端
 - **Framework**: FastAPI (Python)
-- **Database**: SQLite (SQLAlchemy + Alembic)
+- **Database**: SQLite (SQLAlchemy)
 - **Authentication**: JWT (Login/Register)
 - **Crawlers**:
   - `playwright` (AO3 & Lofter dynamic scraping)
