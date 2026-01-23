@@ -19,10 +19,6 @@ class PixivAdapter(BaseAdapter):
         super().__init__()
         self._client = PixivClient()
 
-    def reset(self) -> None:
-        """清空已存信息"""
-        self._client.reset()
-
     async def search(
         self,
         tags: List[str],

@@ -15,11 +15,6 @@ class PixivClient:
         self._api: Optional[object] = None
         self._token: Optional[str] = None
 
-    def reset(self) -> None:
-        """清空已存信息"""
-        self._api = None
-        self._token = None
-
     def ensure(self) -> bool:
         """准备访问工具"""
         refresh_token = settings.PIXIV_REFRESH_TOKEN
