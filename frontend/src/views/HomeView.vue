@@ -152,7 +152,7 @@ function handleRefresh() {
     <!-- 小说列表 -->
     <main class="p-6">
       <NovelList :novels="novelsStore.novels" :loading="novelsStore.loading" :has-more="novelsStore.hasMore"
-        @load-more="novelsStore.loadMore" />
+        :page-breaks="novelsStore.pageBreaks" @load-more="novelsStore.loadMore" />
 
       <div v-if="novelsStore.error" class="text-center p-8 bg-red-50 dark:bg-red-900/20 rounded-lg mt-4">
         <p class="text-red-500 dark:text-red-400 mb-4">{{ novelsStore.error }}</p>

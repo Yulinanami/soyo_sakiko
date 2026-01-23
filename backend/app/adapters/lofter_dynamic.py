@@ -44,10 +44,11 @@ def search_dynamic_sync(
 
         if target_total is None:
             target_total = offset + page_size
-        base_scrolls = settings.LOFTER_DYNAMIC_MAX_SCROLLS or 8
-        max_scrolls = max(base_scrolls, target_total // 8 + 6)
-        scroll_wait_ms = settings.LOFTER_DYNAMIC_SCROLL_WAIT_MS or 1200
-        initial_wait_ms = settings.LOFTER_DYNAMIC_INITIAL_WAIT_MS or 1500
+        base_scrolls = settings.LOFTER_DYNAMIC_MAX_SCROLLS or 15
+        # 更激进的滚动次数计算：确保深度分页时有足够滚动
+        max_scrolls = max(base_scrolls, target_total // 5 + 10)
+        scroll_wait_ms = settings.LOFTER_DYNAMIC_SCROLL_WAIT_MS or 1500
+        initial_wait_ms = settings.LOFTER_DYNAMIC_INITIAL_WAIT_MS or 2000
 
         dwr_payloads: List[str] = []
 
@@ -110,7 +111,7 @@ def search_dynamic_sync(
             while (
                 scrolls < max_scrolls
                 and len(ordered) < target_total
-                and stable_rounds < 4
+                and stable_rounds < 6  # 从4放宽到6，减少提前停止
             ):
                 html = page.content()
                 parsed = parse_tag_page_html(

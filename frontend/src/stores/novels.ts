@@ -10,6 +10,8 @@ export const useNovelsStore = defineStore("novels", () => {
   const currentPage = ref(1);
   const pageSize = 30;
   const hasMore = ref(true);
+  // 记录每一页的起始位置（用于显示分隔线）
+  const pageBreaks = ref<number[]>([]);
   const novelsBySource = ref<Record<NovelSource, Novel[]>>({
     ao3: [],
     pixiv: [],
@@ -58,7 +60,7 @@ export const useNovelsStore = defineStore("novels", () => {
 
   const tagsBySource = ref<Record<NovelSource, string[]>>({
     ao3: ["素祥", "祥素", "Nagasaki Soyo/Togawa Sakiko"],
-    pixiv: ["素祥", "そよさき"],
+    pixiv: ["素祥", "祥素", "そよさき"],
     lofter: ["素祥"],
     bilibili: ["素祥"],
   });
@@ -84,6 +86,7 @@ export const useNovelsStore = defineStore("novels", () => {
 
     if (reset) {
       currentPage.value = 1;
+      pageBreaks.value = []; // 重置时清空分页记录
       if (!specificSources) {
         novels.value = [];
       }
@@ -91,6 +94,12 @@ export const useNovelsStore = defineStore("novels", () => {
         novelsBySource.value[source] = [];
         hasMoreBySource.value[source] = false;
       });
+    } else {
+      // 加载更多时，记录当前位置作为新页的起点
+      const currentCount = novels.value.length;
+      if (currentCount > 0 && !pageBreaks.value.includes(currentCount)) {
+        pageBreaks.value.push(currentCount);
+      }
     }
 
     if (sourcesToProcess.length === 0) {
@@ -292,6 +301,7 @@ export const useNovelsStore = defineStore("novels", () => {
     error,
     currentPage,
     hasMore,
+    pageBreaks, // 导出分页位置
     activeConfigSource,
     selectedSources,
     tagsBySource,

@@ -22,7 +22,6 @@ class BilibiliAdapter(BaseAdapter):
     """处理 Bilibili 数据"""
 
     source_name = "bilibili"
-    SOYOSAKI_TAGS = ["素祥", "祥素", "长崎素世", "丰川祥子"]
 
     def __init__(self) -> None:
         """初始化所需状态"""
@@ -41,8 +40,8 @@ class BilibiliAdapter(BaseAdapter):
         exclude_tags = [t.strip() for t in (exclude_tags or []) if t.strip()]
         user_tags = [t.strip() for t in (tags or []) if t.strip()]
         if not user_tags:
-            user_tags = list(self.SOYOSAKI_TAGS)
-        keyword = user_tags[0] if user_tags else "素祥"
+            return []  # 没有标签则返回空结果
+        keyword = user_tags[0]
 
         order_map = {
             "date": "pubdate",

@@ -17,9 +17,8 @@ class LofterAdapter(BaseAdapter):
     """Lofter 来源处理"""
 
     source_name = "lofter"
-    SOYOSAKI_TAGS = ["素祥", "祥素", "そよさき"]
     _dynamic_cache = {}
-    _dynamic_cache_ttl_seconds = 300
+    _dynamic_cache_ttl_seconds = 600  # 从300秒增加到600秒（10分钟）
 
     def _get_cookie(self) -> Optional[str]:
         """获取 Lofter 登录信息"""
@@ -49,12 +48,9 @@ class LofterAdapter(BaseAdapter):
 
         user_tags = list(dict.fromkeys(tags))
         if not user_tags:
-            user_tags = list(self.SOYOSAKI_TAGS)
+            return []  # 没有标签则返回空结果
 
-        primary_tag = next(
-            (tag for tag in user_tags if tag not in self.SOYOSAKI_TAGS),
-            user_tags[0],
-        )
+        primary_tag = user_tags[0]  # 直接使用第一个标签
 
         ranking_type = {
             "date": "new",

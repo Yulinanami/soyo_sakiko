@@ -2,21 +2,45 @@
 import NovelCard from '@components/novel/NovelCard.vue';
 import type { Novel } from '@app-types/novel';
 
-defineProps<{
+const props = defineProps<{
   novels: Novel[];
   loading: boolean;
   hasMore: boolean;
+  pageBreaks: number[];  // 分页位置数组
 }>();
 
 const emit = defineEmits<{
   (e: 'load-more'): void;
 }>();
+
+// 计算哪个位置是哪一页的起点
+function getPageNumber(index: number): number | null {
+  const breakIndex = props.pageBreaks.indexOf(index);
+  if (breakIndex !== -1) {
+    return breakIndex + 2;  // 第一次加载更多是第2页
+  }
+  return null;
+}
 </script>
 
 <template>
   <div class="w-full">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <NovelCard v-for="novel in novels" :key="`${novel.source}-${novel.id}`" :novel="novel" />
+      <template v-for="(novel, index) in novels" :key="`${novel.source}-${novel.id}`">
+        <!-- 分页分隔线 -->
+        <div v-if="getPageNumber(index)" class="col-span-full flex items-center gap-4 py-4 my-2">
+          <div class="flex-1 h-px bg-gradient-to-r from-transparent via-sakiko/30 to-transparent dark:via-sakiko/20">
+          </div>
+          <span
+            class="text-sm font-medium text-sakiko dark:text-sakiko-pale px-3 py-1 rounded-full bg-sakiko/10 dark:bg-sakiko/5">
+            第 {{ getPageNumber(index) }} 页
+          </span>
+          <div class="flex-1 h-px bg-gradient-to-r from-transparent via-sakiko/30 to-transparent dark:via-sakiko/20">
+          </div>
+        </div>
+
+        <NovelCard :novel="novel" />
+      </template>
     </div>
 
     <div v-if="loading" class="flex items-center justify-center gap-3 py-12 text-gray-500 dark:text-gray-400">
