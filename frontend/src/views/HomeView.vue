@@ -26,16 +26,14 @@ function scrollToPage(pageNum: number) {
   if (pageNum === 1) {
     // 回到顶部
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else if (pageNum === -1) {
+    // 直达底部
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   } else {
-    // 找到对应页的分隔线位置
-    const breakIndex = pageNum - 2; // pageNum=2 对应 breaks[0]
-    if (breakIndex >= 0 && breakIndex < novelsStore.pageBreaks.length) {
-      const novelIndex = novelsStore.pageBreaks[breakIndex];
-      // 找到对应的 DOM 元素
-      const el = document.querySelector(`[data-novel-index="${novelIndex}"]`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+    // 优先尝试定位到分页分隔线
+    const dividerEl = document.querySelector(`[data-page-num="${pageNum}"]`);
+    if (dividerEl) {
+      dividerEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
   isPageNavOpen.value = false;
@@ -220,6 +218,10 @@ function handleRefresh() {
               第 {{ page }} 页
             </button>
           </template>
+          <button @click="scrollToPage(-1)"
+            class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-sakiko/10 hover:text-sakiko rounded-lg transition-colors border-t border-gray-100 dark:border-gray-700 mt-1 pt-2">
+            直达底部
+          </button>
         </div>
       </transition>
 

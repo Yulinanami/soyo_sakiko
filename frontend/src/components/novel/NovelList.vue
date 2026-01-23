@@ -28,7 +28,8 @@ function getPageNumber(index: number): number | null {
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <template v-for="(novel, index) in novels" :key="`${novel.source}-${novel.id}`">
         <!-- 分页分隔线 -->
-        <div v-if="getPageNumber(index)" class="col-span-full flex items-center gap-4 py-4 my-2">
+        <div v-if="getPageNumber(index)" :data-page-num="getPageNumber(index)"
+          class="col-span-full flex items-center gap-4 py-4 my-2">
           <div class="flex-1 h-px bg-linear-to-r from-transparent via-sakiko/30 to-transparent dark:via-sakiko/20">
           </div>
           <span
