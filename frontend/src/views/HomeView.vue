@@ -1,17 +1,49 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, nextTick, ref } from 'vue';
+import { onMounted, onBeforeUnmount, nextTick, ref, computed } from 'vue';
 import { useNovelsStore } from '@stores/novels';
 import { useSourcesStore } from '@stores/sources';
 import NovelList from '@components/novel/NovelList.vue';
 import SourceSelector from '@components/filter/SourceSelector.vue';
 import TagFilter from '@components/filter/TagFilter.vue';
 import ExcludeFilter from '@components/filter/ExcludeFilter.vue';
-import { Menu } from 'lucide-vue-next';
+import { Menu, ChevronUp } from 'lucide-vue-next';
 
 const novelsStore = useNovelsStore();
 const sourcesStore = useSourcesStore();
 const isExcludeOpen = ref(false);
 const isConfigCollapsed = ref(false);
+const isPageNavOpen = ref(false);
+
+// 计算当前加载了多少页
+const loadedPages = computed(() => {
+  const breaks = novelsStore.pageBreaks;
+  // 页数 = 分页断点数 + 1
+  return breaks.length + 1;
+});
+
+// 滚动到指定页
+function scrollToPage(pageNum: number) {
+  if (pageNum === 1) {
+    // 回到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    // 找到对应页的分隔线位置
+    const breakIndex = pageNum - 2; // pageNum=2 对应 breaks[0]
+    if (breakIndex >= 0 && breakIndex < novelsStore.pageBreaks.length) {
+      const novelIndex = novelsStore.pageBreaks[breakIndex];
+      // 找到对应的 DOM 元素
+      const el = document.querySelector(`[data-novel-index="${novelIndex}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }
+  isPageNavOpen.value = false;
+}
+
+function togglePageNav() {
+  isPageNavOpen.value = !isPageNavOpen.value;
+}
 
 function saveScrollPosition() {
   // 保存滚动位置
@@ -151,7 +183,6 @@ function handleRefresh() {
       </div>
     </header>
 
-    <!-- 小说列表 -->
     <main class="p-6">
       <NovelList :novels="novelsStore.novels" :loading="novelsStore.loading" :has-more="novelsStore.hasMore"
         :page-breaks="novelsStore.pageBreaks" @load-more="novelsStore.loadMore" />
@@ -169,5 +200,35 @@ function handleRefresh() {
         <p class="text-sm opacity-70 mt-2">尝试调整筛选条件或切换数据源</p>
       </div>
     </main>
+
+    <!-- 浮动页面导航按钮 -->
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+      <!-- 展开的页面选项 -->
+      <transition enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 translate-y-4 scale-95">
+        <div v-if="isPageNavOpen && loadedPages > 0"
+          class="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 px-3 min-w-[100px]">
+          <button @click="scrollToPage(1)"
+            class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-sakiko/10 hover:text-sakiko rounded-lg transition-colors">
+            回到顶部
+          </button>
+          <template v-for="page in loadedPages" :key="page">
+            <button v-if="page > 1" @click="scrollToPage(page)"
+              class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-sakiko/10 hover:text-sakiko rounded-lg transition-colors">
+              第 {{ page }} 页
+            </button>
+          </template>
+        </div>
+      </transition>
+
+      <!-- 主按钮 -->
+      <button @click="togglePageNav"
+        class="w-12 h-12 rounded-full bg-sakiko text-white shadow-lg hover:bg-sakiko/90 hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+        :class="{ 'rotate-180': isPageNavOpen }" :title="isPageNavOpen ? '收起导航' : '页面导航'">
+        <ChevronUp class="w-6 h-6 transition-transform duration-200" />
+      </button>
+    </div>
   </div>
 </template>

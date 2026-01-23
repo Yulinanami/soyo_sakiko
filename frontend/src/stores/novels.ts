@@ -13,11 +13,14 @@ export const useNovelsStore = defineStore("novels", () => {
   const hasMore = ref(true);
   // 记录每一页的起始位置（用于显示分隔线）
   const pageBreaks = ref<number[]>([]);
-  const novelsBySource = ref<Record<NovelSource, Novel[]>>({
-    ao3: [],
-    pixiv: [],
-    lofter: [],
-    bilibili: [],
+  // 按页存储每个源的结果，解决多源分页交叉问题
+  const novelsBySourceByPage = ref<
+    Record<NovelSource, Record<number, Novel[]>>
+  >({
+    ao3: {},
+    pixiv: {},
+    lofter: {},
+    bilibili: {},
   });
   const hasMoreBySource = ref<Record<NovelSource, boolean>>({
     ao3: false,
@@ -101,7 +104,7 @@ export const useNovelsStore = defineStore("novels", () => {
         novels.value = [];
       }
       sourcesToProcess.forEach((source) => {
-        novelsBySource.value[source] = [];
+        novelsBySourceByPage.value[source] = {};
         hasMoreBySource.value[source] = false;
       });
     } else {
@@ -177,17 +180,9 @@ export const useNovelsStore = defineStore("novels", () => {
               return;
             }
             const filtered = response.novels.filter((n) => n.source === source);
-            if (reset) {
-              novelsBySource.value[source] = filtered;
-            } else {
-              const existingIds = new Set(
-                novelsBySource.value[source].map((n) => `${n.source}:${n.id}`),
-              );
-              const newNovels = filtered.filter(
-                (n) => !existingIds.has(`${n.source}:${n.id}`),
-              );
-              novelsBySource.value[source].push(...newNovels);
-            }
+            // 按页存储结果，确保每页独立交叉
+            const page = currentPage.value;
+            novelsBySourceByPage.value[source][page] = filtered;
             hasMoreBySource.value[source] = response.has_more;
             updateAggregates();
           } catch (err) {
@@ -228,7 +223,7 @@ export const useNovelsStore = defineStore("novels", () => {
     rebuildNovels();
 
     const sourcesToFetch = selectedSources.value.filter(
-      (source) => novelsBySource.value[source].length === 0,
+      (source) => Object.keys(novelsBySourceByPage.value[source]).length === 0,
     );
 
     if (sourcesToFetch.length === 0) {
@@ -255,7 +250,8 @@ export const useNovelsStore = defineStore("novels", () => {
             sortBy: sortBy.value,
           });
           const filtered = response.novels.filter((n) => n.source === source);
-          novelsBySource.value[source] = filtered;
+          // 按页存储，新源从第1页开始
+          novelsBySourceByPage.value[source][1] = filtered;
           hasMoreBySource.value[source] = response.has_more;
           rebuildNovels();
         } catch (err) {
@@ -280,26 +276,46 @@ export const useNovelsStore = defineStore("novels", () => {
   }
 
   function rebuildNovels() {
-    // 重新组合列表
+    // 按页交叉排列，解决多源分页交叉问题
     const combined: Novel[] = [];
     const seen = new Set<string>();
     const sourceOrder = selectedSources.value.length
       ? selectedSources.value
-      : (Object.keys(novelsBySource.value) as NovelSource[]);
-    const maxLen = Math.max(
-      0,
-      ...sourceOrder.map((source) => novelsBySource.value[source]?.length || 0),
-    );
-    for (let i = 0; i < maxLen; i += 1) {
+      : (Object.keys(novelsBySourceByPage.value) as NovelSource[]);
+
+    // 获取所有页码并排序
+    const allPages = new Set<number>();
+    for (const source of sourceOrder) {
+      const pages = novelsBySourceByPage.value[source];
+      if (pages) {
+        Object.keys(pages).forEach((p) => allPages.add(Number(p)));
+      }
+    }
+    const sortedPages = Array.from(allPages).sort((a, b) => a - b);
+
+    // 逐页交叉排列
+    for (const page of sortedPages) {
+      // 获取当前页每个源的结果
+      const pageData: Record<NovelSource, Novel[]> = {} as any;
+      let maxLen = 0;
       for (const source of sourceOrder) {
-        const list = novelsBySource.value[source] || [];
-        if (i >= list.length) continue;
-        const novel = list[i];
-        if (!novel) continue;
-        const key = `${novel.source}:${novel.id}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        combined.push(novel);
+        const novels = novelsBySourceByPage.value[source]?.[page] || [];
+        pageData[source] = novels;
+        if (novels.length > maxLen) maxLen = novels.length;
+      }
+
+      // 在当前页内交叉排列
+      for (let i = 0; i < maxLen; i += 1) {
+        for (const source of sourceOrder) {
+          const list = pageData[source];
+          if (i >= list.length) continue;
+          const novel = list[i];
+          if (!novel) continue;
+          const key = `${novel.source}:${novel.id}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          combined.push(novel);
+        }
       }
     }
     novels.value = combined;

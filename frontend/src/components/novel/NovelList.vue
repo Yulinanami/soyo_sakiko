@@ -39,7 +39,9 @@ function getPageNumber(index: number): number | null {
           </div>
         </div>
 
-        <NovelCard :novel="novel" />
+        <div :data-novel-index="index">
+          <NovelCard :novel="novel" />
+        </div>
       </template>
     </div>
 
