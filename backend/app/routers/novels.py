@@ -73,11 +73,7 @@ async def search_novels(
     any_has_more = False
     if len(novels) >= page_size:
         any_has_more = True
-    if source == NovelSource.LOFTER and settings.LOFTER_DYNAMIC_ENABLED and novels:
-        any_has_more = True
-    if source == NovelSource.BILIBILI and novels:
-        any_has_more = True
-    if source == NovelSource.AO3 and novels:
+    if novels:
         any_has_more = True
 
     logger.info("Total novels from source: %s", len(novels))

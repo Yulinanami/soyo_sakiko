@@ -35,7 +35,7 @@ api.interceptors.response.use(
       if (!url.includes("/auth/login") && !url.includes("/auth/register")) {
         const userStore = useUserStore();
         userStore.logout();
-        window.location.href = "/login";
+        // window.location.href = "/login"; // 移除强制跳转，改为仅退出登录状态（变回游客）
       }
     }
     return Promise.reject(error);
