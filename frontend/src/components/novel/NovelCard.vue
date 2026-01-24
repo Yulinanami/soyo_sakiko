@@ -163,10 +163,10 @@ async function toggleFavorite(event: Event) {
 
 <template>
   <article
-    class="card overflow-hidden hover:-translate-y-1 transition-transform duration-200 dark:bg-gray-800 dark:border dark:border-gray-700">
-    <router-link :to="`/novel/${novel.source}/${novel.id}`" class="block no-underline text-inherit"
+    class="card overflow-hidden hover:-translate-y-1 transition-transform duration-200 dark:bg-gray-800 dark:border dark:border-gray-700 flex flex-col h-full">
+    <router-link :to="`/novel/${novel.source}/${novel.id}`" class="no-underline text-inherit flex flex-col h-full"
       @click="rememberListScroll">
-      <div class="relative">
+      <div class="relative shrink-0">
         <!-- 封面 -->
         <div v-if="coverImageUrl" class="h-40 overflow-hidden bg-sakiko-pale relative">
           <div v-if="!coverLoaded" class="absolute inset-0 flex items-center justify-center bg-sakiko-pale/70">
@@ -189,8 +189,8 @@ async function toggleFavorite(event: Event) {
       </div>
 
       <!-- 内容 -->
-      <div class="p-4">
-        <div class="flex gap-2 mb-3">
+      <div class="p-4 flex flex-col flex-1">
+        <div class="flex gap-2 mb-3 shrink-0">
           <span :class="['flex items-center gap-1 text-xs px-2 py-0.5 rounded', sourceClass]">
             <img v-if="sourceLogo" :src="sourceLogo" alt="" class="w-3 h-3 object-contain" />
             {{ novel.source.toUpperCase() }}
@@ -200,12 +200,13 @@ async function toggleFavorite(event: Event) {
           </span>
         </div>
 
-        <h3 class="text-lg font-semibold mb-1 line-clamp-2 dark:text-gray-100">{{ novel.title }}</h3>
-        <p class="text-sm text-gray-600 mb-3 dark:text-gray-400">{{ novel.author }}</p>
+        <h3 class="text-lg font-semibold mb-1 line-clamp-2 dark:text-gray-100 shrink-0">{{ novel.title }}</h3>
+        <p class="text-sm text-gray-600 mb-3 dark:text-gray-400 shrink-0">{{ novel.author }}</p>
 
-        <p class="text-sm text-gray-500 leading-relaxed mb-3 dark:text-gray-400">{{ truncatedSummary }}</p>
+        <p class="text-sm text-gray-500 leading-relaxed mb-3 dark:text-gray-400 line-clamp-3 flex-1">{{ truncatedSummary
+        }}</p>
 
-        <div class="flex flex-wrap gap-1.5 mb-3">
+        <div class="flex flex-wrap gap-1.5 mb-3 shrink-0">
           <span v-for="tag in novel.tags.slice(0, 5)" :key="tag" :class="[
             'text-xs px-2 py-0.5 rounded-full inline-flex items-center justify-center',
             isHighlightTag(tag) ? 'tag-highlight' : 'tag'
@@ -218,7 +219,7 @@ async function toggleFavorite(event: Event) {
           </span>
         </div>
 
-        <div class="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400">
+        <div class="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400 shrink-0 mt-auto">
           <span v-if="novel.word_count" class="flex items-center gap-1">
             <AlignLeft class="w-3.5 h-3.5" /> {{ novel.word_count.toLocaleString() }} 字
           </span>
@@ -231,7 +232,7 @@ async function toggleFavorite(event: Event) {
           <span class="ml-auto">{{ formattedDate }}</span>
         </div>
 
-        <div class="mt-3 flex items-center gap-2">
+        <div class="mt-3 flex items-center gap-2 shrink-0">
           <span v-if="novel.is_complete !== undefined" :class="[
             'text-xs px-3 py-1 rounded-full',
             novel.is_complete ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
@@ -246,7 +247,7 @@ async function toggleFavorite(event: Event) {
             <span v-else>{{ isFavorite ? '已收藏' : '收藏' }}</span>
           </button>
         </div>
-        <div v-if="footerNote" class="mt-2 text-xs text-gray-500 text-right">
+        <div v-if="footerNote" class="mt-2 text-xs text-gray-500 text-right shrink-0">
           {{ footerNote }}
         </div>
       </div>
