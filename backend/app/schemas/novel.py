@@ -2,7 +2,7 @@
 
 from enum import Enum
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class NovelSource(str, Enum):
@@ -31,8 +31,7 @@ class Novel(BaseModel):
     cover_image: Optional[str] = None
     is_complete: Optional[bool] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NovelListResponse(BaseModel):

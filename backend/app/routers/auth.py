@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, AuthResponse, User as UserSchema, UserLogin
@@ -33,7 +33,9 @@ def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     if "sub" in to_encode and to_encode["sub"] is not None:
         to_encode["sub"] = str(to_encode["sub"])
-    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    )
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -94,17 +96,10 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 async def login(payload: UserLogin, db: Session = Depends(get_db)):
     """登录账号"""
     user = db.query(User).filter(User.username == payload.username).first()
-    if not user:
+    if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="账号不存在",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    if not verify_password(payload.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="密码错误",
+            detail="用户名或密码错误",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

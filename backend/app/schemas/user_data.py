@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class FavoriteBase(BaseModel):
@@ -22,8 +22,7 @@ class FavoriteOut(FavoriteBase):
     id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReadingHistoryBase(BaseModel):
@@ -45,8 +44,7 @@ class ReadingHistoryOut(ReadingHistoryBase):
     id: int
     last_read_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TagConfigUpdate(BaseModel):
@@ -64,5 +62,4 @@ class TagConfigOut(BaseModel):
     exclude_tags: list[str] = []
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -68,7 +68,17 @@ async def search_novels(
         logger.info("%s fetched %s novels (page %s)", source.value, len(novels), page)
     except Exception:
         logger.exception("Error fetching from %s", source.value)
-        novels = []
+        return ApiResponse(
+            status="error",
+            data=NovelListResponse(
+                novels=[],
+                total=0,
+                page=page,
+                page_size=page_size,
+                has_more=False,
+            ),
+            error=f"从 {source.value} 获取数据失败，请稍后重试",
+        )
 
     any_has_more = False
     if len(novels) >= page_size:

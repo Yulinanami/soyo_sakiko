@@ -157,20 +157,21 @@ async def download_novel_pdf(
         else ((novel.chapter_count if novel else None) or 1)
     )
 
-    # 3. 逐章获取内容
-    chapters: list[dict] = []
-    for i in range(1, total_chapters + 1):
+    # 3. 并发获取所有章节内容
+    async def _fetch_chapter(i: int) -> dict:
         try:
             content = await adapter.get_chapter_content(novel_id, i)
             ch_title = ""
             if chapter_list and i - 1 < len(chapter_list):
                 ch_title = chapter_list[i - 1].get("title", "")
-            chapters.append({"title": ch_title, "content": content or ""})
+            return {"title": ch_title, "content": content or ""}
         except Exception:
             logger.warning("Download: failed to get chapter %s", i)
-            chapters.append(
-                {"title": f"第 {i} 章", "content": "<p>（章节内容获取失败）</p>"}
-            )
+            return {"title": f"第 {i} 章", "content": "<p>（章节内容获取失败）</p>"}
+
+    chapters = list(
+        await asyncio.gather(*[_fetch_chapter(i) for i in range(1, total_chapters + 1)])
+    )
 
     if not chapters:
         raise HTTPException(status_code=404, detail="未找到任何章节内容")
