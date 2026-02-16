@@ -28,7 +28,9 @@ def sanitize(text: str) -> str:
     if not text:
         return text
     text = decode_unicode(text)
-    return _SURROGATE_RE.sub("", text)
+    # 移除可能残留的 HTML 标签（如双重编码的 &amp;lt;p&amp;gt; 解码后）
+    text = re.sub(r"<[^>]*>?", "", text)
+    return _SURROGATE_RE.sub("", text).strip()
 
 
 def sanitize_html(html: str) -> str:

@@ -362,13 +362,13 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
         return []
 
 
-def clean_html(html: str) -> str:
+def clean_html(html_str: str) -> str:
     """移除网页标签"""
-    clean = re.sub(r"<[^>]+>", "", html)
-    clean = clean.replace("&nbsp;", " ")
-    clean = clean.replace("&lt;", "<")
-    clean = clean.replace("&gt;", ">")
-    clean = clean.replace("&amp;", "&")
+    import html as html_mod
+
+    # 先解码 HTML 实体（如 &lt; → <），再统一去除所有标签
+    decoded = html_mod.unescape(html_str)
+    clean = re.sub(r"<[^>]+>", "", decoded)
     clean = decode_unicode(clean)
     return clean.strip()
 
