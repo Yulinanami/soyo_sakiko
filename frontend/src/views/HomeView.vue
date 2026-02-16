@@ -116,7 +116,7 @@ function handleRefresh() {
     <!-- 顶部标签栏 -->
     <header
       class="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-30 shadow-sm transition-colors duration-300">
-      <div class="px-6 py-4">
+      <div :class="['px-6', isConfigCollapsed ? 'py-[11px]' : 'py-4']">
         <div class="space-y-4">
           <transition-group enter-active-class="transition duration-200 ease-out"
             enter-from-class="transform -translate-y-2 opacity-0" enter-to-class="transform translate-y-0 opacity-100"
@@ -158,7 +158,7 @@ function handleRefresh() {
 
           <!-- 数据源选择和排序 - 始终显示 -->
           <div
-            class="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-gray-100 dark:border-gray-700">
+            :class="['flex flex-wrap items-center justify-between gap-4', isConfigCollapsed ? '' : 'pt-2 border-t border-gray-100 dark:border-gray-700']">
             <div class="flex items-center gap-2">
               <button @click="isConfigCollapsed = !isConfigCollapsed"
                 class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
