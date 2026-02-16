@@ -4,7 +4,7 @@ import logging
 import time
 from typing import List, Optional
 from app.adapters.base import BaseAdapter
-from app.adapters.lofter_content import fetch_post_content
+from app.adapters.lofter_content import fetch_post_content_async
 from app.adapters.lofter_dynamic import search_dynamic_sync
 from app.adapters.lofter_common import merge_novel_list
 from app.schemas.novel import Novel
@@ -134,14 +134,13 @@ class LofterAdapter(BaseAdapter):
         return [{"chapter": 1, "title": "正文"}]
 
     async def get_chapter_content(self, novel_id: str, chapter: int) -> Optional[str]:
-        """获取 Lofter 章节内容"""
+        """获取 Lofter 章节内容（原生 async）"""
         cookie = self._get_cookie()
         if not cookie:
             return "<p>请配置 LOFTER_COOKIE 后重试</p>"
 
         try:
-            content = await self.run_in_executor(fetch_post_content, novel_id, cookie)
-            return content
-        except Exception as e:
+            return await fetch_post_content_async(novel_id, cookie)
+        except Exception:
             logger.exception("Lofter content fetch error")
-            return f"<p>获取内容失败: {e}</p>"
+            return "<p>获取内容失败</p>"

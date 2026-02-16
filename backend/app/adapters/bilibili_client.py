@@ -1,11 +1,12 @@
 """Bilibili 访问支持"""
 
+import asyncio
 import logging
 import time
 import uuid
 from typing import Optional, List, Dict, Any, Tuple
 from app.config import settings
-from app.services.http_client import get_no_proxy_sync_client
+from app.services.http_client import get_no_proxy_sync_client, get_no_proxy_async_client
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,111 @@ class BilibiliClient:
             "Cookie": "; ".join(cookies),
         }
 
+    def _regenerate_buvid3(self) -> None:
+        """重新生成标识（用于重试）"""
+        self._buvid3 = generate_buvid3()
+        logger.info("Regenerated buvid3 for retry")
+
+    async def fetch_search_async(
+        self, keyword: str, page: int, page_size: int, order: str
+    ) -> List[Dict[str, Any]]:
+        """异步获取搜索结果"""
+        client = get_no_proxy_async_client()
+        params = {
+            "search_type": "article",
+            "keyword": keyword,
+            "page": page,
+            "page_size": page_size,
+            "order": order,
+        }
+
+        response = await client.get(
+            SEARCH_API, params=params, headers=self.get_headers(), timeout=15
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get("code") != 0:
+            logger.warning("Bilibili API error: %s", data.get("message"))
+            return []
+
+        result_data = data.get("data", {})
+        return result_data.get("result", []) or []
+
+    async def fetch_article_async(
+        self, article_id: str, max_retries: int = 5
+    ) -> Tuple[Optional[Dict[str, Any]], str]:
+        """异步获取文章内容（带自动重试）"""
+        client = get_no_proxy_async_client()
+        params = {"id": article_id}
+
+        last_error_code = 0
+        last_message = ""
+
+        for attempt in range(max_retries + 1):
+            try:
+                response = await client.get(
+                    ARTICLE_API, params=params, headers=self.get_headers(), timeout=15
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                error_code = data.get("code", 0)
+                if error_code == 0:
+                    article_data = data.get("data", {})
+                    if attempt > 0:
+                        logger.info(
+                            "Bilibili article %s succeeded after %d retries",
+                            article_id,
+                            attempt,
+                        )
+                    return (article_data or None), ""
+
+                last_error_code = error_code
+                last_message = data.get("message") or str(error_code)
+
+                # 检查是否为可重试的错误码
+                if error_code in RETRYABLE_CODES and attempt < max_retries:
+                    delay = 0.5 * (2**attempt)  # 指数退避: 0.5s, 1s, 2s
+                    logger.warning(
+                        "Bilibili article %s got code %d, retrying in %.1fs (attempt %d/%d)",
+                        article_id,
+                        error_code,
+                        delay,
+                        attempt + 1,
+                        max_retries,
+                    )
+                    await asyncio.sleep(delay)
+                    self._regenerate_buvid3()
+                    continue
+
+                # 不可重试的错误或已用尽重试次数
+                logger.warning(
+                    "Bilibili article error for %s: code=%d, message=%s",
+                    article_id,
+                    error_code,
+                    last_message,
+                )
+                return None, last_message
+
+            except Exception as e:
+                last_message = str(e)
+                if attempt < max_retries:
+                    delay = 0.5 * (2**attempt)
+                    logger.warning(
+                        "Bilibili article %s request failed, retrying in %.1fs: %s",
+                        article_id,
+                        delay,
+                        e,
+                    )
+                    await asyncio.sleep(delay)
+                    self._regenerate_buvid3()
+                    continue
+                logger.exception("Bilibili article fetch failed after retries")
+                return None, last_message
+
+        return None, last_message or "获取失败"
+
     def fetch_search(
         self, keyword: str, page: int, page_size: int, order: str
     ) -> List[Dict[str, Any]]:
@@ -79,11 +185,6 @@ class BilibiliClient:
 
         result_data = data.get("data", {})
         return result_data.get("result", []) or []
-
-    def _regenerate_buvid3(self) -> None:
-        """重新生成标识（用于重试）"""
-        self._buvid3 = generate_buvid3()
-        logger.info("Regenerated buvid3 for retry")
 
     def fetch_article(
         self, article_id: str, max_retries: int = 5
@@ -119,7 +220,7 @@ class BilibiliClient:
 
                 # 检查是否为可重试的错误码
                 if error_code in RETRYABLE_CODES and attempt < max_retries:
-                    delay = 0.5 * (2**attempt)  # 指数退避: 0.5s, 1s, 2s
+                    delay = 0.5 * (2**attempt)
                     logger.warning(
                         "Bilibili article %s got code %d, retrying in %.1fs (attempt %d/%d)",
                         article_id,
@@ -129,10 +230,9 @@ class BilibiliClient:
                         max_retries,
                     )
                     time.sleep(delay)
-                    self._regenerate_buvid3()  # 重新生成标识
+                    self._regenerate_buvid3()
                     continue
 
-                # 不可重试的错误或已用尽重试次数
                 logger.warning(
                     "Bilibili article error for %s: code=%d, message=%s",
                     article_id,

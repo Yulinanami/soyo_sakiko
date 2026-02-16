@@ -1,5 +1,6 @@
 """Bilibili 处理入口"""
 
+import asyncio
 import logging
 from typing import List, Optional
 
@@ -40,7 +41,7 @@ class BilibiliAdapter(BaseAdapter):
         exclude_tags = [t.strip() for t in (exclude_tags or []) if t.strip()]
         user_tags = [t.strip() for t in (tags or []) if t.strip()]
         if not user_tags:
-            return []  # 没有标签则返回空结果
+            return []
         keyword = user_tags[0]
 
         order_map = {
@@ -52,17 +53,36 @@ class BilibiliAdapter(BaseAdapter):
         order = order_map.get(sort_by, "pubdate")
 
         try:
-            novels = await self.run_in_executor(
-                self._search_sync, keyword, page, page_size, order
+            # 异步搜索
+            articles = await self._client.fetch_search_async(
+                keyword, page, page_size, order
             )
 
-            # 1. 基础过滤：包含检查 (Inclusion) + 排除检查 (Exclusion)
+            if not articles:
+                return []
+
+            novels = []
+            for article in articles:
+                try:
+                    novel = parse_article_summary(article)
+                    if novel:
+                        novels.append(novel)
+                except Exception:
+                    logger.exception(
+                        "Error parsing Bilibili article: %s", article.get("id")
+                    )
+                    continue
+
+            logger.info(
+                "Bilibili fetched %d articles for keyword '%s'", len(novels), keyword
+            )
+
+            # 1. 基础过滤
             if novels:
                 novels = [
                     n
                     for n in novels
                     if (
-                        # 包含检查：标签中包含（模糊匹配），或者标题/简介中包含
                         any(any(t in tag for tag in n.tags) for t in user_tags)
                         or any(t in n.title for t in user_tags)
                         or any(t in n.summary for t in user_tags)
@@ -72,10 +92,8 @@ class BilibiliAdapter(BaseAdapter):
                     and not exclude_any_tag(n.tags, exclude_tags)
                 ]
 
-            # 2. 增强过滤：获取详情进行更严格的包含与排除检查
+            # 2. 并发获取详情进行增强过滤
             if novels:
-                import asyncio
-
                 semaphore = asyncio.Semaphore(3)
 
                 async def check_and_filter(novel: Novel, index: int) -> Optional[Novel]:
@@ -87,8 +105,6 @@ class BilibiliAdapter(BaseAdapter):
 
                             detail = await self.get_detail(novel.id)
                             if detail:
-                                # 详情页包含检查 (Inclusion)：必须包含选中的标签（模糊匹配，兼容话题格式）
-                                # 或者标题/简介中明确包含（防止标签漏扫）
                                 has_tag = any(
                                     any(t in tag for tag in detail.tags)
                                     for t in user_tags
@@ -103,7 +119,6 @@ class BilibiliAdapter(BaseAdapter):
                                     )
                                     return None
 
-                                # 详情页排除检查 (Exclusion)
                                 if exclude_any_tag(detail.tags, exclude_tags):
                                     logger.info(
                                         f"Filtered out Bilibili article {novel.id} due to tag match in detail: {detail.tags}"
@@ -140,87 +155,53 @@ class BilibiliAdapter(BaseAdapter):
             logger.exception("Bilibili search error")
             return []
 
-    def _search_sync(
-        self, keyword: str, page: int, page_size: int, order: str
-    ) -> List[Novel]:
-        """获取 Bilibili 搜索结果"""
-        articles = self._client.fetch_search(keyword, page, page_size, order)
-
-        if not articles:
-            return []
-
-        novels = []
-        for article in articles:
-            try:
-                novel = parse_article_summary(article)
-                if novel:
-                    novels.append(novel)
-            except Exception:
-                logger.exception(
-                    "Error parsing Bilibili article: %s", article.get("id")
-                )
-                continue
-
-        logger.info(
-            "Bilibili fetched %d articles for keyword '%s'", len(novels), keyword
-        )
-        return novels
-
     async def get_detail(self, novel_id: str) -> Optional[Novel]:
-        """获取 Bilibili 详情"""
+        """获取 Bilibili 详情（原生 async）"""
         try:
-            return await self.run_in_executor(self._get_detail_sync, novel_id)
+            article_data, _message = await self._client.fetch_article_async(novel_id)
+            if not article_data:
+                return None
+            return parse_article_detail(article_data, novel_id)
         except Exception:
             logger.exception("Bilibili get_detail error for %s", novel_id)
             return None
-
-    def _get_detail_sync(self, novel_id: str) -> Optional[Novel]:
-        """获取 Bilibili 详情"""
-        article_data, _message = self._client.fetch_article(novel_id)
-        if not article_data:
-            return None
-        return parse_article_detail(article_data, novel_id)
 
     async def get_chapters(self, novel_id: str) -> List[dict]:
         """获取 Bilibili 章节列表"""
         return [{"chapter": 1, "title": "正文"}]
 
     async def get_chapter_content(self, novel_id: str, chapter: int) -> Optional[str]:
-        """获取 Bilibili 内容"""
+        """获取 Bilibili 内容（原生 async）"""
         try:
-            return await self.run_in_executor(self._get_content_sync, novel_id)
+            article_data, message = await self._client.fetch_article_async(novel_id)
+            if not article_data:
+                if message:
+                    return f"<p>获取失败: {message}</p>"
+                return "<p>获取内容失败</p>"
+
+            opus_data = article_data.get("opus", {})
+            if opus_data:
+                content = parse_opus_content(opus_data)
+                logger.info(
+                    f"Opus content parsed, length: {len(content)}, has img: {'<img' in content}"
+                )
+                if content:
+                    content = rewrite_image_urls(content)
+                    logger.info(f"After rewrite, has proxy: {'/api/proxy/' in content}")
+                    return f'<div class="bilibili-article">{content}</div>'
+
+            content = article_data.get("content", "")
+
+            if not content:
+                read_info = article_data.get("readInfo", {})
+                content = read_info.get("content", "")
+
+            if not content:
+                return "<p>文章内容为空</p>"
+
+            content = parse_bilibili_content(content)
+            content = rewrite_image_urls(content)
+            return f'<div class="bilibili-article">{content}</div>'
         except Exception:
             logger.exception("Bilibili get_chapter_content error for %s", novel_id)
             return "<p>获取内容失败</p>"
-
-    def _get_content_sync(self, novel_id: str) -> Optional[str]:
-        """获取 Bilibili 内容"""
-        article_data, message = self._client.fetch_article(novel_id)
-        if not article_data:
-            if message:
-                return f"<p>获取失败: {message}</p>"
-            return "<p>获取内容失败</p>"
-
-        opus_data = article_data.get("opus", {})
-        if opus_data:
-            content = parse_opus_content(opus_data)
-            logger.info(
-                f"Opus content parsed, length: {len(content)}, has img: {'<img' in content}"
-            )
-            if content:
-                content = rewrite_image_urls(content)
-                logger.info(f"After rewrite, has proxy: {'/api/proxy/' in content}")
-                return f'<div class="bilibili-article">{content}</div>'
-
-        content = article_data.get("content", "")
-
-        if not content:
-            read_info = article_data.get("readInfo", {})
-            content = read_info.get("content", "")
-
-        if not content:
-            return "<p>文章内容为空</p>"
-
-        content = parse_bilibili_content(content)
-        content = rewrite_image_urls(content)
-        return f'<div class="bilibili-article">{content}</div>'
