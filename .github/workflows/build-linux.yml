@@ -49,8 +49,8 @@ jobs:
           PLAYWRIGHT_BROWSERS_PATH: backend/playwright-browsers
         run: python -m playwright install --with-deps chromium
 
-      - name: 生成后端启动脚本
-        run: python .github/scripts/generate_run_backend.py
+      - name: 复制后端启动脚本
+        run: cp .github/scripts/run_backend.py backend/run_backend.py
 
       - name: 修正 Frozen 环境下的 Env 路径
         run: python .github/scripts/patch_frozen_env.py
