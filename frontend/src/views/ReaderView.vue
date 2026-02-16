@@ -6,7 +6,7 @@ import type { Novel } from '@app-types/novel';
 import { useUserStore } from '@stores/user';
 import { useFavoritesStore } from '@stores/favorites';
 import { useHistoryStore } from '@stores/history';
-import { Download } from 'lucide-vue-next';
+import { Download, ChevronUp } from 'lucide-vue-next';
 
 const route = useRoute();
 const router = useRouter();
@@ -303,6 +303,18 @@ onBeforeRouteLeave(() => {
     }));
   }
 });
+
+const isScrollNavOpen = ref(false);
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  isScrollNavOpen.value = false;
+}
+
+function scrollToBottom() {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  isScrollNavOpen.value = false;
+}
 </script>
 
 <template>
@@ -399,5 +411,31 @@ onBeforeRouteLeave(() => {
         </button>
       </div>
     </nav>
+
+    <!-- 浮动滚动按钮 -->
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+      <transition enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 translate-y-4 scale-95">
+        <div v-if="isScrollNavOpen"
+          class="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 px-3 min-w-[100px]">
+          <button @click="scrollToTop"
+            class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-sakiko/10 hover:text-sakiko rounded-lg transition-colors">
+            回到顶部
+          </button>
+          <button @click="scrollToBottom"
+            class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-sakiko/10 hover:text-sakiko rounded-lg transition-colors border-t border-gray-100 dark:border-gray-700 mt-1 pt-2">
+            直达底部
+          </button>
+        </div>
+      </transition>
+
+      <button @click="isScrollNavOpen = !isScrollNavOpen"
+        class="w-12 h-12 rounded-full bg-sakiko text-white shadow-lg hover:bg-sakiko/90 hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+        :class="{ 'rotate-180': isScrollNavOpen }" :title="isScrollNavOpen ? '收起' : '快速滚动'">
+        <ChevronUp class="w-6 h-6 transition-transform duration-200" />
+      </button>
+    </div>
   </div>
 </template>
