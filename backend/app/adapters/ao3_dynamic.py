@@ -177,7 +177,7 @@ def get_work_details_dynamic_sync(
                 page_obj.goto(chapter_url, wait_until="domcontentloaded", timeout=30000)
                 try:
                     page_obj.wait_for_selector("#workskin", timeout=10000)
-                except:
+                except Exception:
                     pass
 
                 # 获取完整内容 (包括作品级别的前言/后记和章节内容)

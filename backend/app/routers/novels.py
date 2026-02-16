@@ -12,6 +12,15 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
+def _empty_response(page: int, page_size: int) -> ApiResponse:
+    """构造空列表响应"""
+    return ApiResponse(
+        data=NovelListResponse(
+            novels=[], total=0, page=page, page_size=page_size, has_more=False
+        )
+    )
+
+
 @router.get("", response_model=ApiResponse[NovelListResponse])
 async def search_novels(
     sources: List[NovelSource] = Query(default_factory=list),
@@ -24,28 +33,12 @@ async def search_novels(
     """按来源和标签搜索小说"""
 
     if not sources:
-        return ApiResponse(
-            data=NovelListResponse(
-                novels=[],
-                total=0,
-                page=page,
-                page_size=page_size,
-                has_more=False,
-            )
-        )
+        return _empty_response(page, page_size)
     if len(sources) != 1:
         raise HTTPException(status_code=400, detail="只支持单个来源")
 
     if not tags:
-        return ApiResponse(
-            data=NovelListResponse(
-                novels=[],
-                total=0,
-                page=page,
-                page_size=page_size,
-                has_more=False,
-            )
-        )
+        return _empty_response(page, page_size)
 
     logger.info(
         "Searching sources=%s tags=%s exclude=%s page=%s",
@@ -80,20 +73,15 @@ async def search_novels(
             error=f"从 {source.value} 获取数据失败，请稍后重试",
         )
 
-    any_has_more = False
-    if len(novels) >= page_size:
-        any_has_more = True
-    if novels:
-        any_has_more = True
-
     logger.info("Total novels from source: %s", len(novels))
 
+    # 只要有数据就显示「加载更多」，让用户可以继续翻页
     response = NovelListResponse(
         novels=novels,
         total=len(novels),
         page=page,
         page_size=page_size,
-        has_more=any_has_more,
+        has_more=bool(novels),
     )
 
     return ApiResponse(data=response)

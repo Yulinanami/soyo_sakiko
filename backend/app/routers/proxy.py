@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from cachetools import LRUCache
 from app.services.http_client import get_async_client, get_no_proxy_async_client
+from app.adapters.playwright_helpers import DEFAULT_UA
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -69,7 +70,7 @@ async def _proxy_image(url: str, source: str) -> Response:
             url,
             headers={
                 "Referer": cfg["referer"],
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent": DEFAULT_UA,
                 "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
             },
         )

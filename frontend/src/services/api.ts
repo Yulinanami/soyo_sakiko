@@ -44,7 +44,6 @@ api.interceptors.response.use(
 
 export const novelApi = {
   search: async (params: NovelSearchParams): Promise<NovelListResponse> => {
-    // 获取搜索结果
     const searchParams = new URLSearchParams();
 
     params.sources.forEach((source) => searchParams.append("sources", source));
@@ -65,7 +64,6 @@ export const novelApi = {
   },
 
   getDetail: async (source: string, id: string): Promise<Novel> => {
-    // 获取小说详情
     const { data } = await api.get(`/novels/${source}/${id}`);
     return unwrapData<Novel>(data);
   },
@@ -75,7 +73,6 @@ export const novelApi = {
     id: string,
     chapter: number,
   ): Promise<string> => {
-    // 获取章节内容
     const { data } = await api.get(
       `/novels/${source}/${id}/chapters/${chapter}`,
     );
@@ -85,19 +82,16 @@ export const novelApi = {
 
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
-    // 登录
     const { data } = await api.post("/auth/login", credentials);
     return normalizeAuthResponse(unwrapData(data));
   },
 
   register: async (info: RegisterRequest): Promise<AuthResponse> => {
-    // 注册
     const { data } = await api.post("/auth/register", info);
     return normalizeAuthResponse(unwrapData(data));
   },
 
   getProfile: async (): Promise<User> => {
-    // 获取用户信息
     const { data } = await api.get("/auth/me");
     return normalizeUser(unwrapData(data));
   },
@@ -105,53 +99,44 @@ export const authApi = {
 
 export const favoritesApi = {
   getAll: async (): Promise<FavoriteItem[]> => {
-    // 获取收藏列表
     const { data } = await api.get("/user/favorites");
     return unwrapData<FavoriteItem[]>(data);
   },
 
   add: async (payload: Record<string, any>): Promise<FavoriteItem> => {
-    // 添加收藏
     const { data } = await api.post("/user/favorites", payload);
     return unwrapData<FavoriteItem>(data);
   },
 
   remove: async (id: number) => {
-    // 删除收藏
     await api.delete(`/user/favorites/${id}`);
   },
 };
 
 export const historyApi = {
   getAll: async (): Promise<HistoryItem[]> => {
-    // 获取阅读记录
     const { data } = await api.get("/user/history");
     return unwrapData<HistoryItem[]>(data);
   },
   record: async (payload: Record<string, any>): Promise<HistoryItem> => {
-    // 记录阅读进度
     const { data } = await api.post("/user/history", payload);
     return unwrapData<HistoryItem>(data);
   },
   remove: async (id: number) => {
-    // 删除阅读记录
     await api.delete(`/user/history/${id}`);
   },
 };
 
 export const credentialsApi = {
   start: async (source: string) => {
-    // 开始登录
     const { data } = await api.post(`/credentials/${source}/start`);
     return unwrapData(data);
   },
   status: async (source: string): Promise<CredentialState> => {
-    // 查询登录状态
     const { data } = await api.get(`/credentials/${source}/status`);
     return unwrapData<CredentialState>(data);
   },
   clear: async (source: string) => {
-    // 清除登录信息
     const { data } = await api.delete(`/credentials/${source}`);
     return unwrapData(data);
   },
@@ -165,7 +150,6 @@ export interface TagConfigItem {
 
 export const tagConfigApi = {
   getAll: async (): Promise<TagConfigItem[]> => {
-    // 获取所有标签配置
     const { data } = await api.get("/user/tag-configs");
     return unwrapData<TagConfigItem[]>(data);
   },
@@ -175,7 +159,6 @@ export const tagConfigApi = {
     tags: string[],
     excludeTags: string[],
   ): Promise<TagConfigItem> => {
-    // 保存某个数据源的标签配置
     const { data } = await api.put(`/user/tag-configs/${source}`, {
       tags,
       exclude_tags: excludeTags,
@@ -184,13 +167,11 @@ export const tagConfigApi = {
   },
 
   reset: async () => {
-    // 重置所有标签配置
     await api.delete("/user/tag-configs");
   },
 };
 
 export function setAuthToken(token: string | null) {
-  // 设置默认登录信息
   if (token && token !== "undefined" && token !== "null") {
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
   } else {
@@ -199,7 +180,6 @@ export function setAuthToken(token: string | null) {
 }
 
 function normalizeUser(payload: any): User {
-  // 整理用户数据
   return {
     id: payload.id,
     username: payload.username,
@@ -208,7 +188,6 @@ function normalizeUser(payload: any): User {
 }
 
 function normalizeAuthResponse(payload: any): AuthResponse {
-  // 整理登录返回
   return {
     accessToken: payload.access_token ?? payload.accessToken,
     tokenType: payload.token_type ?? payload.tokenType ?? "bearer",
@@ -217,7 +196,6 @@ function normalizeAuthResponse(payload: any): AuthResponse {
 }
 
 function unwrapData<T>(payload: any): T {
-  // 取出真正的数据
   if (payload && typeof payload === "object" && "data" in payload) {
     return payload.data as T;
   }
