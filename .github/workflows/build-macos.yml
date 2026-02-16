@@ -1,0 +1,177 @@
+name: build-macos
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装前端依赖
+        working-directory: frontend
+        run: npm ci
+
+      - name: 构建前端
+        working-directory: frontend
+        env:
+          VITE_API_BASE: http://127.0.0.1:8000/api
+          VITE_API_URL: http://127.0.0.1:8000/api
+        run: npm run build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: 安装后端依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pyinstaller
+
+      - name: 安装浏览器内核
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: backend/playwright-browsers
+        run: python -m playwright install chromium
+
+      - name: 生成后端启动脚本
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          Path("backend/run_backend.py").write_text(
+              "import os\n"
+              "import sys\n"
+              "import threading\n"
+              "import webbrowser\n"
+              "from pathlib import Path\n"
+              "\n"
+              "from fastapi.staticfiles import StaticFiles\n"
+              "from fastapi.responses import FileResponse\n"
+              "from fastapi import HTTPException\n"
+              "import uvicorn\n"
+              "\n"
+              "def get_root():\n"
+              "    if getattr(sys, 'frozen', False):\n"
+              "        return Path(sys.executable).parent\n"
+              "    return Path(__file__).resolve().parent\n"
+              "\n"
+              "def setup_frontend(app):\n"
+              "    root = get_root()\n"
+              "    frontend_dir = root / 'frontend'\n"
+              "    if frontend_dir.is_dir():\n"
+              "        remove_root_route(app)\n"
+              "        \n"
+              "        # Mount assets separately for better performance/caching\n"
+              "        assets_dir = frontend_dir / 'assets'\n"
+              "        if assets_dir.exists():\n"
+              "            app.mount('/assets', StaticFiles(directory=str(assets_dir)), name='assets')\n"
+              "            \n"
+              "        # SPA Catch-all handler\n"
+              "        @app.get('/{full_path:path}')\n"
+              "        async def serve_spa(full_path: str):\n"
+              "            if full_path.startswith('api/'):\n"
+              "                raise HTTPException(status_code=404, detail='Not Found')\n"
+              "            \n"
+              "            # Check if it is an existing file\n"
+              "            file_path = frontend_dir / full_path\n"
+              "            if file_path.is_file():\n"
+              "                return FileResponse(file_path)\n"
+              "            \n"
+              "            # Fallback to index.html\n"
+              "            index = frontend_dir / 'index.html'\n"
+              "            if index.exists():\n"
+              "                return FileResponse(index)\n"
+              "            return HTTPException(status_code=404, detail='Page not found')\n"
+              "            \n"
+              "        return True\n"
+              "    return False\n"
+              "\n"
+              "def remove_root_route(app):\n"
+              "    routes = []\n"
+              "    for route in app.router.routes:\n"
+              "        if getattr(route, 'path', None) == '/':\n"
+              "            continue\n"
+              "        routes.append(route)\n"
+              "    app.router.routes = routes\n"
+              "\n"
+              "if not os.environ.get('PLAYWRIGHT_BROWSERS_PATH') and getattr(sys, 'frozen', False):\n"
+              "    browsers_path = get_root() / 'playwright-browsers'\n"
+              "    if browsers_path.exists():\n"
+              "        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(browsers_path)\n"
+              "\n"
+              "from app.main import app\n"
+              "\n"
+              "has_frontend = setup_frontend(app)\n"
+              "\n"
+              "def open_browser():\n"
+              "    webbrowser.open('http://127.0.0.1:8000')\n"
+              "\n"
+              "if __name__ == '__main__':\n"
+              "    if has_frontend:\n"
+              "        threading.Timer(1.0, open_browser).start()\n"
+              "    uvicorn.run(app, host='127.0.0.1', port=8000)\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: 修正 Frozen 环境下的 Env 路径
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+
+          p = Path("backend/app/services/credential_service.py")
+          content = p.read_text(encoding="utf-8")
+
+          # 替换 _write_env 方法中的路径逻辑
+          old_line = 'env_path = Path(__file__).resolve().parents[2] / ".env"'
+          new_block = (
+              'import sys; '
+              'env_path = (Path(sys.executable).parent / ".env") '
+              'if getattr(sys, "frozen", False) else '
+              '(Path(__file__).resolve().parents[2] / ".env")'
+          )
+
+          if old_line in content:
+              new_content = content.replace(old_line, new_block)
+              p.write_text(new_content, encoding="utf-8")
+              print("Successfully patched credential_service.py")
+          else:
+              print("Warning: Could not find target line to patch in credential_service.py")
+              sys.exit(1)
+          PY
+
+      - name: 构建后端
+        run: |
+          pyinstaller --noconfirm --clean --onedir --console --name SoyoSaki --collect-all playwright --collect-submodules app --collect-submodules passlib --hidden-import app.main --hidden-import passlib.handlers.bcrypt backend/run_backend.py --paths backend
+
+      - name: 组装产物
+        run: |
+          APP_DIR="release/SoyoSaki-${{ github.ref_name }}"
+          mkdir -p "$APP_DIR"
+          cp -R backend/playwright-browsers dist/SoyoSaki/playwright-browsers
+          cp -R dist/SoyoSaki/* "$APP_DIR/"
+          cp -R frontend/dist "$APP_DIR/frontend"
+          cp backend/.env.example "$APP_DIR/.env"
+          cd release
+          tar -czf SoyoSaki-${{ github.ref_name }}-arm64-macos.tar.gz "SoyoSaki-${{ github.ref_name }}"
+
+      - name: 上传产物
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/SoyoSaki-${{ github.ref_name }}-arm64-macos.tar.gz
