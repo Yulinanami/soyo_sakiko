@@ -16,6 +16,16 @@ export default defineConfig({
       "@views": path.resolve(__dirname, "src/views"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["vue", "vue-router", "pinia"],
+          http: ["axios"],
+        },
+      },
+    },
+  },
   server: {
     host: "127.0.0.1",
   },
