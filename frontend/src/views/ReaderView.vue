@@ -6,6 +6,7 @@ import type { Novel } from '@app-types/novel';
 import { useUserStore } from '@stores/user';
 import { useFavoritesStore } from '@stores/favorites';
 import { useHistoryStore } from '@stores/history';
+import { Download } from 'lucide-vue-next';
 
 const route = useRoute();
 const router = useRouter();
@@ -20,6 +21,7 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 const contentRef = ref<HTMLElement | null>(null);
 const favoriteLoading = ref(false);
+const downloading = ref(false);
 const isFavorite = computed(() => (novel.value ? favoritesStore.isFavorite(novel.value) : false));
 
 // 自动重试相关状态
@@ -276,6 +278,22 @@ async function toggleFavorite() {
   }
 }
 
+function handleDownload() {
+  if (!novel.value || downloading.value) return;
+  downloading.value = true;
+  const params = new URLSearchParams();
+  params.set('title', novel.value.title);
+  params.set('author', novel.value.author);
+  const url = `${API_BASE}/download/${novel.value.source}/${novel.value.id}?${params.toString()}`;
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => { downloading.value = false; }, 3000);
+}
+
 onBeforeRouteLeave(() => {
   // 离开时记录阅读信息
   if (novel.value) {
@@ -308,6 +326,16 @@ onBeforeRouteLeave(() => {
             <span v-if="favoriteLoading"
               class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             <span v-else>{{ isFavorite ? '已收藏' : '收藏' }}</span>
+          </button>
+          <button type="button"
+            class="text-xs px-3 py-1 rounded-full bg-white/20 text-white hover:bg-white/30 inline-flex items-center gap-1"
+            @click="handleDownload" title="下载 PDF">
+            <span v-if="downloading"
+              class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <template v-else>
+              <Download class="w-3.5 h-3.5" />
+              <span>下载</span>
+            </template>
           </button>
         </div>
         <div class="flex gap-4 text-sm opacity-80">

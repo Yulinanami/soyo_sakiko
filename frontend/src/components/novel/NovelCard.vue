@@ -9,7 +9,7 @@ import pixivLogo from '@assets/pixiv.png';
 import lofterLogo from '@assets/lofter.png';
 import bilibiliLogo from '@assets/bilibili.png';
 import { useNovelMeta } from '@composables/useNovelMeta';
-import { FileText, BookOpen, Heart, AlignLeft } from 'lucide-vue-next';
+import { FileText, BookOpen, Heart, AlignLeft, Download } from 'lucide-vue-next';
 
 const props = withDefaults(defineProps<{
   novel: Novel;
@@ -65,6 +65,7 @@ const lofterDomains = [
 
 const coverLoaded = ref(false);
 const favoriteLoading = ref(false);
+const downloading = ref(false);
 // 判断是否已收藏
 const isFavorite = computed(() => favoritesStore.isFavorite(props.novel));
 const isLastRead = ref(false);
@@ -159,6 +160,29 @@ async function toggleFavorite(event: Event) {
     favoriteLoading.value = false;
   }
 }
+
+async function handleDownload(event: Event) {
+  // 下载 PDF
+  event.preventDefault();
+  event.stopPropagation();
+  if (downloading.value) return;
+  downloading.value = true;
+  try {
+    const params = new URLSearchParams();
+    params.set('title', props.novel.title);
+    params.set('author', props.novel.author);
+    const url = `${API_BASE}/download/${props.novel.source}/${props.novel.id}?${params.toString()}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } finally {
+    // 延迟重置，给浏览器时间发起请求
+    setTimeout(() => { downloading.value = false; }, 3000);
+  }
+}
 </script>
 
 <template>
@@ -245,6 +269,13 @@ async function toggleFavorite(event: Event) {
             <span v-if="favoriteLoading"
               class="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
             <span v-else>{{ isFavorite ? '已收藏' : '收藏' }}</span>
+          </button>
+          <button type="button"
+            class="ml-auto text-gray-400 hover:text-sakiko dark:text-gray-500 dark:hover:text-sakiko-light transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            title="下载 PDF" @click="handleDownload">
+            <span v-if="downloading"
+              class="inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
+            <Download v-else class="w-4 h-4" />
           </button>
         </div>
         <div v-if="footerNote" class="mt-2 text-xs text-gray-500 text-right shrink-0">
