@@ -86,7 +86,7 @@ def proxy_lofter_images(html_content: str) -> str:
         result = re.sub(r"src='([^']+)'", replace_img_src, result)
         return result
 
-    soup = BeautifulSoup(html_content, "html.parser")
+    soup = BeautifulSoup(html_content, "lxml")
     for img in soup.find_all("img"):
         raw_url = (
             img.get("large")

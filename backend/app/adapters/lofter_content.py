@@ -43,7 +43,7 @@ def fetch_post_content(novel_id: str, cookie: str) -> str:
         try:
             from bs4 import BeautifulSoup
 
-            soup = BeautifulSoup(html, "html.parser")
+            soup = BeautifulSoup(html, "lxml")
             container = (
                 soup.select_one("div.postwrapper .content")
                 or soup.select_one("div#postwrapper .content")
@@ -151,7 +151,7 @@ def _parse_lofter_html(html: str, post_url: str) -> str:
     try:
         from bs4 import BeautifulSoup
 
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(html, "lxml")
         container = (
             soup.select_one("div.postwrapper .content")
             or soup.select_one("div#postwrapper .content")

@@ -11,7 +11,7 @@ from app.services.http_client import get_async_client, get_no_proxy_async_client
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-image_cache: LRUCache = LRUCache(maxsize=100)
+image_cache: LRUCache = LRUCache(maxsize=50)
 
 _SOURCE_CONFIG = {
     "pixiv": {

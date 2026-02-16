@@ -14,6 +14,10 @@ from app.adapters.lofter_common import (
 
 logger = logging.getLogger(__name__)
 
+_VAR_RE = re.compile(r"s(\d+)\.(\w+)\s*=\s*([^;]+);")
+_STR_RE = re.compile(r's(\d+)\.(\w+)\s*=\s*"([^"]*)"')
+_POST_REF_RE = re.compile(r"s(\d+)\.post=s(\d+);")
+
 
 def parse_tag_page_html(
     html: str,
@@ -24,7 +28,7 @@ def parse_tag_page_html(
     """解析标签页列表"""
     from bs4 import BeautifulSoup
 
-    soup = BeautifulSoup(html, "html.parser")
+    soup = BeautifulSoup(html, "lxml")
     items = soup.select("div.m-mlist")
 
     novels: List[Novel] = []
@@ -219,7 +223,7 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
     try:
         assignments = {}
 
-        var_pattern = re.compile(r"s(\d+)\.(\w+)\s*=\s*([^;]+);")
+        var_pattern = _VAR_RE
         for match in var_pattern.finditer(response_text):
             var_id, prop, value = match.groups()
             key = f"s{var_id}"
@@ -227,7 +231,7 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
                 assignments[key] = {}
             assignments[key][prop] = strip_quotes(value)
 
-        str_pattern = re.compile(r's(\d+)\.(\w+)\s*=\s*"([^"]*)"')
+        str_pattern = _STR_RE
         for match in str_pattern.finditer(response_text):
             var_id, prop, value = match.groups()
             key = f"s{var_id}"
@@ -236,7 +240,7 @@ def parse_dwr_response(response_text: str, exclude_tags: List[str]) -> List[Nove
             assignments[key][prop] = value
 
         post_candidates = []
-        post_refs = re.findall(r"s(\d+)\.post=s(\d+);", response_text)
+        post_refs = _POST_REF_RE.findall(response_text)
         if post_refs:
             for _, post_id in post_refs:
                 post_key = f"s{post_id}"

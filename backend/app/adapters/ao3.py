@@ -56,6 +56,8 @@ class AO3Adapter(BaseAdapter):
             current_ao3_page = ((page - 1) * page_size // 20) + 1
             max_ao3_pages = 3  # 每次请求最多查 3 页 AO3 深度
             pages_searched = 0
+            seen_ids: set = set()
+            tags_lower = [t.lower() for t in tags]
 
             while len(novels) < page_size and pages_searched < max_ao3_pages:
                 # 1. 抓取 HTML
@@ -71,7 +73,6 @@ class AO3Adapter(BaseAdapter):
                 # 3. 过滤并追加
                 for novel in results:
                     # 严格包含检测 (忽略大小写)
-                    tags_lower = [t.lower() for t in tags]
                     has_tag = any(
                         any(tl in tag.lower() for tag in novel.tags)
                         for tl in tags_lower
@@ -91,8 +92,9 @@ class AO3Adapter(BaseAdapter):
                     ):
                         continue
 
-                    # 查重
-                    if not any(n.id == novel.id for n in novels):
+                    # O(1) 查重
+                    if novel.id not in seen_ids:
+                        seen_ids.add(novel.id)
                         novels.append(novel)
                         if len(novels) >= page_size:
                             break
