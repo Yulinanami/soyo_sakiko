@@ -4,6 +4,12 @@ import logging
 from typing import List, Optional
 from app.adapters.lofter_common import merge_novel_list, parse_cookie_header
 from app.adapters.lofter_parse import parse_dwr_response, parse_tag_page_html
+from app.adapters.playwright_helpers import (
+    BROWSER_ARGS,
+    DEFAULT_UA,
+    ANTI_DETECT_SCRIPT,
+    block_resources,
+)
 from app.config import settings
 from app.schemas.novel import Novel
 
@@ -66,28 +72,21 @@ def search_dynamic_sync(
                 logger.info("Lofter: forcing headless mode to avoid browser popups")
             browser = p.chromium.launch(
                 headless=headless,
-                args=[
-                    "--disable-blink-features=AutomationControlled",
-                    "--no-proxy-server",
-                ],
+                args=BROWSER_ARGS + ["--no-proxy-server"],
             )
             context = browser.new_context(
-                user_agent=(
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-                ),
+                user_agent=DEFAULT_UA,
                 locale="zh-CN",
                 extra_http_headers=headers,
             )
-            context.add_init_script(
-                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
-            )
+            context.add_init_script(ANTI_DETECT_SCRIPT)
             cookies = parse_cookie_header(cookie)
             if cookies:
                 context.add_cookies(cookies)
 
             page = context.new_page()
+            # 拦截图片/字体/CSS，但保留 XHR (DWR 响应)
+            page.route("**/*", block_resources)
             page.on("response", on_response)
             page.goto(url, wait_until="domcontentloaded", timeout=60000)
             try:

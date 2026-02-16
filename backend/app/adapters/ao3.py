@@ -4,7 +4,10 @@ import logging
 from typing import List, Optional
 from app.adapters.base import BaseAdapter
 from app.adapters.utils import exclude, exclude_any_tag
-from app.adapters.ao3_dynamic import get_work_details_dynamic_sync, search_dynamic_sync
+from app.adapters.ao3_dynamic import (
+    get_work_details_dynamic_sync,
+    search_multi_pages_sync,
+)
 from app.adapters.ao3_parse import (
     map_sort,
     parse_search_results_html,
@@ -53,24 +56,21 @@ class AO3Adapter(BaseAdapter):
             novels = []
             # AO3 每页 20 条。我们要找 page_size (通常 30) 条。
             # 根据请求的 page 计算 AO3 的起始页
-            current_ao3_page = ((page - 1) * page_size // 20) + 1
+            start_ao3_page = ((page - 1) * page_size // 20) + 1
             max_ao3_pages = 3  # 每次请求最多查 3 页 AO3 深度
-            pages_searched = 0
             seen_ids: set = set()
             tags_lower = [t.lower() for t in tags]
 
-            while len(novels) < page_size and pages_searched < max_ao3_pages:
-                # 1. 抓取 HTML
-                html = search_dynamic_sync(tags, map_sort(sort_by), current_ao3_page)
-                if not html or html == "EMPTY":
-                    break
+            # 一次性启动浏览器抓取所有页
+            pages_html = search_multi_pages_sync(
+                tags, map_sort(sort_by), start_ao3_page, max_ao3_pages
+            )
 
-                # 2. 解析 HTML
+            for html in pages_html:
                 results = parse_search_results_html(html)
                 if not results:
                     break
 
-                # 3. 过滤并追加
                 for novel in results:
                     # 严格包含检测 (忽略大小写)
                     has_tag = any(
@@ -99,8 +99,8 @@ class AO3Adapter(BaseAdapter):
                         if len(novels) >= page_size:
                             break
 
-                current_ao3_page += 1
-                pages_searched += 1
+                if len(novels) >= page_size:
+                    break
 
             return novels
         except Exception as e:

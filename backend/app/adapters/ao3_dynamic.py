@@ -5,6 +5,12 @@ from typing import List, Optional
 from urllib.parse import quote
 from app.config import settings
 from app.schemas.novel import Novel
+from app.adapters.playwright_helpers import (
+    BROWSER_ARGS,
+    DEFAULT_UA,
+    ANTI_DETECT_SCRIPT,
+    block_resources,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +38,27 @@ def build_search_url(tags: List[str], sort_column: str, page: int) -> str:
     return f"{base_url}?{'&'.join(query_parts)}"
 
 
+def _launch_context(p):
+    """创建统一配置的浏览器和上下文"""
+    browser = p.chromium.launch(headless=True, args=BROWSER_ARGS)
+    context = browser.new_context(user_agent=DEFAULT_UA, locale="zh-CN")
+    context.add_init_script(ANTI_DETECT_SCRIPT)
+    return browser, context
+
+
+def _new_page_with_blocking(context):
+    """创建页面并启用资源拦截"""
+    page_obj = context.new_page()
+    page_obj.route("**/*", block_resources)
+    return page_obj
+
+
 def search_dynamic_sync(
     tags: List[str],
     sort_column: str,
     page: int,
 ) -> str:
-    """使用 Playwright 抓取 AO3 搜索页 HTML"""
+    """使用 Playwright 抓取 AO3 单页搜索页 HTML"""
     try:
         from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
     except ImportError:
@@ -49,32 +70,18 @@ def search_dynamic_sync(
 
     try:
         with sync_playwright() as p:
-            # 启动浏览器
-            browser = p.chromium.launch(
-                headless=True, args=["--disable-blink-features=AutomationControlled"]
-            )
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                locale="zh-CN",
-            )
+            browser, context = _launch_context(p)
+            page_obj = _new_page_with_blocking(context)
 
-            # 反检测
-            context.add_init_script(
-                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
-            )
-
-            page_obj = context.new_page()
-
-            # 访问页面
             page_obj.goto(url, wait_until="domcontentloaded", timeout=60000)
 
-            # 等待列表加载
             try:
                 page_obj.wait_for_selector("li.work.blurb.group", timeout=15000)
             except PWTimeout:
                 logger.warning("AO3: No results or page load timeout")
-                # 检查是否是 404 或者空结果页面
                 if "No results found" in page_obj.content():
+                    context.close()
+                    browser.close()
                     return "EMPTY"
 
             html = page_obj.content()
@@ -86,6 +93,53 @@ def search_dynamic_sync(
     except Exception as e:
         logger.error(f"AO3: Dynamic crawl failed: {e}")
         return ""
+
+
+def search_multi_pages_sync(
+    tags: List[str],
+    sort_column: str,
+    start_page: int,
+    max_pages: int = 3,
+) -> List[str]:
+    """复用一个浏览器实例抓取多页 AO3 搜索结果"""
+    try:
+        from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+    except ImportError:
+        logger.error("AO3: Playwright not installed")
+        return []
+
+    pages_html: List[str] = []
+
+    try:
+        with sync_playwright() as p:
+            browser, context = _launch_context(p)
+            page_obj = _new_page_with_blocking(context)
+
+            for pg in range(start_page, start_page + max_pages):
+                url = build_search_url(tags, sort_column, pg)
+                logger.info(f"AO3: Fetching page {pg}: {url}")
+
+                page_obj.goto(url, wait_until="domcontentloaded", timeout=60000)
+
+                try:
+                    page_obj.wait_for_selector("li.work.blurb.group", timeout=15000)
+                except PWTimeout:
+                    logger.warning(f"AO3: No results on page {pg}")
+                    if "No results found" in page_obj.content():
+                        break
+
+                html = page_obj.content()
+                if not html:
+                    break
+                pages_html.append(html)
+
+            context.close()
+            browser.close()
+
+    except Exception as e:
+        logger.error(f"AO3: Multi-page crawl failed: {e}")
+
+    return pages_html
 
 
 def get_work_details_dynamic_sync(
@@ -105,11 +159,9 @@ def get_work_details_dynamic_sync(
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            )
-            page_obj = context.new_page()
+            browser, context = _launch_context(p)
+            page_obj = _new_page_with_blocking(context)
+
             page_obj.goto(url, wait_until="domcontentloaded", timeout=60000)
 
             # 等待内容加载
