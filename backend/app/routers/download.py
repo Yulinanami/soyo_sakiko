@@ -5,10 +5,8 @@ import logging
 import re
 from io import BytesIO
 from urllib.parse import quote
-
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-
 from app.adapters import get_adapter
 from app.schemas.novel import NovelSource
 

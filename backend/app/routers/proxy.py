@@ -7,12 +7,13 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 
+from cachetools import LRUCache
 from app.services.http_client import get_async_client, get_no_proxy_async_client
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-image_cache: dict = {}
+image_cache: LRUCache = LRUCache(maxsize=100)
 
 
 @router.get("/pixiv")
@@ -49,11 +50,10 @@ async def proxy_pixiv_image(url: str):
         content = response.content
         content_type = response.headers.get("content-type", "image/jpeg")
 
-        if len(image_cache) < 100:
-            image_cache[cache_key] = {
-                "content": content,
-                "content_type": content_type,
-            }
+        image_cache[cache_key] = {
+            "content": content,
+            "content_type": content_type,
+        }
 
         return Response(
             content=content,

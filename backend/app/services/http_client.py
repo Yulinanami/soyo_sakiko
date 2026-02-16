@@ -7,6 +7,7 @@ from typing import Optional
 _sync_client: Optional[httpx.Client] = None
 _async_client: Optional[httpx.AsyncClient] = None
 _no_proxy_async_client: Optional[httpx.AsyncClient] = None
+_no_proxy_sync_client: Optional[httpx.Client] = None
 
 
 def get_sync_client() -> httpx.Client:
@@ -37,15 +38,23 @@ def get_no_proxy_async_client() -> httpx.AsyncClient:
 
 def get_no_proxy_sync_client() -> httpx.Client:
     """获取不走中转的同步访问工具"""
-    return httpx.Client(timeout=30.0, follow_redirects=True, trust_env=False)
+    global _no_proxy_sync_client
+    if _no_proxy_sync_client is None:
+        _no_proxy_sync_client = httpx.Client(
+            timeout=30.0, follow_redirects=True, trust_env=False
+        )
+    return _no_proxy_sync_client
 
 
 def close_sync_client() -> None:
     """关闭常用访问工具"""
-    global _sync_client
+    global _sync_client, _no_proxy_sync_client
     if _sync_client is not None:
         _sync_client.close()
         _sync_client = None
+    if _no_proxy_sync_client is not None:
+        _no_proxy_sync_client.close()
+        _no_proxy_sync_client = None
 
 
 async def close_async_client() -> None:

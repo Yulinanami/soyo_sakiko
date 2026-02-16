@@ -114,6 +114,11 @@ class LofterAdapter(BaseAdapter):
 
     def _set_dynamic_cache(self, key: str, items: List[Novel], exhausted: bool) -> None:
         """写入已存内容"""
+        if key not in self._dynamic_cache and len(self._dynamic_cache) >= 20:
+            oldest = min(
+                self._dynamic_cache, key=lambda k: self._dynamic_cache[k]["timestamp"]
+            )
+            del self._dynamic_cache[oldest]
         self._dynamic_cache[key] = {
             "items": items,
             "timestamp": time.time(),
