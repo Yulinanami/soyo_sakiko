@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.routers import novels, auth, proxy, credentials, user, download
-from app.database import Base, engine
+from app.database import Base, engine, ensure_user_data_columns
 import app.models
 from app.config import settings
 from app.services.http_client import close_async_client, close_sync_client
@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
             "⚠️  SECRET_KEY 使用了默认值，请在 .env 中设置安全的随机密钥！"
         )
     Base.metadata.create_all(bind=engine)
+    ensure_user_data_columns()
     yield
     close_sync_client()
     await close_async_client()

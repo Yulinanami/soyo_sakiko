@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRef, watch } from 'vue';
+import { computed, onMounted, ref, toRef } from 'vue';
 import type { Novel } from '@app-types/novel';
 import { useFavoritesStore } from '@stores/favorites';
 import { useUserStore } from '@stores/user';
@@ -9,7 +9,8 @@ import pixivLogo from '@assets/pixiv.png';
 import lofterLogo from '@assets/lofter.png';
 import bilibiliLogo from '@assets/bilibili.png';
 import { useNovelMeta } from '@composables/useNovelMeta';
-import { FileText, BookOpen, Heart, AlignLeft, Download } from 'lucide-vue-next';
+import { ElButton, ElCard, ElIcon, ElImage, ElRow, ElSkeletonItem, ElSpace, ElTag, ElText } from 'element-plus';
+import { Calendar, Document, Download, Reading, Star, StarFilled } from '@element-plus/icons-vue';
 
 const props = withDefaults(defineProps<{
   novel: Novel;
@@ -25,7 +26,7 @@ const userStore = useUserStore();
 const router = useRouter();
 
 const novelRef = toRef(props, 'novel');
-const { formattedDate, truncatedSummary, isHighlightTag } = useNovelMeta(novelRef);
+const { formattedPublishedDate, truncatedSummary, isHighlightTag } = useNovelMeta(novelRef);
 
 // 获取服务地址
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/+$/, '');
@@ -41,17 +42,6 @@ const sourceLogos: Record<string, string> = {
 // 选择来源图标
 const sourceLogo = computed(() => sourceLogos[props.novel.source]);
 
-// 生成来源样式
-const sourceClass = computed(() => {
-  const classes: Record<string, string> = {
-    ao3: 'bg-red-700 text-white',
-    pixiv: 'bg-sakiko text-white',
-    lofter: 'bg-soyo text-white',
-    bilibili: 'bg-pink-500 text-white',
-  };
-  return classes[props.novel.source] || 'bg-gray-500 text-white';
-});
-
 // 准备封面地址
 const lofterDomains = [
   'lf127.net',
@@ -63,7 +53,6 @@ const lofterDomains = [
   'netease.com',
 ];
 
-const coverLoaded = ref(false);
 const favoriteLoading = ref(false);
 const downloading = ref(false);
 // 判断是否已收藏
@@ -108,11 +97,6 @@ const coverImageUrl = computed(() => {
   return imageUrl;
 });
 
-watch(coverImageUrl, () => {
-  // 重置封面加载状态
-  coverLoaded.value = false;
-});
-
 onMounted(() => {
   // 登录后加载收藏
   if (userStore.isLoggedIn && !favoritesStore.loaded) {
@@ -131,6 +115,8 @@ function rememberListScroll() {
       author: props.novel.author,
       cover_image: props.novel.cover_image,
       source_url: props.novel.source_url,
+      published_at: props.novel.published_at,
+      updated_at: props.novel.updated_at,
       tags: props.novel.tags,
       rating: props.novel.rating,
       word_count: props.novel.word_count,
@@ -186,102 +172,120 @@ async function handleDownload(event: Event) {
 </script>
 
 <template>
-  <article
-    class="card overflow-hidden hover:-translate-y-1 transition-transform duration-200 dark:bg-gray-800 dark:border dark:border-gray-700 flex flex-col h-full">
-    <router-link :to="`/novel/${novel.source}/${novel.id}`" class="no-underline text-inherit flex flex-col h-full"
-      @click="rememberListScroll">
-      <div class="relative shrink-0">
-        <!-- 封面 -->
-        <div v-if="coverImageUrl" class="h-40 overflow-hidden bg-sakiko-pale relative">
-          <div v-if="!coverLoaded" class="absolute inset-0 flex items-center justify-center bg-sakiko-pale/70">
-            <span class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+  <article class="h-full">
+    <el-card shadow="hover" class="h-full"
+      :body-style="{ padding: '0', height: '100%' }">
+      <div class="flex h-full flex-col">
+        <router-link :to="`/novel/${novel.source}/${novel.id}`"
+          class="no-underline text-inherit flex flex-1 flex-col" @click="rememberListScroll">
+          <div class="relative shrink-0">
+            <!-- 封面 -->
+            <el-image v-if="coverImageUrl" :src="coverImageUrl" :alt="novel.title" fit="cover"
+              class="h-40 w-full bg-sakiko-pale">
+              <template #placeholder>
+                <el-skeleton-item variant="image" class="h-full w-full" />
+              </template>
+              <template #error>
+                <el-row class="h-full w-full bg-sakiko-light" justify="center" align="middle">
+                  <img v-if="sourceLogo" :src="sourceLogo" alt="source"
+                    class="h-16 w-16 object-contain opacity-60" />
+                  <el-icon v-else :size="64"><Document /></el-icon>
+                </el-row>
+              </template>
+            </el-image>
+            <el-row v-else class="h-40 bg-sakiko-light" justify="center" align="middle">
+              <img v-if="sourceLogo" :src="sourceLogo" alt="source"
+                class="w-16 h-16 object-contain opacity-60" />
+              <el-icon v-else :size="64" color="var(--el-text-color-placeholder)"><Document /></el-icon>
+            </el-row>
+
+            <!-- 最近阅读 -->
+            <el-tag v-if="isLastRead" type="success" effect="dark" size="small"
+              class="absolute top-2 right-2 z-10">
+              刚才看过
+            </el-tag>
           </div>
-          <img :src="coverImageUrl" :alt="novel.title"
-            class="w-full h-full object-cover transition-opacity duration-200"
-            :class="coverLoaded ? 'opacity-100' : 'opacity-0'" @load="coverLoaded = true" @error="coverLoaded = true" />
-        </div>
-        <div v-else class="h-40 bg-sakiko-light flex items-center justify-center">
-          <img v-if="sourceLogo" :src="sourceLogo" alt="source" class="w-16 h-16 object-contain opacity-60" />
-          <FileText v-else class="w-16 h-16 text-gray-400 opacity-60" />
-        </div>
 
-        <!-- 最近阅读 -->
-        <div v-if="isLastRead"
-          class="absolute top-0 right-0 bg-soyo text-white text-xs px-2 py-1 rounded-bl-lg shadow-sm font-medium z-10">
-          刚才看过
+          <!-- 内容 -->
+          <div class="p-4 pb-2 flex flex-col flex-1">
+            <el-space class="w-full flex-1" direction="vertical" alignment="flex-start" fill :size="8">
+              <el-space wrap :size="8">
+                <el-tag size="small" type="primary" effect="dark">
+                  <el-space :size="4">
+                  <img v-if="sourceLogo" :src="sourceLogo" alt="" class="w-3 h-3 object-contain" />
+                  {{ novel.source.toUpperCase() }}
+                  </el-space>
+                </el-tag>
+                <el-tag v-if="novel.rating" size="small" type="warning" effect="dark">
+                  {{ novel.rating }}
+                </el-tag>
+              </el-space>
+
+              <el-text tag="h3" size="large" :line-clamp="2"><strong>{{ novel.title }}</strong></el-text>
+              <el-text type="info" size="small">{{ novel.author }}</el-text>
+
+              <el-text class="flex-1" tag="div" type="info" size="small" :line-clamp="3">
+                {{ truncatedSummary }}
+              </el-text>
+
+              <el-space wrap :size="6">
+                <el-tag v-for="tag in novel.tags.slice(0, 5)" :key="tag" size="small" round
+                  :type="isHighlightTag(tag) ? 'primary' : 'info'"
+                  :effect="isHighlightTag(tag) ? 'dark' : 'plain'">
+                  {{ tag }}
+                </el-tag>
+                <el-tag v-if="novel.tags.length > 5" size="small" type="info" round>
+                  +{{ novel.tags.length - 5 }}
+                </el-tag>
+              </el-space>
+
+              <el-row class="w-full mt-auto" justify="space-between" align="middle">
+                <el-space wrap :size="12">
+                  <el-space v-if="novel.word_count" :size="4">
+                    <el-icon><Document /></el-icon>
+                    <el-text type="info" size="small">{{ novel.word_count.toLocaleString() }} 字</el-text>
+                  </el-space>
+                  <el-space v-if="novel.chapter_count" :size="4">
+                    <el-icon><Reading /></el-icon>
+                    <el-text type="info" size="small">{{ novel.chapter_count }} 章</el-text>
+                  </el-space>
+                  <el-space v-if="novel.kudos" :size="4">
+                    <el-icon><Star /></el-icon>
+                    <el-text type="info" size="small">{{ novel.kudos }}</el-text>
+                  </el-space>
+                </el-space>
+                <el-space :size="4">
+                  <el-icon><Calendar /></el-icon>
+                  <el-text type="info" size="small">{{ formattedPublishedDate }}</el-text>
+                </el-space>
+              </el-row>
+            </el-space>
+          </div>
+        </router-link>
+
+        <div class="px-4 pb-4 shrink-0">
+          <el-row class="mt-2" justify="space-between" align="middle">
+            <el-space :size="8">
+              <el-tag v-if="novel.is_complete !== undefined" size="small" round
+                :type="novel.is_complete ? 'success' : 'warning'">
+                {{ novel.is_complete ? '已完结' : '连载中' }}
+              </el-tag>
+              <el-button v-if="showFavoriteAction" size="small" round :loading="favoriteLoading"
+                :icon="isFavorite ? StarFilled : Star"
+                :title="userStore.isLoggedIn ? (isFavorite ? '取消收藏' : '收藏') : '登录后可收藏'"
+                @click="toggleFavorite">
+                {{ isFavorite ? '已收藏' : '收藏' }}
+              </el-button>
+              <slot name="actions" />
+            </el-space>
+            <el-button text circle :icon="Download" :loading="downloading" title="下载 PDF"
+              aria-label="下载 PDF" @click="handleDownload" />
+          </el-row>
+          <el-row v-if="footerNote" class="mt-2" justify="end">
+            <el-text type="info" size="small">{{ footerNote }}</el-text>
+          </el-row>
         </div>
       </div>
-
-      <!-- 内容 -->
-      <div class="p-4 flex flex-col flex-1">
-        <div class="flex gap-2 mb-3 shrink-0">
-          <span :class="['flex items-center gap-1 text-xs px-2 py-0.5 rounded', sourceClass]">
-            <img v-if="sourceLogo" :src="sourceLogo" alt="" class="w-3 h-3 object-contain" />
-            {{ novel.source.toUpperCase() }}
-          </span>
-          <span v-if="novel.rating" class="text-xs px-2 py-0.5 rounded bg-yellow-400 text-gray-800">
-            {{ novel.rating }}
-          </span>
-        </div>
-
-        <h3 class="text-lg font-semibold mb-1 line-clamp-2 dark:text-gray-100 shrink-0">{{ novel.title }}</h3>
-        <p class="text-sm text-gray-600 mb-3 dark:text-gray-400 shrink-0">{{ novel.author }}</p>
-
-        <p class="text-sm text-gray-500 leading-relaxed mb-3 dark:text-gray-400 line-clamp-3 flex-1">{{ truncatedSummary
-        }}</p>
-
-        <div class="flex flex-wrap gap-1.5 mb-3 shrink-0">
-          <span v-for="tag in novel.tags.slice(0, 5)" :key="tag" :class="[
-            'text-xs px-2 py-0.5 rounded-full inline-flex items-center justify-center',
-            isHighlightTag(tag) ? 'tag-highlight' : 'tag'
-          ]">
-            {{ tag }}
-          </span>
-          <span v-if="novel.tags.length > 5"
-            class="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 dark:text-gray-300 inline-flex items-center justify-center">
-            +{{ novel.tags.length - 5 }}
-          </span>
-        </div>
-
-        <div class="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400 shrink-0 mt-auto">
-          <span v-if="novel.word_count" class="flex items-center gap-1">
-            <AlignLeft class="w-3.5 h-3.5" /> {{ novel.word_count.toLocaleString() }} 字
-          </span>
-          <span v-if="novel.chapter_count" class="flex items-center gap-1">
-            <BookOpen class="w-3.5 h-3.5" /> {{ novel.chapter_count }} 章
-          </span>
-          <span v-if="novel.kudos" class="flex items-center gap-1">
-            <Heart class="w-3.5 h-3.5" /> {{ novel.kudos }}
-          </span>
-          <span class="ml-auto">{{ formattedDate }}</span>
-        </div>
-
-        <div class="mt-3 flex items-center gap-2 shrink-0">
-          <span v-if="novel.is_complete !== undefined" :class="[
-            'text-xs px-3 py-1 rounded-full',
-            novel.is_complete ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-          ]">
-            {{ novel.is_complete ? '已完结' : '连载中' }}
-          </span>
-          <button v-if="showFavoriteAction" type="button"
-            class="text-xs px-3 py-1 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
-            :title="userStore.isLoggedIn ? (isFavorite ? '取消收藏' : '收藏') : '登录后可收藏'" @click="toggleFavorite">
-            <span v-if="favoriteLoading"
-              class="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
-            <span v-else>{{ isFavorite ? '已收藏' : '收藏' }}</span>
-          </button>
-          <button type="button"
-            class="ml-auto text-gray-400 hover:text-sakiko dark:text-gray-500 dark:hover:text-sakiko-light transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-            title="下载 PDF" @click="handleDownload">
-            <span v-if="downloading"
-              class="inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
-            <Download v-else class="w-4 h-4" />
-          </button>
-        </div>
-        <div v-if="footerNote" class="mt-2 text-xs text-gray-500 text-right shrink-0">
-          {{ footerNote }}
-        </div>
-      </div>
-    </router-link>
+    </el-card>
   </article>
 </template>

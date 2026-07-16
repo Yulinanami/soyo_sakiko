@@ -26,6 +26,7 @@ class Favorite(Base):
     author = Column(String(100))
     cover_url = Column(Text)
     source_url = Column(Text)
+    published_at = Column(DateTime)
     created_at = Column(DateTime, server_default=func.now())
 
     __table_args__ = (
@@ -46,6 +47,7 @@ class ReadingHistory(Base):
     author = Column(String(100))
     cover_url = Column(Text)
     source_url = Column(Text)
+    published_at = Column(DateTime)
     last_chapter = Column(Integer, default=1)
     progress = Column(Integer, default=0)  # 百分比
     last_read_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

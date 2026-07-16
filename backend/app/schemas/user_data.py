@@ -12,6 +12,7 @@ class FavoriteBase(BaseModel):
     author: Optional[str] = None
     cover_url: Optional[str] = None
     source_url: Optional[str] = None
+    published_at: Optional[datetime] = None
 
 
 class FavoriteCreate(FavoriteBase):
@@ -32,6 +33,7 @@ class ReadingHistoryBase(BaseModel):
     author: Optional[str] = None
     cover_url: Optional[str] = None
     source_url: Optional[str] = None
+    published_at: Optional[datetime] = None
     last_chapter: Optional[int] = 1
     progress: Optional[int] = 0
 

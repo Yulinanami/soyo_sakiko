@@ -3,14 +3,14 @@ import type { Novel } from "@app-types/novel";
 
 export function useNovelMeta(novel: Ref<Novel>) {
   // 生成展示用信息
-  const formattedDate = computed(() => {
-    // 生成日期文本
-    const rawDate = novel.value.published_at || novel.value.updated_at || "";
+  const formattedPublishedDate = computed(() => {
+    // 生成发布时间文本
+    const rawDate = novel.value.published_at || "";
     const date = new Date(rawDate);
     if (Number.isNaN(date.getTime())) {
-      return "未知日期";
+      return "发布时间未知";
     }
-    return date.toLocaleDateString("zh-CN");
+    return `发布于 ${date.toLocaleDateString("zh-CN")}`;
   });
 
   const truncatedSummary = computed(() => {
@@ -32,7 +32,7 @@ export function useNovelMeta(novel: Ref<Novel>) {
   }
 
   return {
-    formattedDate,
+    formattedPublishedDate,
     truncatedSummary,
     isHighlightTag,
   };

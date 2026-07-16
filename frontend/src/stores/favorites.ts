@@ -53,6 +53,7 @@ export const useFavoritesStore = defineStore("favorites", () => {
       author: novel.author,
       cover_url: novel.cover_image,
       source_url: novel.source_url,
+      published_at: novel.published_at || undefined,
     };
     const item = await favoritesApi.add(payload);
     items.value = [

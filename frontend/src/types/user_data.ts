@@ -6,6 +6,7 @@ export interface FavoriteItem {
   author?: string;
   cover_url?: string;
   source_url?: string;
+  published_at?: string;
   created_at: string;
 }
 
@@ -17,6 +18,7 @@ export interface HistoryItem {
   author?: string;
   cover_url?: string;
   source_url?: string;
+  published_at?: string;
   last_read_at: string;
   last_chapter?: number;
   progress?: number;

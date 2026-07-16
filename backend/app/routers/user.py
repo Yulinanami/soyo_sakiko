@@ -57,6 +57,7 @@ def add_favorite(
         favorite.author = payload.author or favorite.author
         favorite.cover_url = payload.cover_url or favorite.cover_url
         favorite.source_url = payload.source_url or favorite.source_url
+        favorite.published_at = payload.published_at or favorite.published_at
     else:
         favorite = Favorite(
             user_id=current_user.id,
@@ -66,6 +67,7 @@ def add_favorite(
             author=payload.author,
             cover_url=payload.cover_url,
             source_url=payload.source_url,
+            published_at=payload.published_at,
         )
         db.add(favorite)
     db.commit()
@@ -135,6 +137,7 @@ def record_history(
         record.author = payload.author or record.author
         record.cover_url = payload.cover_url or record.cover_url
         record.source_url = payload.source_url or record.source_url
+        record.published_at = payload.published_at or record.published_at
         record.last_chapter = payload.last_chapter or record.last_chapter
         record.progress = payload.progress or record.progress
         record.last_read_at = datetime.now()
@@ -147,6 +150,7 @@ def record_history(
             author=payload.author,
             cover_url=payload.cover_url,
             source_url=payload.source_url,
+            published_at=payload.published_at,
             last_chapter=payload.last_chapter or 1,
             progress=payload.progress or 0,
             last_read_at=datetime.now(),

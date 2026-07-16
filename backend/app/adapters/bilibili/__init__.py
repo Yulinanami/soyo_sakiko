@@ -135,6 +135,8 @@ class BilibiliAdapter(BaseAdapter):
 
                                 novel.tags = detail.tags
                                 novel.title = detail.title
+                                novel.author = detail.author or novel.author
+                                novel.author_url = detail.author_url or novel.author_url
                                 novel.summary = detail.summary
                             return novel
                         except Exception as e:

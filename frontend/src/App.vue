@@ -3,18 +3,30 @@ import { ref, watch } from 'vue';
 import { useUserStore } from '@stores/user';
 import { useFavoritesStore } from '@stores/favorites';
 import { useNovelsStore } from '@stores/novels';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import ao3Logo from '@assets/ao3.png';
 import pixivLogo from '@assets/pixiv.png';
 import lofterLogo from '@assets/lofter.png';
 import bilibiliLogo from '@assets/bilibili.png';
-import { Home, Heart, BookOpen, Settings, Menu, Moon, Sun } from 'lucide-vue-next';
+import {
+  Expand,
+  Fold,
+  House,
+  Moon,
+  Reading,
+  Setting,
+  Star,
+  Sunny,
+  SwitchButton,
+  User,
+} from '@element-plus/icons-vue';
 
 const userStore = useUserStore();
 const favoritesStore = useFavoritesStore();
 const novelsStore = useNovelsStore();
 const router = useRouter();
-const sidebarOpen = ref(true);
+const route = useRoute();
+const sidebarOpen = ref(window.matchMedia('(min-width: 769px)').matches);
 
 function toggleSidebar() {
   // 切换侧边栏
@@ -42,121 +54,432 @@ watch(
   },
   { immediate: true }
 );
+
+watch(
+  () => route.path,
+  () => {
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      sidebarOpen.value = false;
+    }
+  }
+);
 </script>
 
 <template>
-  <div id="app" class="min-h-screen flex bg-gray-50 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
-    <!-- 左侧边栏 - 祥子淡蓝色 -->
-    <aside :class="[
-      'fixed left-0 top-0 h-full bg-sakiko-dark dark:bg-slate-900 text-white z-40 transition-all duration-300 flex flex-col shadow-2xl',
-      sidebarOpen ? 'w-56' : 'w-0'
-    ]">
-      <div class="p-4 flex items-center gap-3 border-b border-sakiko dark:border-gray-700">
-        <button @click="toggleSidebar" class="text-xl hover:text-white transition-colors">
-          <Menu class="w-6 h-6" />
-        </button>
-        <router-link v-if="sidebarOpen" to="/"
-          class="text-xl font-bold text-white no-underline flex items-center gap-2">
-          SoyoSaki
-        </router-link>
+  <el-container id="app" class="app-shell">
+    <el-aside
+      :class="['app-sidebar', { 'is-collapsed': !sidebarOpen }]"
+      :width="sidebarOpen ? '224px' : '65px'"
+    >
+      <div class="sidebar-content">
+        <header class="sidebar-header">
+          <el-tooltip :content="sidebarOpen ? '收起菜单' : '展开菜单'" placement="bottom">
+            <el-button
+              class="sidebar-toggle"
+              link
+              circle
+              :aria-label="sidebarOpen ? '收起菜单' : '展开菜单'"
+              @click="toggleSidebar"
+            >
+              <el-icon :size="21">
+                <Fold v-if="sidebarOpen" />
+                <Expand v-else />
+              </el-icon>
+            </el-button>
+          </el-tooltip>
+          <router-link v-if="sidebarOpen" to="/" class="brand-link">SoyoSaki</router-link>
+        </header>
+
+        <el-scrollbar class="sidebar-scroll">
+          <nav class="sidebar-nav">
+            <el-menu
+              class="sidebar-menu"
+              :default-active="route.path"
+              :collapse="!sidebarOpen"
+              :collapse-transition="false"
+              router
+            >
+              <el-menu-item index="/">
+                <el-icon><House /></el-icon>
+                <template #title>首页</template>
+              </el-menu-item>
+
+              <el-menu-item index="/favorites">
+                <el-icon><Star /></el-icon>
+                <template #title>
+                  <el-row class="menu-label" justify="space-between" align="middle">
+                    <span>收藏</span>
+                    <el-tag
+                      v-if="!userStore.isLoggedIn"
+                      size="small"
+                      effect="plain"
+                      round
+                    >
+                      请登录
+                    </el-tag>
+                  </el-row>
+                </template>
+              </el-menu-item>
+
+              <el-menu-item index="/history">
+                <el-icon><Reading /></el-icon>
+                <template #title>
+                  <el-row class="menu-label" justify="space-between" align="middle">
+                    <span>阅读记录</span>
+                    <el-tag
+                      v-if="!userStore.isLoggedIn"
+                      size="small"
+                      effect="plain"
+                      round
+                    >
+                      请登录
+                    </el-tag>
+                  </el-row>
+                </template>
+              </el-menu-item>
+
+              <el-menu-item index="/settings">
+                <el-icon><Setting /></el-icon>
+                <template #title>设置</template>
+              </el-menu-item>
+            </el-menu>
+
+            <el-row class="theme-setting" justify="space-between" align="middle">
+              <el-space v-if="sidebarOpen" :size="10">
+                <el-icon :size="18"><Moon /></el-icon>
+                <span>深色模式</span>
+              </el-space>
+              <el-tooltip
+                :disabled="sidebarOpen"
+                :content="userStore.darkMode ? '切换浅色模式' : '切换深色模式'"
+                placement="right"
+              >
+                <el-switch
+                  v-model="userStore.darkMode"
+                  :active-action-icon="Moon"
+                  :inactive-action-icon="Sunny"
+                  :aria-label="userStore.darkMode ? '切换浅色模式' : '切换深色模式'"
+                />
+              </el-tooltip>
+            </el-row>
+
+            <el-divider />
+
+            <div v-if="sidebarOpen" class="source-title">数据源</div>
+            <el-space class="w-full" direction="vertical" fill :size="3">
+              <el-link
+                class="source-link"
+                href="https://archiveofourown.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                underline="never"
+              >
+                <el-space :size="12">
+                  <img :src="ao3Logo" alt="AO3" class="source-logo" />
+                  <span v-if="sidebarOpen">AO3</span>
+                </el-space>
+              </el-link>
+              <el-link
+                class="source-link"
+                href="https://www.pixiv.net/"
+                target="_blank"
+                rel="noopener noreferrer"
+                underline="never"
+              >
+                <el-space :size="12">
+                  <img :src="pixivLogo" alt="Pixiv" class="source-logo" />
+                  <span v-if="sidebarOpen">Pixiv</span>
+                </el-space>
+              </el-link>
+              <el-link
+                class="source-link"
+                href="https://www.lofter.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                underline="never"
+              >
+                <el-space :size="12">
+                  <img :src="lofterLogo" alt="Lofter" class="source-logo" />
+                  <span v-if="sidebarOpen">Lofter</span>
+                </el-space>
+              </el-link>
+              <el-link
+                class="source-link"
+                href="https://www.bilibili.com/read/home/"
+                target="_blank"
+                rel="noopener noreferrer"
+                underline="never"
+              >
+                <el-space :size="12">
+                  <img :src="bilibiliLogo" alt="Bilibili" class="source-logo" />
+                  <span v-if="sidebarOpen">Bilibili</span>
+                </el-space>
+              </el-link>
+            </el-space>
+          </nav>
+        </el-scrollbar>
+
+        <footer v-if="sidebarOpen || userStore.isLoggedIn" class="user-panel">
+          <template v-if="userStore.isLoggedIn">
+            <div v-if="sidebarOpen" class="user-session">
+              <el-avatar class="user-avatar" :size="34">
+                <el-icon><User /></el-icon>
+              </el-avatar>
+              <div class="user-copy">
+                <span class="user-name">{{ userStore.user?.username }}</span>
+                <span class="user-status">已登录</span>
+              </div>
+              <el-tooltip content="登出" placement="top">
+                <el-button
+                  class="logout-button"
+                  text
+                  circle
+                  type="danger"
+                  aria-label="登出"
+                  @click="handleLogout"
+                >
+                  <el-icon><SwitchButton /></el-icon>
+                </el-button>
+              </el-tooltip>
+            </div>
+            <el-row v-else justify="center">
+              <el-tooltip content="登出" placement="right">
+                <el-button
+                  class="logout-button"
+                  text
+                  circle
+                  type="danger"
+                  aria-label="登出"
+                  @click="handleLogout"
+                >
+                  <el-icon><SwitchButton /></el-icon>
+                </el-button>
+              </el-tooltip>
+            </el-row>
+          </template>
+          <template v-else>
+            <el-button-group class="auth-actions">
+              <el-button class="auth-button" plain @click="router.push('/login')">
+                登录
+              </el-button>
+              <el-button class="auth-button" type="primary" @click="router.push('/register')">
+                注册
+              </el-button>
+            </el-button-group>
+          </template>
+        </footer>
       </div>
+    </el-aside>
 
-      <nav v-if="sidebarOpen" class="flex-1 p-4 space-y-2">
-        <router-link to="/"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko dark:hover:bg-gray-800 no-underline text-white transition-colors">
-          <Home class="w-5 h-5" />
-          <span>首页</span>
-        </router-link>
+    <div
+      v-if="sidebarOpen"
+      class="sidebar-backdrop"
+      aria-hidden="true"
+      @click="toggleSidebar"
+    />
 
-        <router-link to="/favorites"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko dark:hover:bg-gray-800 no-underline text-white transition-colors">
-          <Heart class="w-5 h-5" />
-          <span>收藏</span>
-          <span v-if="!userStore.isLoggedIn" class="text-xs text-white/70">请登录</span>
-        </router-link>
-        <router-link to="/history"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko dark:hover:bg-gray-800 no-underline text-white transition-colors">
-          <BookOpen class="w-5 h-5" />
-          <span>阅读记录</span>
-          <span v-if="!userStore.isLoggedIn" class="text-xs text-white/70">请登录</span>
-        </router-link>
-
-        <router-link to="/settings"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko dark:hover:bg-gray-800 no-underline text-white transition-colors">
-          <Settings class="w-5 h-5" />
-          <span>设置</span>
-        </router-link>
-
-        <button @click="userStore.toggleDarkMode()"
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sakiko dark:hover:bg-gray-800 text-white transition-colors text-left cursor-pointer">
-          <Moon v-if="!userStore.darkMode" class="w-5 h-5" />
-          <Sun v-else class="w-5 h-5" />
-          <span>{{ userStore.darkMode ? '切换浅色模式' : '切换深色模式' }}</span>
-        </button>
-
-        <div class="border-t border-sakiko dark:border-gray-700 my-4"></div>
-
-        <div class="text-xs text-sakiko-pale uppercase tracking-wide px-3 mb-2">数据源</div>
-        <a href="https://archiveofourown.org/" target="_blank"
-          class="flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-sakiko dark:hover:bg-gray-800 rounded-lg transition-colors no-underline">
-          <img :src="ao3Logo" alt="AO3" class="w-5 h-5 object-contain" />
-          <span>AO3</span>
-        </a>
-        <a href="https://www.pixiv.net/" target="_blank"
-          class="flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-sakiko dark:hover:bg-gray-800 rounded-lg transition-colors no-underline">
-          <img :src="pixivLogo" alt="Pixiv" class="w-5 h-5 object-contain" />
-          <span>Pixiv</span>
-        </a>
-        <a href="https://www.lofter.com/" target="_blank"
-          class="flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-sakiko dark:hover:bg-gray-800 rounded-lg transition-colors no-underline">
-          <img :src="lofterLogo" alt="Lofter" class="w-5 h-5 object-contain" />
-          <span>Lofter</span>
-        </a>
-        <a href="https://www.bilibili.com/read/home/" target="_blank"
-          class="flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-sakiko dark:hover:bg-gray-800 rounded-lg transition-colors no-underline">
-          <img :src="bilibiliLogo" alt="Bilibili" class="w-5 h-5 object-contain" />
-          <span>Bilibili</span>
-        </a>
-      </nav>
-
-      <!-- 用户区域 -->
-      <div v-if="sidebarOpen" class="p-4 border-t border-sakiko dark:border-gray-700">
-        <template v-if="userStore.isLoggedIn">
-          <div class="flex items-center justify-between">
-            <span class="text-sm">{{ userStore.user?.username }}</span>
-            <button @click="handleLogout"
-              class="text-xs px-2 py-1 bg-transparent border border-sakiko rounded hover:border-red-400 hover:text-red-400 transition-all">
-              登出
-            </button>
-          </div>
-        </template>
-        <template v-else>
-          <div class="flex gap-2">
-            <router-link to="/login"
-              class="flex-1 text-center text-sm py-2 border border-sakiko rounded hover:bg-sakiko no-underline text-white transition-colors">
-              登录
-            </router-link>
-            <router-link to="/register"
-              class="flex-1 text-center text-sm py-2 bg-soyo rounded no-underline text-white hover:bg-soyo-dark transition-colors">
-              注册
-            </router-link>
-          </div>
-        </template>
-      </div>
-    </aside>
-
-    <!-- 侧边栏收起时显示的小按钮 -->
-    <button v-if="!sidebarOpen" @click="toggleSidebar"
-      class="fixed left-0 top-4 z-50 bg-sakiko-dark text-white p-3 rounded-r-lg hover:bg-sakiko transition-colors">
-      <Menu class="w-6 h-6" />
-    </button>
-
-    <!-- 主内容区域 -->
-    <main :class="[
-      'flex-1 transition-all duration-300',
-      sidebarOpen ? 'ml-56' : 'ml-0'
-    ]">
+    <el-main :class="['app-main', { 'is-sidebar-open': sidebarOpen }]">
       <router-view />
-    </main>
-  </div>
+    </el-main>
+  </el-container>
 </template>
+
+<style scoped>
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  height: 100vh;
+  overflow: hidden;
+  color: var(--el-color-white);
+  background: var(--color-sakiko-dark);
+  border-right: 1px solid var(--el-border-color);
+  transition: width 0.3s ease;
+  --el-border-color: var(--color-sakiko);
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 68px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--el-border-color);
+}
+
+.sidebar-toggle {
+  flex: 0 0 auto;
+  --el-button-text-color: var(--el-color-white);
+  --el-button-hover-text-color: var(--el-color-white);
+}
+
+.brand-link {
+  overflow: hidden;
+  color: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-scroll {
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar-nav {
+  padding: 12px;
+}
+
+.app-sidebar.is-collapsed .sidebar-nav {
+  padding-inline: 0;
+}
+
+.sidebar-menu {
+  border-right: 0;
+  --el-menu-bg-color: transparent;
+  --el-menu-text-color: var(--el-color-white);
+  --el-menu-active-color: var(--el-color-white);
+  --el-menu-hover-bg-color: var(--color-sakiko);
+}
+
+.menu-label {
+  width: 100%;
+}
+
+.theme-setting {
+  padding: 12px 20px 0;
+}
+
+.app-sidebar.is-collapsed .theme-setting {
+  justify-content: center;
+  padding: 12px 0 0;
+}
+
+.source-title {
+  padding: 0 12px 7px;
+  color: var(--color-sakiko-pale);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.source-link {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  justify-content: flex-start;
+  --el-link-text-color: var(--el-color-white);
+  --el-link-hover-text-color: var(--el-color-white);
+}
+
+.app-sidebar.is-collapsed .source-link {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.source-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.user-panel {
+  padding: 14px;
+  border-top: 1px solid var(--el-border-color);
+}
+
+.user-session {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-status {
+  color: var(--color-sakiko-pale);
+  font-size: 11px;
+}
+
+.auth-actions {
+  width: 100%;
+}
+
+.auth-actions :deep(.el-button) {
+  flex: 1;
+}
+
+.app-main {
+  min-width: 0;
+  min-height: 100vh;
+  margin-left: 65px;
+  overflow: visible;
+  padding: 0;
+  transition: margin-left 0.3s ease;
+}
+
+.app-main.is-sidebar-open {
+  margin-left: 224px;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+:global(.dark .app-sidebar) {
+  background: var(--el-bg-color);
+  --el-border-color: var(--el-border-color-darker);
+}
+
+:global(.dark .sidebar-menu) {
+  --el-menu-hover-bg-color: var(--el-fill-color-light);
+}
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    max-width: calc(100vw - 48px);
+  }
+
+  .sidebar-content {
+    max-width: calc(100vw - 48px);
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    display: block;
+    background: var(--el-overlay-color-lighter);
+  }
+
+  .app-main,
+  .app-main.is-sidebar-open {
+    margin-left: 65px;
+  }
+}
+</style>

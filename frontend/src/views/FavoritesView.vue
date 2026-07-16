@@ -1,20 +1,23 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
-import { useFavoritesStore } from '@stores/favorites';
-import NovelCard from '@components/novel/NovelCard.vue';
-import { Heart } from 'lucide-vue-next';
-import type { Novel } from '@app-types/novel';
-
-interface FavoriteItem {
-  id: number;
-  novel_id: string;
-  source: string;
-  title: string;
-  author?: string;
-  cover_url?: string;
-  source_url?: string;
-  created_at: string;
-}
+import { computed, onMounted } from "vue";
+import {
+  ElAlert,
+  ElAvatar,
+  ElButton,
+  ElCard,
+  ElCol,
+  ElEmpty,
+  ElRow,
+  ElSkeleton,
+  ElSpace,
+  ElTag,
+  ElText,
+} from "element-plus";
+import { CollectionTag, Search } from "@element-plus/icons-vue";
+import { useFavoritesStore } from "@stores/favorites";
+import NovelCard from "@components/novel/NovelCard.vue";
+import type { Novel } from "@app-types/novel";
+import type { FavoriteItem } from "@app-types/user_data";
 
 const favoritesStore = useFavoritesStore();
 const favorites = computed(() => favoritesStore.items);
@@ -26,69 +29,132 @@ onMounted(async () => {
   await favoritesStore.fetchFavorites(true);
 });
 
-async function removeFavorite(id: number) {
-  // 取消收藏
-  try {
-    const target = favoritesStore.items.find((item) => item.id === id);
-    if (target) {
-      await favoritesStore.removeFavoriteByKey(target.source, target.novel_id);
-    }
-  } catch (err) {
-    console.warn('取消收藏失败', err);
-  }
-}
-
 function toNovel(fav: FavoriteItem): Novel {
   // 转成小说结构
   return {
     id: fav.novel_id,
-    source: fav.source as Novel['source'],
+    source: fav.source as Novel["source"],
     title: fav.title,
-    author: fav.author || 'Unknown',
-    summary: '',
+    author: fav.author || "Unknown",
+    summary: "",
     tags: [],
-    published_at: fav.created_at || '',
-    source_url: fav.source_url || '',
+    published_at: fav.published_at || "",
+    source_url: fav.source_url || "",
     cover_image: fav.cover_url,
   };
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-    <header
-      class="bg-linear-to-r from-primary to-secondary text-white py-12 text-center dark:bg-none dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300 shadow-sm border-b border-transparent">
-      <h1 class="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
-        <Heart class="w-8 h-8" /> 收藏
-      </h1>
-      <p>共收藏 {{ favorites.length }} 篇小说</p>
+  <div class="collection-page">
+    <header class="page-hero">
+      <ElRow class="page-heading" align="middle" justify="space-between">
+        <ElSpace :size="16">
+          <ElAvatar class="page-avatar" :size="54" :icon="CollectionTag" />
+          <ElSpace direction="vertical" alignment="flex-start" :size="4">
+            <ElText tag="h1" class="page-title">我的收藏</ElText>
+            <ElText tag="p" class="page-subtitle">
+              把喜欢的作品安静地收在这里
+            </ElText>
+          </ElSpace>
+        </ElSpace>
+        <ElTag class="count-tag" effect="light" round>
+          {{ favorites.length }} 篇
+        </ElTag>
+      </ElRow>
     </header>
 
-    <main class="py-8">
-      <div class="max-w-7xl mx-auto px-4">
-        <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">加载中...</div>
+    <main class="page-content">
+      <ElCard v-if="loading" shadow="never">
+        <ElSkeleton :rows="6" animated />
+      </ElCard>
 
-        <div v-else-if="error"
-          class="text-center text-red-500 p-8 bg-red-50 rounded-lg dark:bg-red-900/20 dark:text-red-400">
-          {{ error }}
-        </div>
+      <ElAlert
+        v-else-if="error"
+        :title="error || ''"
+        type="error"
+        show-icon
+        :closable="false"
+      />
 
-        <div v-else-if="favorites.length === 0" class="text-center py-16">
-          <p class="text-gray-500 mb-6 dark:text-gray-400">还没有收藏任何小说</p>
-          <router-link to="/" class="btn-primary">去发现好文</router-link>
-        </div>
+      <ElCard
+        v-else-if="favorites.length === 0"
+        shadow="never"
+      >
+        <ElEmpty description="还没有收藏任何小说">
+          <RouterLink v-slot="{ navigate }" to="/" custom>
+            <ElButton type="primary" :icon="Search" @click="navigate">
+              去发现好文
+            </ElButton>
+          </RouterLink>
+        </ElEmpty>
+      </ElCard>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <div v-for="fav in favorites" :key="fav.id" class="relative group">
-            <NovelCard :novel="toNovel(fav)" :show-favorite-action="false" />
-            <button class="absolute top-2 right-2 px-3 py-1 bg-red-500/90 text-white text-sm rounded
-                     opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-              @click="removeFavorite(fav.id)">
-              取消收藏
-            </button>
-          </div>
-        </div>
-      </div>
+      <ElRow v-else class="novel-row" :gutter="22">
+        <ElCol
+          v-for="fav in favorites"
+          :key="fav.id"
+          :xs="24"
+          :sm="12"
+          :md="8"
+          :lg="6"
+        >
+          <NovelCard :novel="toNovel(fav)" />
+        </ElCol>
+      </ElRow>
     </main>
   </div>
 </template>
+
+<style scoped>
+.collection-page {
+  min-height: 100vh;
+  background: var(--el-fill-color-extra-light);
+}
+
+.page-hero {
+  padding: 34px 28px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--el-color-primary);
+}
+
+.page-heading {
+  max-width: 1280px;
+  margin: 0 auto;
+  row-gap: 8px;
+}
+
+.count-tag {
+  margin-left: auto;
+}
+
+.page-avatar {
+  color: var(--el-color-primary-dark-2);
+  background: var(--el-color-primary-light-9);
+}
+
+.page-title,
+.page-subtitle {
+  margin: 0;
+  color: var(--el-text-color-primary);
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.page-subtitle {
+  font-size: 14px;
+}
+
+.page-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px;
+}
+
+.novel-row {
+  row-gap: 22px;
+}
+</style>

@@ -7,7 +7,8 @@ import ao3Logo from '@assets/ao3.png';
 import pixivLogo from '@assets/pixiv.png';
 import lofterLogo from '@assets/lofter.png';
 import bilibiliLogo from '@assets/bilibili.png';
-import { Lock, RefreshCw } from 'lucide-vue-next';
+import { ElAlert, ElButton, ElDialog, ElIcon, ElSpace, ElText } from 'element-plus';
+import { Lock, Refresh } from '@element-plus/icons-vue';
 
 const sourcesStore = useSourcesStore();
 const router = useRouter();
@@ -84,59 +85,32 @@ function continueWithoutCredentials() {
 </script>
 
 <template>
-  <div class="flex items-center gap-3">
-    <span class="font-medium text-gray-700 whitespace-nowrap dark:text-gray-300">数据源:</span>
-    <div class="flex gap-2 flex-wrap">
-      <button v-for="source in sourcesStore.sources" :key="source.name" :class="[
-        'flex items-center gap-1.5 px-3 py-2 border-2 rounded-lg cursor-pointer transition-all text-sm',
-        source.enabled
-          ? 'border-sakiko bg-sakiko text-white'
-          : 'border-gray-200 bg-white hover:border-sakiko hover:text-sakiko-dark dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-sakiko dark:hover:text-sakiko-light',
-        source.requiresAuth && !source.enabled ? 'opacity-60' : ''
-      ]" @click="toggle(source.name)" :title="source.requiresAuth ? '需要配置账号' : ''">
-        <span v-if="source.enabled && props.loadingSources?.[source.name]"
-          class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-        <span v-else-if="sourceLogos[source.name]" class="text-base">
-          <img :src="sourceLogos[source.name]" :alt="source.displayName" class="w-4 h-4 object-contain" />
-        </span>
+  <el-space wrap :size="12" alignment="center">
+    <el-text tag="strong">数据源:</el-text>
+    <el-space wrap :size="8">
+      <el-button v-for="source in sourcesStore.sources" :key="source.name"
+        :type="source.enabled ? 'primary' : 'default'" :plain="!source.enabled"
+        :loading="source.enabled && props.loadingSources?.[source.name]" @click="toggle(source.name)"
+        :title="source.requiresAuth ? '需要配置账号' : ''">
+        <img v-if="sourceLogos[source.name]" :src="sourceLogos[source.name]" :alt="source.displayName"
+          class="h-4 w-4 object-contain" />
 
         <span>{{ source.displayName }}</span>
-        <Lock v-if="source.requiresAuth && !source.enabled" class="w-3 h-3" />
-      </button>
+        <el-icon v-if="source.requiresAuth && !source.enabled" :size="12"><Lock /></el-icon>
+      </el-button>
 
       <!-- 刷新 -->
-      <button @click="emit('refresh')"
-        class="flex items-center gap-1.5 px-3 py-2 border-2 border-gray-200 bg-white rounded-lg cursor-pointer transition-all text-sm hover:border-sakiko hover:text-sakiko-dark dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-sakiko dark:hover:text-sakiko-light"
-        title="刷新数据">
-        <RefreshCw class="w-4 h-4" />
-      </button>
-    </div>
-  </div>
+      <el-button circle plain :icon="Refresh" title="刷新数据" @click="emit('refresh')" />
+    </el-space>
+  </el-space>
 
   <!-- 登录提示 -->
-  <Teleport to="body">
-    <div v-if="showCredentialDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      @click.self="showCredentialDialog = false">
-      <div
-        class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">
-          需要配置登录凭证
-        </h3>
-        <p class="text-gray-600 dark:text-gray-300 mb-6">
-          <span class="font-medium text-sakiko">{{ pendingSourceName }}</span>
-          需要登录凭证才能获取内容。请先前往设置页面完成配置。
-        </p>
-        <div class="flex gap-3 justify-end">
-          <button @click="continueWithoutCredentials"
-            class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-            仍然启用
-          </button>
-          <button @click="goToSettings"
-            class="px-4 py-2 bg-sakiko text-white rounded-lg hover:bg-sakiko/90 transition-colors">
-            去设置
-          </button>
-        </div>
-      </div>
-    </div>
-  </Teleport>
+  <el-dialog v-model="showCredentialDialog" title="需要配置登录凭证" width="min(90vw, 28rem)" align-center>
+    <el-alert :title="pendingSourceName" type="warning" :closable="false" show-icon
+      description="需要登录凭证才能获取内容。请先前往设置页面完成配置。" />
+    <template #footer>
+      <el-button @click="continueWithoutCredentials">仍然启用</el-button>
+      <el-button type="primary" @click="goToSettings">去设置</el-button>
+    </template>
+  </el-dialog>
 </template>

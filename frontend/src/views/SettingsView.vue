@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
+import {
+  Delete,
+  Key,
+  RefreshRight,
+  Setting,
+} from "@element-plus/icons-vue";
 import { credentialsApi } from "@services/api";
 import { useNovelsStore } from "@stores/novels";
 import type { CredentialState } from "@app-types/source";
@@ -80,116 +86,221 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-    <header
-      class="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300 shadow-sm">
-      <div class="px-6 py-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">设置</h1>
-        <p class="text-sm text-gray-500 mt-1 dark:text-gray-400">
-          登录并配置需要凭证的数据源。
-        </p>
-      </div>
+  <div class="settings-page">
+    <header class="page-hero">
+      <ElRow class="page-heading" align="middle" justify="space-between">
+        <ElSpace :size="16">
+          <ElAvatar class="page-avatar" :size="54" :icon="Setting" />
+          <ElSpace direction="vertical" alignment="flex-start" :size="4">
+            <ElText tag="h1" class="page-title">设置</ElText>
+            <ElText tag="p" class="page-subtitle">
+              管理需要浏览器凭证的数据源与标签配置
+            </ElText>
+          </ElSpace>
+        </ElSpace>
+      </ElRow>
     </header>
 
-    <main class="p-6">
-      <section
-        class="bg-white rounded-xl border border-gray-200 p-6 space-y-4 max-w-3xl dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-base font-semibold text-gray-900 dark:text-white">
-              Pixiv 登录
-            </div>
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-              用于搜索 Pixiv 同人文。
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button type="button" class="flex items-center gap-2 px-4 py-2 border-2 rounded-lg text-sm transition-all"
-              :class="credentialStatus.pixiv.configured
-                ? 'border-green-400 text-green-700 dark:text-green-400 dark:border-green-500/50'
-                : 'border-gray-200 hover:border-sakiko hover:text-sakiko-dark dark:border-gray-600 dark:text-gray-300 dark:hover:border-sakiko dark:hover:text-sakiko-light'
-                " @click="startCredential('pixiv')">
-              <span v-if="credentialStatus.pixiv.state === 'running'"
-                class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-              <span>{{
-                credentialStatus.pixiv.configured ? "重新登录" : "开始登录"
-                }}</span>
-            </button>
-            <button type="button"
-              class="px-3 py-2 border-2 rounded-lg text-sm border-red-200 text-red-600 hover:border-red-400 hover:text-red-700 transition-all dark:border-red-900/30 dark:text-red-400 dark:hover:border-red-500/50 dark:hover:text-red-300"
-              @click="clearCredential('pixiv')">
-              清除
-            </button>
-          </div>
-        </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400" v-if="credentialStatus.pixiv.message">
-          {{ credentialStatus.pixiv.message }}
-        </div>
-      </section>
+    <main class="page-content">
+      <ElSpace class="settings-stack" direction="vertical" fill :size="18">
+        <ElCard shadow="never">
+          <ElSpace class="card-content" direction="vertical" fill :size="18">
+            <ElRow class="settings-row" :gutter="24" align="middle">
+              <ElCol :xs="24" :sm="14">
+                <ElSpace direction="vertical" alignment="flex-start" :size="4">
+                  <ElSpace wrap :size="10">
+                    <ElText tag="strong" size="large">Pixiv 登录</ElText>
+                    <ElTag
+                      :type="credentialStatus.pixiv.configured ? 'success' : 'info'"
+                      effect="light"
+                      round
+                      size="small"
+                    >
+                      {{ credentialStatus.pixiv.configured ? "已配置" : "未配置" }}
+                    </ElTag>
+                  </ElSpace>
+                  <ElText type="info" size="small">用于搜索 Pixiv 同人文。</ElText>
+                </ElSpace>
+              </ElCol>
+              <ElCol :xs="24" :sm="10">
+                <ElRow justify="end">
+                  <ElSpace wrap :size="10">
+                    <ElButton
+                      :type="credentialStatus.pixiv.configured ? 'success' : 'primary'"
+                      :icon="credentialStatus.pixiv.configured ? RefreshRight : Key"
+                      :loading="credentialStatus.pixiv.state === 'running'"
+                      @click="startCredential('pixiv')"
+                    >
+                      {{ credentialStatus.pixiv.configured ? "重新登录" : "开始登录" }}
+                    </ElButton>
+                    <ElButton
+                      type="danger"
+                      plain
+                      :icon="Delete"
+                      @click="clearCredential('pixiv')"
+                    >
+                      清除
+                    </ElButton>
+                  </ElSpace>
+                </ElRow>
+              </ElCol>
+            </ElRow>
+            <ElAlert
+              v-if="credentialStatus.pixiv.message"
+              :title="credentialStatus.pixiv.message"
+              :type="credentialStatus.pixiv.configured ? 'success' : 'info'"
+              show-icon
+              :closable="false"
+            />
+          </ElSpace>
+        </ElCard>
 
-      <section
-        class="bg-white rounded-xl border border-gray-200 p-6 space-y-4 max-w-3xl mt-6 dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-base font-semibold text-gray-900 dark:text-white">
-              Lofter 登录
-            </div>
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-              用于搜索 Lofter 同人文。
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button type="button" class="flex items-center gap-2 px-4 py-2 border-2 rounded-lg text-sm transition-all"
-              :class="credentialStatus.lofter.configured
-                ? 'border-green-400 text-green-700 dark:text-green-400 dark:border-green-500/50'
-                : 'border-gray-200 hover:border-soyo hover:text-soyo-dark dark:border-gray-600 dark:text-gray-300 dark:hover:border-soyo dark:hover:text-soyo-light'
-                " @click="startCredential('lofter')">
-              <span v-if="credentialStatus.lofter.state === 'running'"
-                class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-              <span>{{
-                credentialStatus.lofter.configured ? "重新登录" : "开始登录"
-                }}</span>
-            </button>
-            <button type="button"
-              class="px-3 py-2 border-2 rounded-lg text-sm border-red-200 text-red-600 hover:border-red-400 hover:text-red-700 transition-all dark:border-red-900/30 dark:text-red-400 dark:hover:border-red-500/50 dark:hover:text-red-300"
-              @click="clearCredential('lofter')">
-              清除
-            </button>
-          </div>
-        </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400" v-if="credentialStatus.lofter.message">
-          {{ credentialStatus.lofter.message }}
-        </div>
-      </section>
+        <ElCard shadow="never">
+          <ElSpace class="card-content" direction="vertical" fill :size="18">
+            <ElRow class="settings-row" :gutter="24" align="middle">
+              <ElCol :xs="24" :sm="14">
+                <ElSpace direction="vertical" alignment="flex-start" :size="4">
+                  <ElSpace wrap :size="10">
+                    <ElText tag="strong" size="large">Lofter 登录</ElText>
+                    <ElTag
+                      :type="credentialStatus.lofter.configured ? 'success' : 'info'"
+                      effect="light"
+                      round
+                      size="small"
+                    >
+                      {{ credentialStatus.lofter.configured ? "已配置" : "未配置" }}
+                    </ElTag>
+                  </ElSpace>
+                  <ElText type="info" size="small">用于搜索 Lofter 同人文。</ElText>
+                </ElSpace>
+              </ElCol>
+              <ElCol :xs="24" :sm="10">
+                <ElRow justify="end">
+                  <ElSpace wrap :size="10">
+                    <ElButton
+                      :type="credentialStatus.lofter.configured ? 'success' : 'primary'"
+                      :icon="credentialStatus.lofter.configured ? RefreshRight : Key"
+                      :loading="credentialStatus.lofter.state === 'running'"
+                      @click="startCredential('lofter')"
+                    >
+                      {{ credentialStatus.lofter.configured ? "重新登录" : "开始登录" }}
+                    </ElButton>
+                    <ElButton
+                      type="danger"
+                      plain
+                      :icon="Delete"
+                      @click="clearCredential('lofter')"
+                    >
+                      清除
+                    </ElButton>
+                  </ElSpace>
+                </ElRow>
+              </ElCol>
+            </ElRow>
+            <ElAlert
+              v-if="credentialStatus.lofter.message"
+              :title="credentialStatus.lofter.message"
+              :type="credentialStatus.lofter.configured ? 'success' : 'info'"
+              show-icon
+              :closable="false"
+            />
+          </ElSpace>
+        </ElCard>
 
-      <p v-if="
-        credentialStatus.pixiv.state === 'running' ||
-        credentialStatus.lofter.state === 'running'
-      " class="text-xs text-gray-500 mt-4 dark:text-gray-400">
-        已弹出浏览器窗口，请在窗口内完成登录。
-      </p>
+        <ElAlert
+          v-if="
+            credentialStatus.pixiv.state === 'running' ||
+            credentialStatus.lofter.state === 'running'
+          "
+          title="已弹出浏览器窗口，请在窗口内完成登录。"
+          type="info"
+          show-icon
+          :closable="false"
+        />
 
-      <!-- 标签配置重置 -->
-      <section
-        class="bg-white rounded-xl border border-gray-200 p-6 space-y-4 max-w-3xl mt-6 dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-base font-semibold text-gray-900 dark:text-white">
-              标签配置
-            </div>
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-              重置搜索标签和排除标签为默认值。
-            </div>
-          </div>
-          <button type="button"
-            class="flex items-center gap-2 px-4 py-2 border-2 rounded-lg text-sm transition-all border-orange-200 text-orange-600 hover:border-orange-400 hover:text-orange-700 dark:border-orange-900/30 dark:text-orange-400 dark:hover:border-orange-500/50 dark:hover:text-orange-300"
-            :disabled="resetting" @click="resetTagConfigs">
-            <span v-if="resetting"
-              class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-            <span>{{ resetting ? '重置中...' : '重置为默认' }}</span>
-          </button>
-        </div>
-      </section>
+        <ElCard shadow="never">
+          <ElRow class="settings-row" :gutter="24" align="middle">
+            <ElCol :xs="24" :sm="16">
+              <ElSpace direction="vertical" alignment="flex-start" :size="4">
+                <ElText tag="strong" size="large">标签配置</ElText>
+                <ElText type="info" size="small">重置搜索标签和排除标签为默认值。</ElText>
+              </ElSpace>
+            </ElCol>
+            <ElCol :xs="24" :sm="8">
+              <ElRow justify="end">
+                <ElSpace wrap>
+                  <ElButton
+                    type="warning"
+                    plain
+                    :icon="RefreshRight"
+                    :loading="resetting"
+                    @click="resetTagConfigs"
+                  >
+                    重置为默认
+                  </ElButton>
+                </ElSpace>
+              </ElRow>
+            </ElCol>
+          </ElRow>
+        </ElCard>
+      </ElSpace>
     </main>
   </div>
 </template>
+
+<style scoped>
+.settings-page {
+  min-height: 100vh;
+  background: var(--el-fill-color-extra-light);
+}
+
+.page-hero {
+  padding: 34px 28px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--el-color-primary);
+}
+
+.page-heading {
+  max-width: 1280px;
+  margin: 0 auto;
+  row-gap: 8px;
+}
+
+.page-avatar {
+  color: var(--el-color-primary-dark-2);
+  background: var(--el-color-primary-light-9);
+}
+
+.page-title,
+.page-subtitle {
+  margin: 0;
+  color: var(--el-text-color-primary);
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.page-subtitle {
+  font-size: 14px;
+}
+
+.page-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px;
+}
+
+.settings-stack {
+  width: 100%;
+}
+
+.settings-row {
+  row-gap: 16px;
+}
+
+.card-content {
+  width: 100%;
+}
+</style>

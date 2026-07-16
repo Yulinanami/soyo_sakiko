@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { ChevronRight, ChevronDown } from 'lucide-vue-next';
+import { ElButton, ElCheckTag, ElInput, ElSpace, ElText } from 'element-plus';
+import { ArrowDown, ArrowRight, Plus } from '@element-plus/icons-vue';
 
 const props = defineProps<{
   selectedTags: string[];
@@ -50,33 +51,22 @@ function isSelected(tag: string) {
 </script>
 
 <template>
-  <div class="flex items-center gap-3 flex-wrap">
-    <button type="button"
-      class="w-6 h-6 flex items-center justify-center rounded border border-gray-200 text-gray-600 hover:border-red-400 hover:text-red-500 transition-all dark:border-gray-600 dark:text-gray-400 dark:hover:border-red-400 dark:hover:text-red-400"
-      @click="emit('toggle-exclude')" :title="props.excludeOpen ? '收起排除标签' : '展开排除标签'" aria-label="切换排除标签">
-      <ChevronDown v-if="props.excludeOpen" class="w-4 h-4" />
-      <ChevronRight v-else class="w-4 h-4" />
-    </button>
-    <span class="font-medium text-gray-700 whitespace-nowrap dark:text-gray-300">标签:</span>
-    <div class="flex gap-1.5 flex-wrap">
-      <button v-for="tag in allTags" :key="tag" :class="[
-        'px-3 py-1.5 border rounded-full text-sm cursor-pointer transition-all',
-        isSelected(tag)
-          ? 'bg-soyo text-white border-soyo'
-          : 'border-gray-200 bg-white hover:border-soyo hover:text-soyo-dark dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-soyo dark:hover:text-soyo-light'
-      ]" @click="toggleTag(tag)">
+  <el-space wrap :size="12" alignment="center">
+    <el-button circle plain size="small" :icon="props.excludeOpen ? ArrowDown : ArrowRight"
+      @click="emit('toggle-exclude')" :title="props.excludeOpen ? '收起排除标签' : '展开排除标签'"
+      aria-label="切换排除标签" />
+    <el-text tag="strong">标签:</el-text>
+    <el-space wrap :size="6">
+      <el-check-tag v-for="tag in allTags" :key="tag" type="primary" :checked="isSelected(tag)"
+        @change="toggleTag(tag)">
         {{ tag }}
-      </button>
-    </div>
-    <div class="flex gap-1">
-      <input v-model="customTag" type="text" placeholder="添加标签..." @keyup.enter="addCustomTag"
-        class="px-3 py-1.5 border border-gray-200 rounded-full text-sm w-28 focus:outline-none focus:border-primary bg-white text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-white" />
-      <button @click="addCustomTag" :disabled="!customTag.trim()" class="w-8 h-8 border border-gray-200 bg-white rounded-full cursor-pointer text-lg flex items-center justify-center text-gray-500
-               hover:bg-primary hover:text-white hover:border-primary transition-all
-               disabled:opacity-50 disabled:cursor-not-allowed
-               dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:hover:bg-primary">
-        +
-      </button>
-    </div>
-  </div>
+      </el-check-tag>
+    </el-space>
+    <el-space :size="4">
+      <el-input v-model="customTag" placeholder="添加标签..." size="small" class="w-28"
+        @keyup.enter="addCustomTag" />
+      <el-button circle size="small" :icon="Plus" :disabled="!customTag.trim()" aria-label="添加标签"
+        @click="addCustomTag" />
+    </el-space>
+  </el-space>
 </template>

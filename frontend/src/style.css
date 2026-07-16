@@ -21,46 +21,68 @@
   --color-secondary: #7eb8da;
 }
 
-/* 主按钮 - 素世亚麻色 */
-.btn-primary {
-  @apply px-6 py-3 bg-soyo text-white font-semibold rounded-lg 
-         hover:bg-soyo-dark hover:shadow-lg hover:-translate-y-0.5 
-         transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+:root {
+  --el-color-primary: #c4a77d;
+  --el-color-primary-rgb: 196, 167, 125;
+  --el-color-primary-light-3: #d4bc94;
+  --el-color-primary-light-5: #e2d3be;
+  --el-color-primary-light-7: #ede5d8;
+  --el-color-primary-light-8: #f3ede5;
+  --el-color-primary-light-9: #f9f6f2;
+  --el-color-primary-dark-2: #8b6914;
 }
 
-/* 次按钮 - 祥子淡蓝色 */
-.btn-secondary {
-  @apply px-4 py-2 border-2 border-sakiko bg-white text-sakiko-dark rounded-lg
-         hover:bg-sakiko hover:text-white transition-all duration-200;
+html.dark {
+  color-scheme: dark;
+  --el-color-primary: #896f50;
+  --el-color-primary-rgb: 137, 111, 80;
+  --el-color-primary-light-3: #66543e;
+  --el-color-primary-light-5: #4e4232;
+  --el-color-primary-light-7: #372f26;
+  --el-color-primary-light-8: #2b2620;
+  --el-color-primary-light-9: #201d1a;
+  --el-color-primary-dark-2: #a18c73;
 }
 
-.card {
-  @apply bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-200 dark:bg-gray-800 dark:border dark:border-gray-700;
+html,
+body,
+#app {
+  min-height: 100%;
 }
 
-.input {
-  @apply w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base
-         focus:outline-none focus:border-sakiko transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-white;
-}
-
-/* 普通标签 */
-.tag {
-  @apply px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-full dark:bg-gray-700 dark:text-gray-300;
-}
-
-/* 素祥相关标签高亮 - 使用祥子的淡蓝色 */
-.tag-highlight {
-  @apply bg-sakiko text-white;
+body {
+  margin: 0;
+  color: var(--el-text-color-primary);
+  background: var(--el-bg-color-page);
 }
 
 /* 阅读器内容样式 */
 .reader-content {
+  min-width: 0;
   font-family:
     "Noto Serif SC", "Source Han Serif CN", "Songti SC", "SimSun", serif;
   font-size: 1.125rem;
   line-height: 2;
-  @apply text-gray-800 dark:text-gray-300;
+  color: var(--el-text-color-primary);
+  overflow-wrap: anywhere;
   text-align: justify;
+}
+
+.reader-content img,
+.reader-content video,
+.reader-content iframe,
+.reader-content table {
+  max-width: 100%;
+}
+
+.reader-content table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.reader-content pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .reader-content p {
@@ -94,7 +116,7 @@
   display: block;
   margin: 1em 0;
   min-height: 120px;
-  background: #f1f5f9;
+  background: var(--el-fill-color-light);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -119,8 +141,8 @@
   width: 28px;
   height: 28px;
   margin: -14px 0 0 -14px;
-  border: 3px solid #cbd5f5;
-  border-top-color: #94a3b8;
+  border: 3px solid var(--el-border-color);
+  border-top-color: var(--el-text-color-secondary);
   border-radius: 50%;
   animation: soyo-spin 1s linear infinite;
 }
@@ -147,19 +169,17 @@
   display: none !important;
 }
 
-.reader-content .preface .title {
-  @apply block text-xl font-bold mb-4 text-soyo-dark dark:text-soyo-light;
-}
-
 .reader-content .module .heading {
-  @apply text-base font-normal text-black dark:text-gray-200 mb-2;
-  border-bottom: 1px solid #000;
+  @apply text-base font-normal mb-2;
   width: 100%;
   display: block;
+  color: var(--el-text-color-primary);
+  border-bottom: 1px solid var(--el-border-color);
 }
 
 .reader-content blockquote.userstuff {
-  @apply text-black dark:text-gray-200 border-none p-0 my-4;
+  @apply border-none p-0 my-4;
+  color: var(--el-text-color-primary);
   font-style: normal;
   text-indent: 0 !important;
 }

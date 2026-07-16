@@ -6,7 +6,17 @@ import type { Novel } from '@app-types/novel';
 import { useUserStore } from '@stores/user';
 import { useFavoritesStore } from '@stores/favorites';
 import { useHistoryStore } from '@stores/history';
-import { Download, ChevronUp } from 'lucide-vue-next';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpBold,
+  Bottom,
+  Download,
+  Loading,
+  Star,
+  StarFilled,
+  Top,
+} from '@element-plus/icons-vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -57,6 +67,8 @@ async function loadNovel() {
       }
       novel.value.cover_image = novel.value.cover_image || cached.cover_image;
       novel.value.source_url = novel.value.source_url || cached.source_url || novel.value.source_url;
+      novel.value.published_at = novel.value.published_at || cached.published_at || '';
+      novel.value.updated_at = novel.value.updated_at || cached.updated_at;
     }
   } catch (err) {
     console.warn('Could not load novel detail:', err);
@@ -82,8 +94,8 @@ async function loadNovel() {
       kudos: cached?.kudos,
       hits: cached?.hits,
       rating: cached?.rating,
-      published_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      published_at: cached?.published_at || '',
+      updated_at: cached?.updated_at,
       source_url: cached?.source_url || sourceUrl,
       cover_image: cached?.cover_image,
       is_complete: cached?.is_complete ?? true,
@@ -167,6 +179,7 @@ async function recordHistory(chapter: number) {
         author: novel.value.author,
         cover_url: novel.value.cover_image,
         source_url: novel.value.source_url,
+        published_at: novel.value.published_at || undefined,
         last_chapter: chapter,
         progress,
       },
@@ -318,124 +331,301 @@ function scrollToBottom() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-soyo-cream dark:bg-gray-900 transition-colors duration-300">
-    <!-- 顶部信息 -->
-    <header v-if="novel"
-      class="relative z-10 bg-soyo text-white py-8 dark:bg-gray-800 transition-colors duration-300 shadow-sm">
-      <div class="max-w-3xl mx-auto px-4">
-        <button type="button" @click="goBack" class="text-white/80 text-sm hover:text-white no-underline">
-          ← 返回列表
-        </button>
-        <h1 class="mt-4 mb-2 text-2xl md:text-3xl font-bold">{{ novel.title }}</h1>
-        <p class="opacity-90 mb-2">作者: {{ novel.author }}</p>
-        <div class="flex flex-wrap items-center gap-3 mb-2">
-          <a :href="novel.source_url" target="_blank"
-            class="inline-block text-sm text-white/90 hover:text-white underline-offset-4 hover:underline">
-            在 {{ source.toUpperCase() }} 查看原文
-          </a>
-          <button type="button" class="text-xs px-3 py-1 rounded-full bg-white/20 text-white hover:bg-white/30"
-            @click="toggleFavorite">
-            <span v-if="favoriteLoading"
-              class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            <span v-else>{{ isFavorite ? '已收藏' : '收藏' }}</span>
-          </button>
-          <button type="button"
-            class="text-xs px-3 py-1 rounded-full bg-white/20 text-white hover:bg-white/30 inline-flex items-center gap-1"
-            @click="handleDownload" title="下载 PDF">
-            <span v-if="downloading"
-              class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            <template v-else>
-              <Download class="w-3.5 h-3.5" />
-              <span>下载</span>
-            </template>
-          </button>
+  <div class="reader-page min-h-screen">
+    <header v-if="novel" class="reader-hero">
+      <div class="reader-shell">
+        <el-button link :icon="ArrowLeft" class="reader-back" @click="goBack">
+          返回列表
+        </el-button>
+
+        <div class="reader-heading">
+          <div>
+            <h1>{{ novel.title }}</h1>
+            <p>作者：{{ novel.author }}</p>
+          </div>
+          <el-tag type="info" round>{{ source.toUpperCase() }}</el-tag>
         </div>
-        <div class="flex gap-4 text-sm opacity-80">
-          <span class="bg-white/20 px-2 py-0.5 rounded">{{ source.toUpperCase() }}</span>
+
+        <div class="reader-actions">
+          <el-link :href="novel.source_url" target="_blank" underline="never" class="source-link">
+            在 {{ source.toUpperCase() }} 查看原文
+          </el-link>
+          <el-button
+            round
+            size="small"
+            :icon="isFavorite ? StarFilled : Star"
+            :loading="favoriteLoading"
+            @click="toggleFavorite"
+          >
+            {{ isFavorite ? '已收藏' : '收藏' }}
+          </el-button>
+          <el-button
+            round
+            size="small"
+            :icon="Download"
+            :loading="downloading"
+            title="下载 PDF"
+            @click="handleDownload"
+          >
+            下载
+          </el-button>
+        </div>
+
+        <div class="reader-meta">
           <span v-if="novel.word_count">{{ novel.word_count.toLocaleString() }} 字</span>
           <span v-if="novel.chapter_count">{{ novel.chapter_count }} 章</span>
         </div>
       </div>
     </header>
 
-    <!-- 章节导航 -->
-    <nav v-if="novel" class="bg-soyo-cream border-b border-soyo-light/30 py-4 dark:bg-gray-800 dark:border-gray-700">
-      <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
-        <button @click="prevChapter" :disabled="currentChapter <= 1"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500">
-          ← 上一章
-        </button>
-        <span class="text-gray-600 dark:text-gray-300">
+    <nav v-if="novel" class="chapter-nav-wrap">
+      <div class="reader-shell chapter-nav">
+        <el-button
+          plain
+          type="primary"
+          :icon="ArrowLeft"
+          :disabled="currentChapter <= 1"
+          @click="prevChapter"
+        >
+          上一章
+        </el-button>
+        <el-tag round effect="plain" size="large">
           第 {{ currentChapter }} / {{ novel.chapter_count || 1 }} 章
-        </span>
-        <button @click="nextChapter" :disabled="currentChapter >= (novel.chapter_count || 1)"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500">
-          下一章 →
-        </button>
+        </el-tag>
+        <el-button
+          plain
+          type="primary"
+          :icon="ArrowRight"
+          :disabled="currentChapter >= (novel.chapter_count || 1)"
+          @click="nextChapter"
+        >
+          下一章
+        </el-button>
       </div>
     </nav>
 
-    <!-- 正文内容 -->
-    <main class="py-12 bg-soyo-cream dark:bg-gray-900 transition-colors duration-300">
-      <div class="max-w-2xl mx-auto px-6">
-        <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">
-          <template v-if="isRetrying">
-            <div class="flex flex-col items-center gap-2">
-              <span
-                class="inline-block w-6 h-6 border-2 border-sakiko border-t-transparent rounded-full animate-spin"></span>
-              <span>正在自动重试 ({{ retryCount }}/{{ maxRetries }})...</span>
-              <span class="text-xs text-gray-400">Bilibili 风控触发，请稍候</span>
-            </div>
-          </template>
-          <template v-else>加载中...</template>
-        </div>
-        <div v-else-if="error" class="text-center py-16 text-red-500 dark:text-red-400">{{ error }}</div>
-        <article v-else ref="contentRef"
-          class="reader-content bg-soyo-cream/50 px-10 py-12 rounded-xl shadow-xl dark:bg-gray-800 dark:shadow-none transition-colors duration-300"
-          v-html="chapterContent"></article>
+    <main class="reader-main">
+      <div class="reader-content-shell">
+        <el-card v-if="loading" shadow="never">
+          <div v-if="isRetrying" class="retry-state">
+            <el-icon class="is-loading" :size="30"><Loading /></el-icon>
+            <strong>正在自动重试（{{ retryCount }}/{{ maxRetries }}）</strong>
+            <span>Bilibili 风控触发，请稍候</span>
+          </div>
+          <el-skeleton v-else :rows="10" animated />
+        </el-card>
+
+        <el-result v-else-if="error" icon="error" title="章节加载失败" :sub-title="error" />
+
+        <article v-else ref="contentRef" class="reader-content" v-html="chapterContent"></article>
       </div>
     </main>
 
-    <!-- 底部导航 -->
-    <nav v-if="novel && !loading"
-      class="bg-soyo-cream border-t border-soyo-light/30 py-4 mt-8 dark:bg-gray-800 dark:border-gray-700">
-      <div class="max-w-3xl mx-auto px-4 flex justify-between items-center">
-        <button @click="prevChapter" :disabled="currentChapter <= 1"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500">
-          ← 上一章
-        </button>
-        <span class="text-gray-500 text-sm dark:text-gray-400">{{ source.toUpperCase() }}</span>
-        <button @click="nextChapter" :disabled="currentChapter >= (novel.chapter_count || 1)"
-          class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-500">
-          下一章 →
-        </button>
+    <nav v-if="novel && !loading" class="chapter-nav-wrap chapter-nav-bottom">
+      <div class="reader-shell chapter-nav">
+        <el-button
+          plain
+          type="primary"
+          :icon="ArrowLeft"
+          :disabled="currentChapter <= 1"
+          @click="prevChapter"
+        >
+          上一章
+        </el-button>
+        <el-tag round type="info">{{ source.toUpperCase() }}</el-tag>
+        <el-button
+          plain
+          type="primary"
+          :icon="ArrowRight"
+          :disabled="currentChapter >= (novel.chapter_count || 1)"
+          @click="nextChapter"
+        >
+          下一章
+        </el-button>
       </div>
     </nav>
 
-    <!-- 浮动滚动按钮 -->
-    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
-      <transition enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100"
-        leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100"
-        leave-to-class="opacity-0 translate-y-4 scale-95">
-        <div v-if="isScrollNavOpen"
-          class="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 px-3 min-w-[100px]">
-          <button @click="scrollToTop"
-            class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-sakiko/10 hover:text-sakiko rounded-lg transition-colors">
+    <div class="reader-float">
+      <el-popover
+        v-model:visible="isScrollNavOpen"
+        placement="top-end"
+        trigger="click"
+        :width="150"
+      >
+        <template #reference>
+          <el-button
+            type="primary"
+            circle
+            size="large"
+            :icon="isScrollNavOpen ? Bottom : ArrowUpBold"
+            :title="isScrollNavOpen ? '收起' : '快速滚动'"
+          />
+        </template>
+        <el-space direction="vertical" fill :size="4">
+          <el-button text :icon="Top" style="width: 100%; justify-content: flex-start" @click="scrollToTop">
             回到顶部
-          </button>
-          <button @click="scrollToBottom"
-            class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-sakiko/10 hover:text-sakiko rounded-lg transition-colors border-t border-gray-100 dark:border-gray-700 mt-1 pt-2">
+          </el-button>
+          <el-button text :icon="Bottom" style="width: 100%; justify-content: flex-start" @click="scrollToBottom">
             直达底部
-          </button>
-        </div>
-      </transition>
-
-      <button @click="isScrollNavOpen = !isScrollNavOpen"
-        class="w-12 h-12 rounded-full bg-sakiko text-white shadow-lg hover:bg-sakiko/90 hover:shadow-xl transition-all duration-200 flex items-center justify-center"
-        :class="{ 'rotate-180': isScrollNavOpen }" :title="isScrollNavOpen ? '收起' : '快速滚动'">
-        <ChevronUp class="w-6 h-6 transition-transform duration-200" />
-      </button>
+          </el-button>
+        </el-space>
+      </el-popover>
     </div>
   </div>
 </template>
+
+<style scoped>
+.reader-page {
+  background: var(--el-bg-color-page);
+}
+
+.reader-shell {
+  width: min(920px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.reader-hero {
+  padding: 28px 0 30px;
+  color: var(--el-text-color-primary);
+  background: var(--el-color-primary);
+}
+
+.reader-back {
+  --el-button-text-color: var(--el-text-color-primary);
+  --el-button-hover-text-color: var(--el-text-color-primary);
+}
+
+.source-link {
+  --el-link-text-color: var(--el-text-color-primary);
+  --el-link-hover-text-color: var(--el-text-color-primary);
+}
+
+.reader-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 18px;
+}
+
+.reader-heading > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.reader-heading h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 4vw, 2.35rem);
+  line-height: 1.25;
+}
+
+.reader-heading p {
+  margin: 10px 0 0;
+  color: var(--el-text-color-regular);
+}
+
+.reader-actions,
+.reader-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.reader-meta {
+  gap: 18px;
+  color: var(--el-text-color-regular);
+  font-size: 0.875rem;
+}
+
+.chapter-nav-wrap {
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--el-bg-color);
+}
+
+.chapter-nav-bottom {
+  margin-top: 24px;
+  border-top: 1px solid var(--el-border-color-lighter);
+  border-bottom: 0;
+}
+
+.chapter-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+}
+
+.reader-main {
+  padding: 38px 0 18px;
+}
+
+.reader-content-shell {
+  width: min(780px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.reader-content {
+  padding: 40px 32px;
+  background: var(--el-bg-color);
+}
+
+.retry-state {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--el-text-color-regular);
+}
+
+.reader-float {
+  position: fixed;
+  z-index: 50;
+  right: 24px;
+  bottom: 24px;
+}
+
+@media (max-width: 640px) {
+  .reader-hero {
+    padding-top: 20px;
+  }
+
+  .reader-heading {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .chapter-nav {
+    gap: 8px;
+  }
+
+  .chapter-nav :deep(.el-button) {
+    padding-inline: 10px;
+  }
+
+  .chapter-nav :deep(.el-tag) {
+    max-width: 42%;
+  }
+
+  .reader-main {
+    padding-top: 24px;
+  }
+
+  .reader-content-shell {
+    width: min(100% - 20px, 780px);
+  }
+
+  .reader-content {
+    padding: 24px 20px;
+  }
+
+  .reader-float {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+</style>
