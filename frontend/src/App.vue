@@ -465,10 +465,6 @@ watch(
     max-width: calc(100vw - 48px);
   }
 
-  .sidebar-content {
-    max-width: calc(100vw - 48px);
-  }
-
   .sidebar-backdrop {
     position: fixed;
     inset: 0;

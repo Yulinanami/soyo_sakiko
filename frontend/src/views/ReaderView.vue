@@ -514,7 +514,6 @@ function scrollToBottom() {
 }
 
 .reader-heading h1 {
-  margin: 0;
   font-size: clamp(1.65rem, 4vw, 2.35rem);
   line-height: 1.25;
 }

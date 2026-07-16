@@ -141,35 +141,3 @@ async function handleLogin() {
     </ElCard>
   </div>
 </template>
-
-<style scoped>
-.auth-page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 32px 20px;
-  background: var(--el-color-primary);
-}
-
-.auth-card {
-  width: min(100%, 440px);
-}
-
-.auth-heading {
-  width: 100%;
-  margin-bottom: 26px;
-}
-
-.auth-alert {
-  margin-bottom: 20px;
-}
-
-.auth-submit {
-  width: 100%;
-  margin-top: 4px;
-}
-
-.auth-footer {
-  margin-top: 24px;
-}
-</style>
