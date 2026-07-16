@@ -50,17 +50,14 @@ jobs:
             platform: x64-windows
             archive_cmd: 7z a SoyoSaki-${{ github.ref_name }}-x64-windows.zip "SoyoSaki-${{ github.ref_name }}"
             archive_file: SoyoSaki-${{ github.ref_name }}-x64-windows.zip
-            playwright_install: chromium
           - os: ubuntu-22.04
             platform: x64-linux
             archive_cmd: tar -czf SoyoSaki-${{ github.ref_name }}-x64-linux.tar.gz "SoyoSaki-${{ github.ref_name }}"
             archive_file: SoyoSaki-${{ github.ref_name }}-x64-linux.tar.gz
-            playwright_install: --with-deps chromium
           - os: macos-14
             platform: arm64-macos
             archive_cmd: tar -czf SoyoSaki-${{ github.ref_name }}-arm64-macos.tar.gz "SoyoSaki-${{ github.ref_name }}"
             archive_file: SoyoSaki-${{ github.ref_name }}-arm64-macos.tar.gz
-            playwright_install: chromium
 
     runs-on: ${{ matrix.os }}
     defaults:
@@ -81,11 +78,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
           pip install pyinstaller
-
-      - name: 安装浏览器内核
-        env:
-          PLAYWRIGHT_BROWSERS_PATH: backend/playwright-browsers
-        run: python -m playwright install ${{ matrix.playwright_install }}
 
       - name: 复制后端启动脚本
         run: cp .github/scripts/run_backend.py backend/run_backend.py
@@ -115,7 +107,6 @@ jobs:
         run: |
           APP_DIR="release/SoyoSaki-${{ github.ref_name }}"
           mkdir -p "$APP_DIR"
-          cp -R backend/playwright-browsers dist/SoyoSaki/playwright-browsers
           cp -R dist/SoyoSaki/* "$APP_DIR/"
           cp -R frontend-dist "$APP_DIR/frontend"
           cp backend/.env.example "$APP_DIR/.env"

@@ -1,6 +1,5 @@
 """PyInstaller 入口脚本 - 构建时复制到 backend/run_backend.py"""
 
-import os
 import sys
 import threading
 import webbrowser
@@ -57,11 +56,6 @@ def remove_root_route(app):
         routes.append(route)
     app.router.routes = routes
 
-
-if not os.environ.get("PLAYWRIGHT_BROWSERS_PATH") and getattr(sys, "frozen", False):
-    browsers_path = get_root() / "playwright-browsers"
-    if browsers_path.exists():
-        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(browsers_path)
 
 from app.main import app
 

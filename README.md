@@ -116,12 +116,8 @@ uvicorn app.main:app --reload
 
 后端服务运行在 `http://localhost:8000`
 
-如果缺少chromium，可以先安装内核再重试
-
-```bash
-# 安装 Playwright 浏览器内核
-playwright install chromium
-```
+动态抓取需要电脑上已安装 Chrome、Edge、Chromium、Brave、Vivaldi 或 Opera。
+项目会自动检测可用的 Chromium 系浏览器，不会下载浏览器内核。
 
 ### 2. 前端设置
 
