@@ -2,7 +2,7 @@
 
 import logging
 import re
-from app.adapters.lofter_common import normalize_lofter_image_url, proxy_lofter_images
+from .common import normalize_lofter_image_url, proxy_lofter_images
 from app.adapters.utils import sanitize_html
 from app.services.http_client import get_no_proxy_sync_client, get_no_proxy_async_client
 

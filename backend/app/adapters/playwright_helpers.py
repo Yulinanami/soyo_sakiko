@@ -1,5 +1,12 @@
 """Playwright 共享配置和工具函数"""
 
+import logging
+
+
+logger = logging.getLogger(__name__)
+
+_SYSTEM_CHROMIUM_CHANNELS = ("chrome", "msedge")
+
 BROWSER_ARGS = ["--disable-blink-features=AutomationControlled"]
 
 DEFAULT_UA = (
@@ -14,6 +21,24 @@ ANTI_DETECT_SCRIPT = (
 
 # 不需要加载的资源类型 — 只需要 HTML 文本
 _BLOCKED_TYPES = frozenset({"image", "font", "stylesheet", "media"})
+
+
+def launch_browser(browser_type, **kwargs):
+    """优先使用本机 Chromium 系浏览器，失败时回退 Playwright Chromium"""
+    for channel in _SYSTEM_CHROMIUM_CHANNELS:
+        try:
+            browser = browser_type.launch(channel=channel, **kwargs)
+            logger.info("Playwright: using system browser channel %s", channel)
+            return browser
+        except Exception as exc:
+            logger.debug(
+                "Playwright: system browser channel %s unavailable: %s",
+                channel,
+                exc,
+            )
+
+    logger.info("Playwright: falling back to bundled Chromium")
+    return browser_type.launch(**kwargs)
 
 
 def block_resources(route):

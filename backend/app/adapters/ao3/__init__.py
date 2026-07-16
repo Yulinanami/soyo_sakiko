@@ -4,11 +4,11 @@ import logging
 from typing import List, Optional
 from app.adapters.base import BaseAdapter
 from app.adapters.utils import exclude, exclude_any_tag
-from app.adapters.ao3_dynamic import (
+from app.adapters.ao3.dynamic import (
     get_work_details_dynamic_sync,
     search_multi_pages_sync,
 )
-from app.adapters.ao3_parse import (
+from app.adapters.ao3.parse import (
     map_sort,
     parse_search_results_html,
     parse_work_detail_html,

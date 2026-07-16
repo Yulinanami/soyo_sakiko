@@ -2,13 +2,14 @@
 
 import logging
 from typing import List, Optional
-from app.adapters.lofter_common import merge_novel_list, parse_cookie_header
-from app.adapters.lofter_parse import parse_dwr_response, parse_tag_page_html
+from .common import merge_novel_list, parse_cookie_header
+from .parse import parse_dwr_response, parse_tag_page_html
 from app.adapters.playwright_helpers import (
     BROWSER_ARGS,
     DEFAULT_UA,
     ANTI_DETECT_SCRIPT,
     block_resources,
+    launch_browser,
 )
 from app.config import settings
 from app.schemas.novel import Novel
@@ -70,7 +71,8 @@ def search_dynamic_sync(
             headless = True
             if not settings.LOFTER_DYNAMIC_HEADLESS:
                 logger.info("Lofter: forcing headless mode to avoid browser popups")
-            browser = p.chromium.launch(
+            browser = launch_browser(
+                p.chromium,
                 headless=headless,
                 args=BROWSER_ARGS + ["--no-proxy-server"],
             )

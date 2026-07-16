@@ -4,9 +4,9 @@ import logging
 import time
 from typing import List, Optional
 from app.adapters.base import BaseAdapter
-from app.adapters.lofter_content import fetch_post_content_async
-from app.adapters.lofter_dynamic import search_dynamic_sync
-from app.adapters.lofter_common import merge_novel_list
+from .content import fetch_post_content_async
+from .dynamic import search_dynamic_sync
+from .common import merge_novel_list
 from app.schemas.novel import Novel
 from app.config import settings
 

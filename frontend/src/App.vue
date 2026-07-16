@@ -8,7 +8,6 @@ import ao3Logo from '@assets/ao3.png';
 import pixivLogo from '@assets/pixiv.png';
 import lofterLogo from '@assets/lofter.png';
 import bilibiliLogo from '@assets/bilibili.png';
-import bassLogo from '@assets/bass.png';
 import { Home, Heart, BookOpen, Settings, Menu, Moon, Sun } from 'lucide-vue-next';
 
 const userStore = useUserStore();
@@ -58,7 +57,6 @@ watch(
         </button>
         <router-link v-if="sidebarOpen" to="/"
           class="text-xl font-bold text-white no-underline flex items-center gap-2">
-          <img :src="bassLogo" alt="Bass" class="w-6 h-6 object-contain" />
           SoyoSaki
         </router-link>
       </div>

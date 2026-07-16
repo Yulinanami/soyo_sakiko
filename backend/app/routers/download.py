@@ -8,6 +8,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from app.adapters import get_adapter
+from app.adapters.playwright_helpers import launch_browser
 from app.schemas.novel import NovelSource
 
 router = APIRouter()
@@ -82,7 +83,8 @@ def _generate_pdf_sync(html: str) -> bytes:
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(
+        browser = launch_browser(
+            p.chromium,
             headless=True,
             args=["--disable-blink-features=AutomationControlled"],
         )

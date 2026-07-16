@@ -10,6 +10,7 @@ from app.adapters.playwright_helpers import (
     DEFAULT_UA,
     ANTI_DETECT_SCRIPT,
     block_resources,
+    launch_browser,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ def build_search_url(tags: List[str], sort_column: str, page: int) -> str:
 
 def _launch_context(p):
     """创建统一配置的浏览器和上下文"""
-    browser = p.chromium.launch(headless=True, args=BROWSER_ARGS)
+    browser = launch_browser(p.chromium, headless=True, args=BROWSER_ARGS)
     context = browser.new_context(user_agent=DEFAULT_UA, locale="zh-CN")
     context.add_init_script(ANTI_DETECT_SCRIPT)
     return browser, context

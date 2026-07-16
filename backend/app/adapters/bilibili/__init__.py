@@ -7,8 +7,8 @@ from typing import List, Optional
 from app.adapters.base import BaseAdapter
 from app.adapters.utils import exclude, exclude_any_tag
 from app.schemas.novel import Novel
-from app.adapters.bilibili_client import BilibiliClient
-from app.adapters.bilibili_parse import (
+from .client import BilibiliClient
+from .parse import (
     parse_article_summary,
     parse_article_detail,
     parse_opus_content,

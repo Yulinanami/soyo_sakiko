@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
+from app.adapters.playwright_helpers import launch_browser
 from app.services.http_client import get_sync_client
 from app.config import settings
 
@@ -151,7 +152,8 @@ class CredentialManager:
         cookie_string = ""
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(
+            browser = launch_browser(
+                p.chromium,
                 headless=False,
                 args=[
                     "--no-proxy-server",
@@ -247,7 +249,7 @@ class CredentialManager:
                 captured_code["value"] = match.group(1)
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)
+            browser = launch_browser(p.chromium, headless=False)
             context = browser.new_context()
             page = context.new_page()
             cdp_session = context.new_cdp_session(page)

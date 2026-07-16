@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 from app.adapters.utils import decode_unicode, exclude, exclude_any_tag, sanitize
 from app.schemas.novel import Novel, NovelSource
-from app.adapters.lofter_common import (
+from .common import (
     extract_blog_name,
     extract_post_id,
     normalize_lofter_image_url,

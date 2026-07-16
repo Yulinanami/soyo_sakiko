@@ -5,8 +5,8 @@ from typing import List, Optional
 from app.adapters.base import BaseAdapter
 from app.adapters.utils import exclude, exclude_any_tag, with_retries
 from app.schemas.novel import Novel
-from app.adapters.pixiv_client import PixivClient
-from app.adapters.pixiv_parse import parse_novel
+from .client import PixivClient
+from .parse import parse_novel
 
 logger = logging.getLogger(__name__)
 
