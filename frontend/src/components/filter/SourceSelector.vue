@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSourcesStore } from '@stores/sources';
 import { credentialsApi } from '@services/api';
@@ -14,12 +14,16 @@ const sourcesStore = useSourcesStore();
 const router = useRouter();
 const props = defineProps<{
   loadingSources?: Record<string, boolean>;
+  hasFetched?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: 'change'): void;
   (e: 'refresh'): void;
 }>();
+const isFetching = computed(() =>
+  Object.values(props.loadingSources ?? {}).some(Boolean)
+);
 
 // 弹窗状态
 const showCredentialDialog = ref(false);
@@ -99,8 +103,11 @@ function continueWithoutCredentials() {
         <el-icon v-if="source.requiresAuth && !source.enabled" :size="12"><Lock /></el-icon>
       </el-button>
 
-      <!-- 刷新 -->
-      <el-button circle plain :icon="Refresh" title="刷新数据" @click="emit('refresh')" />
+      <!-- 手动开始获取 -->
+      <el-button type="primary" plain :icon="Refresh" :loading="isFetching"
+        @click="emit('refresh')">
+        {{ props.hasFetched ? '重新获取' : '开始获取' }}
+      </el-button>
     </el-space>
   </el-space>
 

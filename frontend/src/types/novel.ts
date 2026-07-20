@@ -1,4 +1,5 @@
 export type NovelSource = "ao3" | "pixiv" | "lofter" | "bilibili";
+export type NovelFetchMode = "quantity" | "date";
 
 export interface Novel {
   id: string;
@@ -29,10 +30,19 @@ export interface NovelSearchParams {
   sortBy?: "date" | "kudos" | "hits" | "wordCount";
 }
 
+export interface NovelDateSearchParams {
+  source: NovelSource;
+  tags: string[];
+  excludeTags?: string[];
+  beforeDate: string;
+  sortBy?: "date" | "kudos" | "hits" | "wordCount";
+}
+
 export interface NovelListResponse {
   novels: Novel[];
   total: number;
   page: number;
   page_size: number;
   has_more: boolean;
+  result_date?: string | null;
 }

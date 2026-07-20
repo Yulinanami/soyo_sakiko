@@ -1,6 +1,12 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import type { Novel, NovelSearchParams, NovelSource } from "@app-types/novel";
+import type {
+  Novel,
+  NovelFetchMode,
+  NovelListResponse,
+  NovelSearchParams,
+  NovelSource,
+} from "@app-types/novel";
 import { novelApi, tagConfigApi } from "@services/api";
 import { useUserStore } from "@stores/user";
 
@@ -10,7 +16,14 @@ export const useNovelsStore = defineStore("novels", () => {
   const error = ref<string | null>(null);
   const currentPage = ref(1);
   const pageSize = 30;
-  const hasMore = ref(true);
+  const hasMore = ref(false);
+  const hasFetched = ref(false);
+  const fetchModeStorageKey = "soyosaki:novelFetchMode";
+  const storedFetchMode = localStorage.getItem(fetchModeStorageKey);
+  const fetchMode = ref<NovelFetchMode>(
+    storedFetchMode === "date" ? "date" : "quantity",
+  );
+  const currentResultDate = ref<string | null>(null);
   // 记录每一页的起始位置（用于显示分隔线）
   const pageBreaks = ref<number[]>([]);
   // 按页存储每个源的结果，解决多源分页交叉问题
@@ -34,6 +47,18 @@ export const useNovelsStore = defineStore("novels", () => {
     lofter: false,
     bilibili: false,
   });
+  const nextDatePageBySource = ref<Record<NovelSource, number>>({
+    ao3: 1,
+    pixiv: 1,
+    lofter: 1,
+    bilibili: 1,
+  });
+  let dateSeenIdsBySource: Record<NovelSource, Set<string>> = {
+    ao3: new Set(),
+    pixiv: new Set(),
+    lofter: new Set(),
+    bilibili: new Set(),
+  };
   let requestId = 0;
 
   const activeConfigSource = ref<NovelSource>("ao3");
@@ -90,7 +115,10 @@ export const useNovelsStore = defineStore("novels", () => {
   // 判断是否为空
   const isEmpty = computed(() => novels.value.length === 0 && !loading.value);
 
-  async function fetchNovels(reset = false, specificSources?: NovelSource[]) {
+  async function fetchNovelsByQuantity(
+    reset = false,
+    specificSources?: NovelSource[],
+  ) {
     // 获取小说列表
     requestId += 1;
     const activeRequestId = requestId;
@@ -99,6 +127,7 @@ export const useNovelsStore = defineStore("novels", () => {
 
     if (reset) {
       currentPage.value = 1;
+      currentResultDate.value = null;
       pageBreaks.value = []; // 重置时清空分页记录
       if (!specificSources) {
         novels.value = [];
@@ -215,7 +244,283 @@ export const useNovelsStore = defineStore("novels", () => {
     }
   }
 
-  async function loadMore() {
+  type DateCandidate = {
+    source: NovelSource;
+    response: NovelListResponse | null;
+  };
+
+  function formatLocalDate(value: Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function getTomorrowDate() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return formatLocalDate(tomorrow);
+  }
+
+  function resetDatePaging() {
+    nextDatePageBySource.value = {
+      ao3: 1,
+      pixiv: 1,
+      lofter: 1,
+      bilibili: 1,
+    };
+    dateSeenIdsBySource = {
+      ao3: new Set(),
+      pixiv: new Set(),
+      lofter: new Set(),
+      bilibili: new Set(),
+    };
+  }
+
+  async function fetchNextDatePage(
+    source: NovelSource,
+    activeRequestId: number,
+  ) {
+    const page = nextDatePageBySource.value[source];
+    try {
+      const response = await novelApi.search({
+        sources: [source],
+        tags: tagsBySource.value[source],
+        excludeTags: excludeTagsBySource.value[source],
+        page,
+        pageSize,
+        sortBy: "date",
+      });
+      if (activeRequestId !== requestId) return false;
+
+      nextDatePageBySource.value[source] = page + 1;
+      let discoveredNewNovel = false;
+      for (const novel of response.novels) {
+        const key = `${novel.source}:${novel.id}`;
+        if (!dateSeenIdsBySource[source].has(key)) {
+          dateSeenIdsBySource[source].add(key);
+          discoveredNewNovel = true;
+        }
+      }
+      hasMoreBySource.value[source] =
+        response.has_more && response.novels.length > 0 && discoveredNewNovel;
+      return discoveredNewNovel;
+    } catch (err) {
+      if (activeRequestId === requestId) {
+        error.value = err instanceof Error ? err.message : "获取小说列表失败";
+        hasMoreBySource.value[source] = false;
+      }
+      return false;
+    }
+  }
+
+  async function ensureDateCandidate(
+    source: NovelSource,
+    beforeDate: string,
+    activeRequestId: number,
+  ): Promise<NovelListResponse | null> {
+    while (activeRequestId === requestId) {
+      try {
+        const response = await novelApi.getCachedByDate({
+          source,
+          tags: tagsBySource.value[source],
+          excludeTags: excludeTagsBySource.value[source],
+          beforeDate,
+          sortBy: sortBy.value,
+        });
+        if (response.result_date) return response;
+        if (!hasMoreBySource.value[source]) return response;
+      } catch (err) {
+        if (activeRequestId === requestId) {
+          error.value =
+            err instanceof Error ? err.message : "读取本地同人文缓存失败";
+          hasMoreBySource.value[source] = false;
+        }
+        return null;
+      }
+
+      const fetched = await fetchNextDatePage(source, activeRequestId);
+      if (!fetched && !hasMoreBySource.value[source]) return null;
+    }
+    return null;
+  }
+
+  async function collectDateCandidates(
+    sources: NovelSource[],
+    beforeDate: string,
+    activeRequestId: number,
+  ): Promise<DateCandidate[]> {
+    return Promise.all(
+      sources.map(async (source) => ({
+        source,
+        response: await ensureDateCandidate(
+          source,
+          beforeDate,
+          activeRequestId,
+        ),
+      })),
+    );
+  }
+
+  function applyDateCandidates(
+    candidates: DateCandidate[],
+    displayPage: number,
+    reset: boolean,
+  ) {
+    const datedCandidates = candidates.filter(
+      (candidate) => candidate.response?.result_date,
+    );
+    const resultDate = datedCandidates.reduce<string | null>(
+      (latest, candidate) => {
+        const candidateDate = candidate.response?.result_date;
+        if (!candidateDate) return latest;
+        return !latest || candidateDate > latest ? candidateDate : latest;
+      },
+      null,
+    );
+
+    if (!resultDate) {
+      hasMore.value = false;
+      return false;
+    }
+
+    const previousTotal = novels.value.length;
+    for (const candidate of candidates) {
+      novelsBySourceByPage.value[candidate.source][displayPage] =
+        candidate.response?.result_date === resultDate
+          ? candidate.response.novels
+          : [];
+    }
+
+    currentResultDate.value = resultDate;
+    currentPage.value = displayPage;
+    rebuildNovels();
+    if (!reset && novels.value.length > previousTotal) {
+      pageBreaks.value.push(previousTotal);
+    }
+
+    const cachedOlderDate = candidates.some((candidate) => {
+      const candidateDate = candidate.response?.result_date;
+      return Boolean(
+        candidateDate &&
+          (candidateDate < resultDate || candidate.response?.has_more),
+      );
+    });
+    const sourceCanFetchMore = selectedSources.value.some(
+      (source) => hasMoreBySource.value[source],
+    );
+    hasMore.value = cachedOlderDate || sourceCanFetchMore;
+    return true;
+  }
+
+  async function fetchNovelsByDate(reset = false) {
+    if (!reset && currentResultDate.value) {
+      await loadMoreByDate();
+      return;
+    }
+
+    requestId += 1;
+    const activeRequestId = requestId;
+    const sourcesToProcess = selectedSources.value.filter(
+      (source) => tagsBySource.value[source].length > 0,
+    );
+
+    currentPage.value = 1;
+    currentResultDate.value = null;
+    pageBreaks.value = [];
+    novels.value = [];
+    resetDatePaging();
+    (Object.keys(novelsBySourceByPage.value) as NovelSource[]).forEach(
+      (source) => {
+        novelsBySourceByPage.value[source] = {};
+        hasMoreBySource.value[source] = sourcesToProcess.includes(source);
+        loadingSources.value[source] = sourcesToProcess.includes(source);
+      },
+    );
+
+    if (sourcesToProcess.length === 0) {
+      error.value = "请先选择至少一个标签";
+      hasMore.value = false;
+      loading.value = false;
+      return;
+    }
+
+    loading.value = true;
+    error.value = null;
+    try {
+      await Promise.all(
+        sourcesToProcess.map((source) =>
+          fetchNextDatePage(source, activeRequestId),
+        ),
+      );
+      if (activeRequestId !== requestId) return;
+
+      const candidates = await collectDateCandidates(
+        sourcesToProcess,
+        getTomorrowDate(),
+        activeRequestId,
+      );
+      if (activeRequestId === requestId) {
+        applyDateCandidates(candidates, 1, true);
+      }
+    } finally {
+      if (activeRequestId === requestId) {
+        sourcesToProcess.forEach((source) => {
+          loadingSources.value[source] = false;
+        });
+        loading.value = false;
+      }
+    }
+  }
+
+  async function loadMoreByDate() {
+    if (
+      loading.value ||
+      !hasMore.value ||
+      !currentResultDate.value ||
+      selectedSources.value.length === 0
+    )
+      return;
+
+    requestId += 1;
+    const activeRequestId = requestId;
+    const sourcesToProcess = selectedSources.value.filter(
+      (source) => tagsBySource.value[source].length > 0,
+    );
+    sourcesToProcess.forEach((source) => {
+      loadingSources.value[source] = true;
+    });
+    loading.value = true;
+    error.value = null;
+    try {
+      const candidates = await collectDateCandidates(
+        sourcesToProcess,
+        currentResultDate.value,
+        activeRequestId,
+      );
+      if (activeRequestId === requestId) {
+        applyDateCandidates(candidates, currentPage.value + 1, false);
+      }
+    } finally {
+      if (activeRequestId === requestId) {
+        sourcesToProcess.forEach((source) => {
+          loadingSources.value[source] = false;
+        });
+        loading.value = false;
+      }
+    }
+  }
+
+  async function fetchNovels(reset = false, specificSources?: NovelSource[]) {
+    hasFetched.value = true;
+    if (fetchMode.value === "date") {
+      await fetchNovelsByDate(reset || Boolean(specificSources));
+      return;
+    }
+    await fetchNovelsByQuantity(reset, specificSources);
+  }
+
+  async function loadMoreByQuantity() {
     // 加载更多
     if (loading.value || !hasMore.value || selectedSources.value.length === 0)
       return;
@@ -223,61 +528,47 @@ export const useNovelsStore = defineStore("novels", () => {
     await fetchNovels(false);
   }
 
-  async function fetchSourcesWithCache() {
-    // 补齐来源结果
-    rebuildNovels();
-
-    const sourcesToFetch = selectedSources.value.filter(
-      (source) => Object.keys(novelsBySourceByPage.value[source]).length === 0,
-    );
-
-    if (sourcesToFetch.length === 0) {
-      hasMore.value = selectedSources.value.some(
-        (source) => hasMoreBySource.value[source],
-      );
+  async function loadMore() {
+    if (fetchMode.value === "date") {
+      await loadMoreByDate();
       return;
     }
-
-    sourcesToFetch.forEach((source) => {
-      loadingSources.value[source] = true;
-    });
-    loading.value = true;
-
-    await Promise.allSettled(
-      sourcesToFetch.map(async (source) => {
-        try {
-          const response = await novelApi.search({
-            sources: [source],
-            tags: tagsBySource.value[source],
-            excludeTags: excludeTagsBySource.value[source],
-            page: 1,
-            pageSize,
-            sortBy: sortBy.value,
-          });
-          const filtered = response.novels.filter((n) => n.source === source);
-          // 按页存储，新源从第1页开始
-          novelsBySourceByPage.value[source][1] = filtered;
-          hasMoreBySource.value[source] = response.has_more;
-          rebuildNovels();
-        } catch (err) {
-          error.value = err instanceof Error ? err.message : "获取小说列表失败";
-        } finally {
-          loadingSources.value[source] = false;
-          loading.value = selectedSources.value.some(
-            (s) => loadingSources.value[s],
-          );
-          hasMore.value = selectedSources.value.some(
-            (s) => hasMoreBySource.value[s],
-          );
-        }
-      }),
-    );
+    await loadMoreByQuantity();
   }
 
   function retry() {
-    // 重试加载
+    // 按当前配置从第一页重新获取
     error.value = null;
-    fetchNovels(false);
+    fetchNovels(true);
+  }
+
+  function markFetchConfigChanged() {
+    // 保留当前列表，但在重新获取前禁止继续混入旧配置的分页
+    hasMore.value = false;
+  }
+
+  function setFetchMode(mode: NovelFetchMode) {
+    // 保存获取方式，等待用户手动开始获取
+    if (fetchMode.value === mode) return;
+    requestId += 1;
+    fetchMode.value = mode;
+    localStorage.setItem(fetchModeStorageKey, mode);
+    novels.value = [];
+    currentPage.value = 1;
+    currentResultDate.value = null;
+    pageBreaks.value = [];
+    hasMore.value = false;
+    hasFetched.value = false;
+    error.value = null;
+    resetDatePaging();
+    (Object.keys(novelsBySourceByPage.value) as NovelSource[]).forEach(
+      (source) => {
+        novelsBySourceByPage.value[source] = {};
+        hasMoreBySource.value[source] = false;
+        loadingSources.value[source] = false;
+      },
+    );
+    loading.value = false;
   }
 
   function rebuildNovels() {
@@ -369,6 +660,7 @@ export const useNovelsStore = defineStore("novels", () => {
 
   async function saveTagConfig(source: NovelSource) {
     // 保存某个数据源的标签配置
+    markFetchConfigChanged();
     const userStore = useUserStore();
 
     if (userStore.isLoggedIn) {
@@ -398,6 +690,7 @@ export const useNovelsStore = defineStore("novels", () => {
     // 恢复默认值
     tagsBySource.value = { ...defaultTagsBySource };
     excludeTagsBySource.value = { ...defaultExcludeTagsBySource };
+    markFetchConfigChanged();
 
     if (userStore.isLoggedIn) {
       try {
@@ -416,6 +709,9 @@ export const useNovelsStore = defineStore("novels", () => {
     error,
     currentPage,
     hasMore,
+    hasFetched,
+    fetchMode,
+    currentResultDate,
     pageBreaks, // 导出分页位置
     activeConfigSource,
     selectedSources,
@@ -425,9 +721,10 @@ export const useNovelsStore = defineStore("novels", () => {
     loadingSources,
     isEmpty,
     fetchNovels,
-    fetchSourcesWithCache,
     loadMore,
     retry,
+    markFetchConfigChanged,
+    setFetchMode,
     loadTagConfigs,
     saveTagConfig,
     resetToDefaults,

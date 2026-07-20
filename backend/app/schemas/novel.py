@@ -40,3 +40,4 @@ class NovelListResponse(BaseModel):
     page: int
     page_size: int
     has_more: bool
+    result_date: Optional[str] = None

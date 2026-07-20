@@ -65,9 +65,16 @@ async function resetTagConfigs() {
   resetting.value = true;
   try {
     await novelsStore.resetToDefaults();
-    await novelsStore.fetchNovels(true);
   } finally {
     resetting.value = false;
+  }
+}
+
+function handleFetchModeChange(
+  value: string | number | boolean | undefined,
+) {
+  if (value === "quantity" || value === "date") {
+    novelsStore.setFetchMode(value);
   }
 }
 
@@ -94,7 +101,7 @@ onBeforeUnmount(() => {
           <ElSpace direction="vertical" alignment="flex-start" :size="4">
             <ElText tag="h1" class="page-title">设置</ElText>
             <ElText tag="p" class="page-subtitle">
-              管理需要浏览器凭证的数据源与标签配置
+              管理同人文获取方式、数据源凭证与标签配置
             </ElText>
           </ElSpace>
         </ElSpace>
@@ -103,6 +110,31 @@ onBeforeUnmount(() => {
 
     <main class="page-content">
       <ElSpace class="settings-stack" direction="vertical" fill :size="18">
+        <ElCard shadow="never">
+          <ElRow class="settings-row" :gutter="24" align="middle">
+            <ElCol :xs="24" :sm="14">
+              <ElSpace direction="vertical" alignment="flex-start" :size="4">
+                <ElText tag="strong" size="large">同人文获取方式</ElText>
+                <ElText type="info" size="small">
+                  按日期会优先显示当天作品；当天没有时自动跳到最近有作品的日期。
+                </ElText>
+              </ElSpace>
+            </ElCol>
+            <ElCol :xs="24" :sm="10">
+              <ElRow justify="end">
+                <ElRadioGroup
+                  :model-value="novelsStore.fetchMode"
+                  :disabled="novelsStore.loading"
+                  @change="handleFetchModeChange"
+                >
+                  <ElRadioButton value="quantity">按数量</ElRadioButton>
+                  <ElRadioButton value="date">按日期</ElRadioButton>
+                </ElRadioGroup>
+              </ElRow>
+            </ElCol>
+          </ElRow>
+        </ElCard>
+
         <ElCard shadow="never">
           <ElSpace class="card-content" direction="vertical" fill :size="18">
             <ElRow class="settings-row" :gutter="24" align="middle">

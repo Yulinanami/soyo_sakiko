@@ -19,6 +19,7 @@ import {
   ElOption,
   ElPopover,
   ElRow,
+  ElScrollbar,
   ElSelect,
   ElSpace,
   ElText,
@@ -33,6 +34,7 @@ const isPageNavOpen = ref(false);
 
 // 计算当前加载了多少页
 const loadedPages = computed(() => {
+  if (novelsStore.novels.length === 0) return 0;
   const breaks = novelsStore.pageBreaks;
   // 页数 = 分页断点数 + 1
   return breaks.length + 1;
@@ -78,8 +80,21 @@ onBeforeUnmount(() => {
   saveScrollPosition();
 });
 
+function syncSelectedSources() {
+  const enabled = sourcesStore.getEnabledSourceNames();
+  novelsStore.selectedSources = enabled;
+
+  if (enabled.length > 0 && !enabled.includes(novelsStore.activeConfigSource)) {
+    const firstEnabled = enabled[0];
+    if (firstEnabled) {
+      novelsStore.activeConfigSource = firstEnabled;
+    }
+  }
+}
+
 onMounted(async () => {
-  // 根据返回来源决定是否保留列表
+  // 只恢复已有列表，不在启动时自动获取
+  syncSelectedSources();
   const preserve = sessionStorage.getItem('soyosaki:preserveList') === '1';
 
   if (novelsStore.novels.length > 0) {
@@ -92,25 +107,14 @@ onMounted(async () => {
   }
 
   sessionStorage.removeItem('soyosaki:preserveList');
-  await novelsStore.fetchNovels(true);
   await nextTick();
   restoreListScroll();
 });
 
 function handleSourceChange() {
-  // 切换来源后刷新
-  const enabled = sourcesStore.getEnabledSourceNames();
-  novelsStore.selectedSources = enabled;
-
-  // 如果当前配置源被关闭了，切换到第一个开启的源
-  if (enabled.length > 0 && !enabled.includes(novelsStore.activeConfigSource)) {
-    const firstEnabled = enabled[0];
-    if (firstEnabled) {
-      novelsStore.activeConfigSource = firstEnabled;
-    }
-  }
-
-  novelsStore.fetchSourcesWithCache();
+  // 只同步来源选择，等待用户手动开始获取
+  syncSelectedSources();
+  novelsStore.markFetchConfigChanged();
 }
 
 function toggleExclude() {
@@ -118,8 +122,9 @@ function toggleExclude() {
   isExcludeOpen.value = !isExcludeOpen.value;
 }
 
-function handleRefresh() {
-  // 重新拉取全部数据
+function handleStartFetch() {
+  // 按当前配置从第一页开始获取
+  syncSelectedSources();
   novelsStore.fetchNovels(true);
 }
 </script>
@@ -148,7 +153,6 @@ function handleRefresh() {
                   :exclude-open="isExcludeOpen" @toggle-exclude="toggleExclude" @update:selected-tags="(tags) => {
                     novelsStore.tagsBySource[novelsStore.activeConfigSource] = tags;
                     novelsStore.saveTagConfig(novelsStore.activeConfigSource);
-                    novelsStore.fetchNovels(true, [novelsStore.activeConfigSource]);
                   }" />
 
                 <!-- 排除过滤 -->
@@ -156,7 +160,6 @@ function handleRefresh() {
                   :open="isExcludeOpen" @update:exclude-tags="(tags) => {
                     novelsStore.excludeTagsBySource[novelsStore.activeConfigSource] = tags;
                     novelsStore.saveTagConfig(novelsStore.activeConfigSource);
-                    novelsStore.fetchNovels(true, [novelsStore.activeConfigSource]);
                   }" />
               </div>
 
@@ -171,11 +174,12 @@ function handleRefresh() {
             <el-button text circle :icon="isConfigCollapsed ? Expand : Fold"
               @click="isConfigCollapsed = !isConfigCollapsed"
               :title="isConfigCollapsed ? '展开配置' : '折叠配置'" />
-            <SourceSelector :loading-sources="novelsStore.loadingSources" @change="handleSourceChange"
-              @refresh="handleRefresh" />
+            <SourceSelector :loading-sources="novelsStore.loadingSources" :has-fetched="novelsStore.hasFetched"
+              @change="handleSourceChange" @refresh="handleStartFetch" />
           </el-space>
 
-          <el-select v-model="novelsStore.sortBy" style="width: 8rem" @change="novelsStore.fetchNovels(true)">
+          <el-select v-model="novelsStore.sortBy" style="width: 8rem"
+            @change="novelsStore.markFetchConfigChanged">
             <el-option label="最新更新" value="date" />
             <el-option label="最多点赞" value="kudos" />
             <el-option label="最多阅读" value="hits" />
@@ -197,8 +201,13 @@ function handleRefresh() {
         </el-alert>
       </div>
 
-      <el-empty v-if="novelsStore.isEmpty" description="暂无符合条件的小说">
-        <el-text type="info" size="small">尝试调整筛选条件或切换数据源</el-text>
+      <el-empty
+        v-if="novelsStore.isEmpty"
+        :description="novelsStore.hasFetched ? '暂无符合条件的小说' : '尚未开始获取'"
+      >
+        <el-text type="info" size="small">
+          {{ novelsStore.hasFetched ? '请调整筛选条件后重新获取' : '设置筛选条件后点击“开始获取”' }}
+        </el-text>
       </el-empty>
     </el-main>
 
@@ -206,20 +215,22 @@ function handleRefresh() {
     <div class="fixed bottom-6 right-6 z-50">
       <el-popover v-model:visible="isPageNavOpen" placement="top-end" trigger="click" :width="150"
         :disabled="loadedPages <= 0">
-        <el-space direction="vertical" fill :size="0">
-          <el-button text :icon="Top" style="width: 100%; justify-content: flex-start" @click="scrollToPage(1)">
-            回到顶部
-          </el-button>
-          <template v-for="page in loadedPages" :key="page">
-            <el-button v-if="page > 1" text style="width: 100%; justify-content: flex-start"
-              @click="scrollToPage(page)">
-              第 {{ page }} 页
+        <el-scrollbar max-height="50vh" always>
+          <el-space direction="vertical" fill :size="0" style="width: 100%">
+            <el-button text :icon="Top" style="width: 100%; justify-content: flex-start" @click="scrollToPage(1)">
+              回到顶部
             </el-button>
-          </template>
-          <el-button text :icon="Bottom" style="width: 100%; justify-content: flex-start" @click="scrollToPage(-1)">
-            直达底部
-          </el-button>
-        </el-space>
+            <template v-for="page in loadedPages" :key="page">
+              <el-button v-if="page > 1" text style="width: 100%; justify-content: flex-start"
+                @click="scrollToPage(page)">
+                第 {{ page }} 页
+              </el-button>
+            </template>
+            <el-button text :icon="Bottom" style="width: 100%; justify-content: flex-start" @click="scrollToPage(-1)">
+              直达底部
+            </el-button>
+          </el-space>
+        </el-scrollbar>
         <template #reference>
           <el-button type="primary" circle size="large" :icon="isPageNavOpen ? Bottom : ArrowUpBold"
             :title="isPageNavOpen ? '收起导航' : '页面导航'" />

@@ -1,6 +1,7 @@
 import axios from "axios";
 import type {
   Novel,
+  NovelDateSearchParams,
   NovelListResponse,
   NovelSearchParams,
 } from "@app-types/novel";
@@ -60,6 +61,23 @@ export const novelApi = {
     searchParams.append("page_size", String(params.pageSize ?? 20));
     searchParams.append("sort_by", params.sortBy ?? "date");
     const { data } = await api.get(`/novels?${searchParams.toString()}`);
+    return unwrapData<NovelListResponse>(data);
+  },
+
+  getCachedByDate: async (
+    params: NovelDateSearchParams,
+  ): Promise<NovelListResponse> => {
+    const searchParams = new URLSearchParams();
+    searchParams.append("source", params.source);
+    params.tags.forEach((tag) => searchParams.append("tags", tag));
+    params.excludeTags?.forEach((tag) =>
+      searchParams.append("exclude_tags", tag),
+    );
+    searchParams.append("before_date", params.beforeDate);
+    searchParams.append("sort_by", params.sortBy ?? "date");
+    const { data } = await api.get(
+      `/novels/cached/by-date?${searchParams.toString()}`,
+    );
     return unwrapData<NovelListResponse>(data);
   },
 
