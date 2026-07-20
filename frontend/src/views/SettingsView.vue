@@ -78,6 +78,14 @@ function handleFetchModeChange(
   }
 }
 
+function handleQuantityPageSizeChange(value: number | undefined) {
+  novelsStore.setQuantityPageSize(value);
+}
+
+function handleDatesPerPageChange(value: number | undefined) {
+  novelsStore.setDatesPerPage(value);
+}
+
 onMounted(async () => {
   // 进入页面时刷新状态
   await refreshCredentialStatus();
@@ -111,28 +119,77 @@ onBeforeUnmount(() => {
     <main class="page-content">
       <ElSpace class="settings-stack" direction="vertical" fill :size="18">
         <ElCard shadow="never">
-          <ElRow class="settings-row" :gutter="24" align="middle">
-            <ElCol :xs="24" :sm="14">
-              <ElSpace direction="vertical" alignment="flex-start" :size="4">
-                <ElText tag="strong" size="large">同人文获取方式</ElText>
-                <ElText type="info" size="small">
-                  按日期会优先显示当天作品；当天没有时自动跳到最近有作品的日期。
-                </ElText>
-              </ElSpace>
-            </ElCol>
-            <ElCol :xs="24" :sm="10">
-              <ElRow justify="end">
-                <ElRadioGroup
-                  :model-value="novelsStore.fetchMode"
-                  :disabled="novelsStore.loading"
-                  @change="handleFetchModeChange"
-                >
-                  <ElRadioButton value="quantity">按数量</ElRadioButton>
-                  <ElRadioButton value="date">按日期</ElRadioButton>
-                </ElRadioGroup>
-              </ElRow>
-            </ElCol>
-          </ElRow>
+          <ElSpace class="card-content" direction="vertical" fill :size="18">
+            <ElRow class="settings-row" :gutter="24" align="middle">
+              <ElCol :xs="24" :sm="14">
+                <ElSpace direction="vertical" alignment="flex-start" :size="4">
+                  <ElText tag="strong" size="large">同人文获取方式</ElText>
+                  <ElText type="info" size="small">
+                    按日期会优先显示当天作品；当天没有时自动跳到最近有作品的日期。
+                  </ElText>
+                </ElSpace>
+              </ElCol>
+              <ElCol :xs="24" :sm="10">
+                <ElRow justify="end">
+                  <ElRadioGroup
+                    :model-value="novelsStore.fetchMode"
+                    :disabled="novelsStore.loading"
+                    @change="handleFetchModeChange"
+                  >
+                    <ElRadioButton value="quantity">按数量</ElRadioButton>
+                    <ElRadioButton value="date">按日期</ElRadioButton>
+                  </ElRadioGroup>
+                </ElRow>
+              </ElCol>
+            </ElRow>
+
+            <ElDivider />
+
+            <ElRow class="settings-row" :gutter="24" align="middle">
+              <ElCol :xs="24" :sm="14">
+                <ElSpace direction="vertical" alignment="flex-start" :size="4">
+                  <ElText tag="strong" size="large">
+                    {{
+                      novelsStore.fetchMode === "quantity"
+                        ? "每页文章数量"
+                        : "每页日期数量"
+                    }}
+                  </ElText>
+                  <ElText type="info" size="small">
+                    {{
+                      novelsStore.fetchMode === "quantity"
+                        ? "设置每个数据源每页获取的文章数量（1–100）。"
+                        : "设置每页包含的有效日期数量（1–30，自动跳过没有作品的日期）。"
+                    }}
+                  </ElText>
+                </ElSpace>
+              </ElCol>
+              <ElCol :xs="24" :sm="10">
+                <ElRow justify="end">
+                  <ElInputNumber
+                    v-if="novelsStore.fetchMode === 'quantity'"
+                    :model-value="novelsStore.quantityPageSize"
+                    :min="1"
+                    :max="100"
+                    :step="1"
+                    step-strictly
+                    :disabled="novelsStore.loading"
+                    @change="handleQuantityPageSizeChange"
+                  />
+                  <ElInputNumber
+                    v-else
+                    :model-value="novelsStore.datesPerPage"
+                    :min="1"
+                    :max="30"
+                    :step="1"
+                    step-strictly
+                    :disabled="novelsStore.loading"
+                    @change="handleDatesPerPageChange"
+                  />
+                </ElRow>
+              </ElCol>
+            </ElRow>
+          </ElSpace>
         </ElCard>
 
         <ElCard shadow="never">
